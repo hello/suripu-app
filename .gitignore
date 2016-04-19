@@ -1,0 +1,4 @@
+/configs/*.dev.yml
+suripu-app.iml
+.idea
+/target/
