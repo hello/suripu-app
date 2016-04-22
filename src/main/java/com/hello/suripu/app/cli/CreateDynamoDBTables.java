@@ -1,5 +1,7 @@
 package com.hello.suripu.app.cli;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -7,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AggregateSleepScoreDAODynamoDB;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.AlgorithmResultsDAODynamoDB;
@@ -37,15 +40,16 @@ import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
-import com.hello.suripu.coredw.configuration.DynamoDBConfiguration;
-import com.hello.suripu.coredw.db.SleepHmmDAODynamoDB;
-import com.hello.suripu.coredw.db.TimelineDAODynamoDB;
-import com.hello.suripu.coredw.db.TimelineLogDAODynamoDB;
-import com.yammer.dropwizard.cli.ConfiguredCommand;
-import com.yammer.dropwizard.config.Bootstrap;
+import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
+import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.setup.Bootstrap;
 
 public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfiguration> {
 
@@ -95,10 +99,13 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
-        final DynamoDBConfiguration config = configuration.getSmartAlarmLogDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SMART_ALARM_LOG);
+        final String endpoint = endpoints.get(DynamoDBTableName.SMART_ALARM_LOG);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -110,10 +117,13 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createAccountPreferencesTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        final DynamoDBConfiguration config = configuration.getPreferencesDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.PREFERENCES);
+        final String endpoint = endpoints.get(DynamoDBTableName.PREFERENCES);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -125,10 +135,13 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createScheduledRingTimeHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        DynamoDBConfiguration config = configuration.getScheduledRingTimeHistoryDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.RING_TIME_HISTORY);
+        final String endpoint = endpoints.get(DynamoDBTableName.RING_TIME_HISTORY);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -140,12 +153,15 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createSleepScoreTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        final DynamoDBConfiguration config = configuration.getSleepScoreDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final String version = configuration.getSleepScoreVersion();
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(config.getEndpoint());
-        final String tableName = config.getTableName() + "_" + version;
+        final String version = configuration.getSleepScoreVersion();
+        final String tableName = tableNames.get(DynamoDBTableName.SLEEP_SCORE) + "_" + version;
+        final String endpoint = endpoints.get(DynamoDBTableName.SLEEP_SCORE);
+        client.setEndpoint(endpoint);
+
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -157,11 +173,13 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createAlgorithmTestTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        final DynamoDBConfiguration config = configuration.getAlgorithmTestDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(config.getEndpoint());
-        final String tableName = config.getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.ALGORITHM_TEST);
+        final String endpoint = endpoints.get(DynamoDBTableName.ALGORITHM_TEST);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -173,11 +191,13 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createInsightsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        final DynamoDBConfiguration config = configuration.getInsightsDynamoDBConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(config.getEndpoint());
-        final String tableName = config.getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.INSIGHTS);
+        final String endpoint = endpoints.get(DynamoDBTableName.INSIGHTS);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -191,8 +211,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createTeamsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
 
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        client.setEndpoint(configuration.getTeamsDynamoDBConfiguration().getEndpoint());
-        final String tableName = configuration.getTeamsDynamoDBConfiguration().getTableName();
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.TEAMS);
+        final String endpoint = endpoints.get(DynamoDBTableName.TEAMS);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -206,9 +230,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createUserInfoTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
 
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getUserInfoDynamoDBConfiguration().getEndpoint());
-        final String tableName = configuration.getUserInfoDynamoDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.ALARM_INFO);
+        final String endpoint = endpoints.get(DynamoDBTableName.ALARM_INFO);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -222,9 +249,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createFeaturesTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
 
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getFeaturesDynamoDBConfiguration().getEndpoint());
-        final String tableName = configuration.getFeaturesDynamoDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.FEATURES);
+        final String endpoint = endpoints.get(DynamoDBTableName.FEATURES);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -238,9 +268,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createAlarmTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
 
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getAlarmDBConfiguration().getEndpoint());
-        final String tableName = configuration.getAlarmDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.ALARM);
+        final String endpoint = endpoints.get(DynamoDBTableName.ALARM);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -254,9 +287,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createTimeZoneHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
 
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getTimeZoneHistoryDBConfiguration().getEndpoint());
-        final String tableName = configuration.getTimeZoneHistoryDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY);
+        final String endpoint = endpoints.get(DynamoDBTableName.TIMEZONE_HISTORY);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -269,9 +305,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createSenseKeyStoreTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getSenseKeyStoreDynamoDBConfiguration().getEndpoint());
-        final String tableName = configuration.getSenseKeyStoreDynamoDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.SENSE_KEY_STORE);
+        final String endpoint = endpoints.get(DynamoDBTableName.SENSE_KEY_STORE);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -284,9 +323,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createPillKeyStoreTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getPillKeyStoreDynamoDBConfiguration().getEndpoint());
-        final String tableName = configuration.getPillKeyStoreDynamoDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.PILL_KEY_STORE);
+        final String endpoint = endpoints.get(DynamoDBTableName.PILL_KEY_STORE);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -299,9 +341,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createTimelineTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getTimelineDBConfiguration().getEndpoint());
-        final String tableName = configuration.getTimelineDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.TIMELINE);
+        final String endpoint = endpoints.get(DynamoDBTableName.TIMELINE);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -315,9 +360,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createPasswordResetTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getPasswordResetDBConfiguration().getEndpoint());
-        final String tableName = configuration.getPasswordResetDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.PASSWORD_RESET);
+        final String endpoint = endpoints.get(DynamoDBTableName.PASSWORD_RESET);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -330,9 +378,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createRingTimeHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(configuration.getRingTimeHistoryDBConfiguration().getEndpoint());
-        final String tableName = configuration.getRingTimeHistoryDBConfiguration().getTableName();
+        final String tableName = tableNames.get(DynamoDBTableName.RING_TIME_HISTORY);
+        final String endpoint = endpoints.get(DynamoDBTableName.RING_TIME_HISTORY);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -345,8 +396,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createSleepHmmTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        client.setEndpoint(configuration.getSleepHmmDBConfiguration().getEndpoint());
-        final String tableName = configuration.getSleepHmmDBConfiguration().getTableName();
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SLEEP_HMM);
+        final String endpoint = endpoints.get(DynamoDBTableName.SLEEP_HMM);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -359,12 +414,15 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     }
 
     private void createSleepStatsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
-        final DynamoDBConfiguration config = configuration.getSleepStatsDynamoConfiguration();
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final String version = configuration.getSleepStatsVersion();
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        client.setEndpoint(config.getEndpoint());
-        final String tableName = config.getTableName() + "_" + version;
+        final String version = configuration.getSleepStatsVersion();
+        final String tableName = tableNames.get(DynamoDBTableName.SLEEP_STATS) + "_" + version;
+        final String endpoint = endpoints.get(DynamoDBTableName.SLEEP_STATS);
+        client.setEndpoint(endpoint);
+
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -377,9 +435,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createTimelineLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
-        final String tableName = configuration.getTimelineLogDBConfiguration().getTableName();
-        client.setEndpoint(configuration.getTimelineLogDBConfiguration().getEndpoint());
+        final String tableName = tableNames.get(DynamoDBTableName.TIMELINE_LOG);
+        final String endpoint = endpoints.get(DynamoDBTableName.TIMELINE_LOG);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -393,9 +454,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createOTAHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getOTAHistoryDBConfiguration();
-        final String tableName = configuration.getOTAHistoryDBConfiguration().getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.OTA_HISTORY);
+        final String endpoint = endpoints.get(DynamoDBTableName.OTA_HISTORY);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -409,9 +473,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createResponseCommandsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getResponseCommandsDBConfiguration();
-        final String tableName = configuration.getResponseCommandsDBConfiguration().getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SYNC_RESPONSE_COMMANDS);
+        final String endpoint = endpoints.get(DynamoDBTableName.SYNC_RESPONSE_COMMANDS);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -425,9 +492,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createFWUpgradePathTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getFWUpgradePathDBConfiguration();
-        final String tableName = configuration.getFWUpgradePathDBConfiguration().getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.FIRMWARE_UPGRADE_PATH);
+        final String endpoint = endpoints.get(DynamoDBTableName.FIRMWARE_UPGRADE_PATH);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -442,9 +512,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createFeatureExtractionModelsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getFeatureExtractionModelsConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.FEATURE_EXTRACTION_MODELS);
+        final String endpoint = endpoints.get(DynamoDBTableName.FEATURE_EXTRACTION_MODELS);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -458,9 +531,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createOnlineHmmModelsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getOnlineHmmModelsConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.ONLINE_HMM_MODELS);
+        final String endpoint = endpoints.get(DynamoDBTableName.ONLINE_HMM_MODELS);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -475,9 +551,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createCalibrationTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getCalibrationConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.CALIBRATION);
+        final String endpoint = endpoints.get(DynamoDBTableName.CALIBRATION);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -491,9 +570,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createWifiInfoTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getWifiInfoConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.WIFI_INFO);
+        final String endpoint = endpoints.get(DynamoDBTableName.WIFI_INFO);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -507,9 +589,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createAppStatsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getAppStatsConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.APP_STATS);
+        final String endpoint = endpoints.get(DynamoDBTableName.APP_STATS);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -523,9 +608,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createPillHeartBeatTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getPillHeartBeatConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.PILL_HEARTBEAT);
+        final String endpoint = endpoints.get(DynamoDBTableName.PILL_HEARTBEAT);
+        client.setEndpoint(endpoint);
 
         try {
             client.describeTable(tableName);
@@ -539,9 +627,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createDeviceDataTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getDeviceDataConfiguration();
-        final String tablePrefix = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tablePrefix = tableNames.get(DynamoDBTableName.DEVICE_DATA);
+        final String endpoint = endpoints.get(DynamoDBTableName.DEVICE_DATA);
+        client.setEndpoint(endpoint);
         final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(client, tablePrefix);
 
         final DateTime now = DateTime.now(DateTimeZone.UTC);
@@ -562,10 +653,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createLastSeenTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getSenseLastSeenConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
+        final String tableName = tableNames.get(DynamoDBTableName.SENSE_LAST_SEEN);
+        final String endpoint = endpoints.get(DynamoDBTableName.SENSE_LAST_SEEN);
+        client.setEndpoint(endpoint);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -578,11 +671,15 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createPillDataTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getPillDataConfiguration();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.PILL_DATA);
+        final String endpoint = endpoints.get(DynamoDBTableName.PILL_DATA);
+        client.setEndpoint(endpoint);
 
         final DateTime now = DateTime.now(DateTimeZone.UTC);
-        final PillDataDAODynamoDB pillDataDynamoDB = new PillDataDAODynamoDB(client, config.getTableName());
+        final PillDataDAODynamoDB pillDataDynamoDB = new PillDataDAODynamoDB(client, tableName);
         for (int i = 0; i < 6; i++) {
             final DateTime currDateTime = now.plusMonths(i);
             final String currentTablename = pillDataDynamoDB.getTableName(currDateTime);
@@ -600,9 +697,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createSenseStateTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getSenseStateDBConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SENSE_STATE);
+        final String endpoint = endpoints.get(DynamoDBTableName.SENSE_STATE);
+        client.setEndpoint(endpoint);
 
         final SenseStateDynamoDB senseStateDynamoDB = new SenseStateDynamoDB(client, tableName);
         try {
@@ -617,9 +717,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createFileManifestTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getFileManifestDBConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.FILE_MANIFEST);
+        final String endpoint = endpoints.get(DynamoDBTableName.FILE_MANIFEST);
+        client.setEndpoint(endpoint);
 
         final FileManifestDynamoDB fileManifestDynamoDB = new FileManifestDynamoDB(client, tableName);
         try {
@@ -634,9 +737,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
     private void createMarketingInsightsSeenTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getMarketingInsightsSeenConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.MARKETING_INSIGHTS_SEEN);
+        final String endpoint = endpoints.get(DynamoDBTableName.MARKETING_INSIGHTS_SEEN);
+        client.setEndpoint(endpoint);
 
         final MarketingInsightsSeenDAODynamoDB dynamoDB = new MarketingInsightsSeenDAODynamoDB(client, tableName);
         try {

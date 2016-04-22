@@ -1,6 +1,8 @@
 package com.hello.suripu.app.v2;
 
 import com.google.common.base.Optional;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.WifiInfo;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
@@ -9,9 +11,9 @@ import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
-import com.hello.suripu.coredw.resources.BaseResource;
+import com.hello.suripu.coredw8.resources.BaseResource;
 import com.hello.suripu.core.util.JsonError;
-import com.yammer.metrics.annotation.Timed;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -158,21 +158,6 @@ logging:
     # The timezone used to format dates. HINT: USE THE DEFAULT, UTC.
     timeZone: UTC
 
-event_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_event
-
-timezone_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_timezone_history
-
-alarm_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_alarm
-
 score_threshold : 15 # minutes bucket for sleep-scores
 
 push_notifications:
@@ -181,75 +166,6 @@ push_notifications:
     android: arn:aws:sns:us-east-1:053216739513:app/GCM/hello-sense-android-dev
 
   table_name: notifications #deprecate later
-
-notifications_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_notifications
-
-preferences_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_preferences
-
-ring_time_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_ring_time
-
-alarm_info_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_alarm_info
-
-# remember to update version when changing score methods
-# v0.1: pure movement
-sleep_score_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: prod_sleep_score
-sleep_score_version: v_0_1
-
-features_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: features
-
-teams_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: teams
-
-insights_dynamo_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: prod_insights
-
-sense_key_store_dynamo_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: key_store
-
-pill_key_store_dynamo_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: pill_key_store
-
-password_reset_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: prod_password_reset
-
-kinesis:
-  endpoint : https://kinesis.us-east-1.amazonaws.com
-  streams :
-    audio_features : audio_features
-    activity_stream : activity_stream
-    registrations: registrations
-    encode_audio : encode_audio
-    batch_pill_data : batch_pill_data
-    sense_sensors_data : sense_sensors_data
-    logs : logs
 
 messeji_http_client:
   endpoint: "http://internal-messeji-prod-internal-510481854.us-east-1.elb.amazonaws.com:80"
@@ -265,104 +181,12 @@ taimurain_http_client:
 question_configs:
   num_skips : 5
 
-timeline_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_timeline
-
-email:
-   api_key: XnAIQfmDpMYIapDWGigfwA
-   link_host: https://account.hello.is/password_update
-
-ring_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_ring_history_by_account
-
-sleephmm_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_sleephmm
-
 # store sleep scores and other stats
 # v0.2: score uses movement and duration
-sleep_stats_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: prod_sleep_stats
 sleep_stats_version: v_0_2
+sleep_score_version: v_0_1
 
 max_cache_refresh_days: 20
-
-algorithm_test_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_algorithm_test
-
-smart_alarm_log_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_smart_alarm_log
-
-timeline_log_db:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_timeline_log
-
-ota_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: ota_history
-
-resp_commands_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_response_commands
-
-fw_path_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: fw_upgrade_path
-
-sense_last_seen:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_sense_last_seen
-
-feature_extraction_models:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_feature_extraction_models
-
-online_hmm_models:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_online_hmm_models
-
-calibration:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_calibration
-
-wifi_info:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_wifi_info
-
-app_stats:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_app_stats
-
-pill_heartbeat:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_pill_heartbeat
-
-device_data:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_sense_data
 
 timeline_model_ensembles:
   bucket: hello-timeline-models
@@ -372,22 +196,95 @@ timeline_seed_model:
   bucket: hello-timeline-models
   key: normal4.base64
 
-pill_data:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_pill_data
+email:
+   api_key: XnAIQfmDpMYIapDWGigfwA
+   link_host: https://account.hello.is/password_update
 
-sense_state_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_sense_state
+kinesis:
+  endpoint : https://kinesis.us-east-1.amazonaws.com
+  streams :
+    audio_features : audio_features
+    activity_stream : activity_stream
+    registrations: registrations
+    encode_audio : encode_audio
+    batch_pill_data : batch_pill_data
+    sense_sensors_data : sense_sensors_data
+    logs : logs
 
-file_manifest:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
+dynamodb:
   region: us-east-1
-  table_name: prod_file_manifest
+  tables:
+    alarm: prod_alarm
+    alarm_info: prod_alarm_info
+    algorithm_test: prod_algorithm_test
+    app_stats: prod_app_stats
+    calibration: prod_calibration
+    device_data: prod_sense_data
+    event: prod_event
+    feature_extraction_models: prod_feature_extraction_models
+    features: features
+    file_manifest: prod_file_manifest
+    fw_path: fw_upgrade_path
+    insights_dynamo: prod_insights
+    marketing_insights_seen: prod_marketing_insights_seen
+    notifications: prod_notifications
+    online_hmm_models: prod_online_hmm_models
+    ota_history: ota_history
+    password_reset: prod_password_reset
+    pill_data: prod_pill_data
+    pill_heartbeat: prod_pill_heartbeat
+    pill_key_store: pill_key_store
+    preferences: prod_preferences
+    sync_response_commands: prod_response_commands
+    ring_history: prod_ring_history_by_account
+    ring_time: prod_ring_time
+    sense_key_store: key_store
+    sense_last_seen: prod_sense_last_seen
+    sense_state: prod_sense_state
+    sleephmm: prod_sleephmm
+    sleep_score: prod_sleep_score
+    sleep_stats: prod_sleep_stats
+    smart_alarm_log: prod_smart_alarm_log
+    teams: teams
+    timeline: prod_timeline
+    timeline_log: prod_timeline_log
+    timezone_history: prod_timezone_history
+    wifi_info: prod_wifi_info
 
-marketing_insights_seen:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: prod_marketing_insights_seen
+  endpoints:
+    alarm: http://dynamodb.us-east-1.amazonaws.com
+    alarm_info: http://dynamodb.us-east-1.amazonaws.com
+    algorithm_test: http://dynamodb.us-east-1.amazonaws.com
+    app_stats: http://dynamodb.us-east-1.amazonaws.com
+    calibration: http://dynamodb.us-east-1.amazonaws.com
+    device_data: http://dynamodb.us-east-1.amazonaws.com
+    event: http://dynamodb.us-east-1.amazonaws.com
+    feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
+    features: http://dynamodb.us-east-1.amazonaws.com
+    file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    fw_path: http://dynamodb.us-east-1.amazonaws.com
+    insights_dynamo: http://dynamodb.us-east-1.amazonaws.com
+    marketing_insights_seen: http://dynamodb.us-east-1.amazonaws.com
+    notifications: http://dynamodb.us-east-1.amazonaws.com
+    online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
+    ota_history: http://dynamodb.us-east-1.amazonaws.com
+    password_reset: http://dynamodb.us-east-1.amazonaws.com
+    pill_data: http://dynamodb.us-east-1.amazonaws.com
+    pill_heartbeat: http://dynamodb.us-east-1.amazonaws.com
+    pill_key_store: http://dynamodb.us-east-1.amazonaws.com
+    preferences: http://dynamodb.us-east-1.amazonaws.com
+    sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
+    ring_history: http://dynamodb.us-east-1.amazonaws.com
+    ring_time: http://dynamodb.us-east-1.amazonaws.com
+    sense_key_store: http://dynamodb.us-east-1.amazonaws.com
+    sense_last_seen: http://dynamodb.us-east-1.amazonaws.com
+    sense_state: http://dynamodb.us-east-1.amazonaws.com
+    sleephmm: http://dynamodb.us-east-1.amazonaws.com
+    sleep_score: http://dynamodb.us-east-1.amazonaws.com
+    sleep_stats: http://dynamodb.us-east-1.amazonaws.com
+    smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
+    teams: http://dynamodb.us-east-1.amazonaws.com
+    timeline: http://dynamodb.us-east-1.amazonaws.com
+    timeline_log: http://dynamodb.us-east-1.amazonaws.com
+    timezone_history: http://dynamodb.us-east-1.amazonaws.com
+    wifi_info: http://dynamodb.us-east-1.amazonaws.com
