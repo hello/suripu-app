@@ -14,6 +14,8 @@ import com.amazonaws.services.sns.AmazonSNSClient;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
@@ -118,36 +120,32 @@ import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
-import com.hello.suripu.coredw8.clients.TaimurainHttpClient;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
-import com.hello.suripu.coredw8.filters.CacheFilterFactory;
-import com.hello.suripu.coredw8.metrics.RegexMetricPredicate;
 import com.hello.suripu.coredw8.oauth.OAuthAuthenticator;
-import com.hello.suripu.coredw8.oauth.OAuthProvider;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
-import com.hello.suripu.coredw8.util.DropwizardServiceUtil;
-import com.sun.jersey.api.core.ResourceConfig;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import io.dropwizard.Application;
+import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.jdbi.ImmutableListContainerFactory;
 import io.dropwizard.jdbi.ImmutableSetContainerFactory;
 import io.dropwizard.jdbi.OptionalContainerFactory;
 import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
+import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
@@ -244,8 +242,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
-        final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
-
         final AmazonDynamoDB ringTimeHistoryDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.RING_TIME_HISTORY);
         final RingTimeHistoryDAODynamoDB ringTimeHistoryDAODynamoDB = new RingTimeHistoryDAODynamoDB(ringTimeHistoryDynamoDBClient, tableNames.get(DynamoDBTableName.RING_TIME_HISTORY));
 
@@ -257,14 +253,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB pillDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PILL_DATA);
         final PillDataDAODynamoDB pillDataDAODynamoDB = new PillDataDAODynamoDB(pillDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.PILL_DATA));
-
-        final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
-                notificationSubscriptionsDAO,
-                snsClient,
-                arns
-        );
-
-        final MobilePushNotificationProcessor mobilePushNotificationProcessor = new MobilePushNotificationProcessor(snsClient, notificationSubscriptionsDAO);
 
         /*  Timeline Log dynamo dB stuff */
         final AmazonDynamoDB timelineLogDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.TIMELINE_LOG);
@@ -304,15 +292,17 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             final Integer interval = configuration.getGraphite().getReportingIntervalInSeconds();
 
             final String env = (configuration.getDebug()) ? "dev" : "prod";
+            final String prefix = String.format("%s.%s.suripu-app", apiKey, env);
 
-            final String prefix = String.format("%s.%s.%s", apiKey, env, "suripu-app");
+            final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
 
-            final List<String> metrics = configuration.getGraphite().getIncludeMetrics();
-            final RegexMetricPredicate predicate = new RegexMetricPredicate(metrics);
-            final Joiner joiner = Joiner.on(", ");
-            LOGGER.info("Logging the following metrics: {}", joiner.join(metrics));
-
-            GraphiteReporter.enable(Metrics.defaultRegistry(), interval, TimeUnit.SECONDS, graphiteHostName, 2003, prefix, predicate);
+            final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
+                .prefixedWith(prefix)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .filter(MetricFilter.ALL)
+                .build(graphite);
+            reporter.start(interval, TimeUnit.SECONDS);
 
             LOGGER.info("Metrics enabled.");
         } else {
@@ -320,13 +310,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         }
 
         LOGGER.warn("DEBUG MODE = {}", configuration.getDebug());
-        // Custom JSON handling for responses.
-        final ResourceConfig jrConfig = environment.getJerseyResourceConfig();
-        DropwizardServiceUtil.deregisterDWSingletons(jrConfig);
+
+        //Doing this programmatically instead of in config files
+        AbstractServerFactory sf = (AbstractServerFactory) configuration.getServerFactory();
+        // disable all default exception mappers
+        sf.setRegisterDefaultExceptionMappers(false);
+
         environment.addProvider(new CustomJSONExceptionMapper(configuration.getDebug()));
-
         environment.addProvider(new OAuthProvider(new OAuthAuthenticator(accessTokenStore), "protected-resources", activityLogger));
-
         environment.getJerseyResourceConfig()
                 .getResourceFilterFactories().add(CacheFilterFactory.class);
 
@@ -428,6 +419,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.addResource(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.addResource(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
         environment.addResource(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
+
+        final MobilePushNotificationProcessor mobilePushNotificationProcessor = new MobilePushNotificationProcessor(snsClient, notificationSubscriptionsDAO);
+        final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
+        final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
+            notificationSubscriptionsDAO,
+            snsClient,
+            arns
+        );
         environment.addResource(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
 
         final QuestionProcessor questionProcessor = new QuestionProcessor.Builder()
