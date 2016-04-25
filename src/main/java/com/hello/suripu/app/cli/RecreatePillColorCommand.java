@@ -46,8 +46,7 @@ public class RecreatePillColorCommand extends ConfiguredCommand<SuripuAppConfigu
 
     @Override
     protected void run(Bootstrap<SuripuAppConfiguration> bootstrap, Namespace namespace, SuripuAppConfiguration configuration) throws Exception {
-        final ManagedDataSourceFactory managedDataSourceFactory = new ManagedDataSourceFactory();
-        final ManagedDataSource dataSource = managedDataSourceFactory.build(configuration.getCommonDB());
+        final ManagedDataSource dataSource = (configuration.getCommonDB().build(bootstrap.getMetricRegistry(), "commonDB"));
 
         final DBI jdbi = new DBI(dataSource);
         jdbi.registerArgumentFactory(new OptionalArgumentFactory(configuration.getCommonDB().getDriverClass()));

@@ -37,8 +37,7 @@ public class ScanInvalidNightsCommand extends ConfiguredCommand<SuripuAppConfigu
 
     @Override
     protected void run(final Bootstrap<SuripuAppConfiguration> bootstrap, final Namespace namespace, final SuripuAppConfiguration configuration) throws Exception {
-        final ManagedDataSourceFactory managedDataSourceFactory = new ManagedDataSourceFactory();
-        final ManagedDataSource commonDataSource = managedDataSourceFactory.build(configuration.getCommonDB());
+        final ManagedDataSource commonDataSource = (configuration.getCommonDB().build(bootstrap.getMetricRegistry(), "commonDB"));
 
         final DBI commonJDBI = new DBI(commonDataSource);
         commonJDBI.registerArgumentFactory(new OptionalArgumentFactory(configuration.getCommonDB().getDriverClass()));
@@ -49,7 +48,7 @@ public class ScanInvalidNightsCommand extends ConfiguredCommand<SuripuAppConfigu
 
         final AccountDAOImpl accountDAO = commonJDBI.onDemand(AccountDAOImpl.class);
 
-        final ManagedDataSource sensorDataSource = managedDataSourceFactory.build(configuration.getSensorsDB());
+        final ManagedDataSource sensorDataSource = (configuration.getSensorsDB().build(bootstrap.getMetricRegistry(), "sensorsDB"));
 
         final DBI sensorJDBI = new DBI(sensorDataSource);
         sensorJDBI.registerArgumentFactory(new OptionalArgumentFactory(configuration.getSensorsDB().getDriverClass()));

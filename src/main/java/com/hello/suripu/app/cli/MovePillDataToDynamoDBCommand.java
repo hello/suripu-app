@@ -46,6 +46,7 @@ import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 
 import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.jdbi.ImmutableListContainerFactory;
 import io.dropwizard.jdbi.ImmutableSetContainerFactory;
@@ -169,7 +170,7 @@ public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppCo
                 runMigrate(namespace, suripuAppConfiguration, accountToExternalMapping, pillDataDAODynamoDB);
                 break;
             case "test":
-                testResults(namespace, suripuAppConfiguration, pillDataDAODynamoDB, accountToExternalMapping);
+                testResults(bootstrap, namespace, suripuAppConfiguration, pillDataDAODynamoDB, accountToExternalMapping);
                 break;
             default:
                 LOGGER.error("WRONG task");
@@ -185,15 +186,15 @@ public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppCo
      * @param configuration configuration
      * @param pillDataDAODynamoDB dynamo client
      */
-    private void testResults(final Namespace namespace,
+    private void testResults(final Bootstrap<SuripuAppConfiguration> bootstrap,
+                             final Namespace namespace,
                              final SuripuAppConfiguration configuration,
                              final PillDataDAODynamoDB pillDataDAODynamoDB,
                              final Map<String, String> accountToExternalMapping) throws Exception
     {
         // set up postgres DAO
 
-        final ManagedDataSourceFactory managedDataSourceFactory = new ManagedDataSourceFactory();
-        final ManagedDataSource dataSource = managedDataSourceFactory.build(configuration.getSensorsDB());
+        final ManagedDataSource dataSource = (configuration.getSensorsDB().build(bootstrap.getMetricRegistry(), "sensorsDB"));
 
         final DBI jdbi = new DBI(dataSource);
         jdbi.registerArgumentFactory(new OptionalArgumentFactory(configuration.getSensorsDB().getDriverClass()));

@@ -49,6 +49,7 @@ import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 
 import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.jdbi.ImmutableListContainerFactory;
 import io.dropwizard.jdbi.ImmutableSetContainerFactory;
@@ -183,7 +184,7 @@ public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfigu
         } else if (task.equals("test")) {
 
             final Map<String, String> accountToInternalMapping = readIdMapping(mappingFile, DeviceMapColumns.ID);
-            testResults(namespace, suripuAppConfiguration, deviceDataDAODynamoDB, accountToExternalMapping, accountToInternalMapping);
+            testResults(bootstrap, namespace, suripuAppConfiguration, deviceDataDAODynamoDB, accountToExternalMapping, accountToInternalMapping);
         } else {
             LOGGER.error("WRONG task");
         }
@@ -197,7 +198,8 @@ public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfigu
      * @param configuration
      * @param deviceDataDAODynamoDB
      */
-    private void testResults(final Namespace namespace,
+    private void testResults(final Bootstrap<SuripuAppConfiguration> bootstrap,
+                             final Namespace namespace,
                              final SuripuAppConfiguration configuration,
                              final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
                              final Map<String, String> accountToExternalMapping,
@@ -205,8 +207,7 @@ public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfigu
     {
         // set up postgres DAO
 
-        final ManagedDataSourceFactory managedDataSourceFactory = new ManagedDataSourceFactory();
-        final ManagedDataSource dataSource = managedDataSourceFactory.build(configuration.getSensorsDB());
+        final ManagedDataSource dataSource = (configuration.getSensorsDB().build(bootstrap.getMetricRegistry(), "sensorsDB"));
 
         final DBI jdbi = new DBI(dataSource);
         jdbi.registerArgumentFactory(new OptionalArgumentFactory(configuration.getSensorsDB().getDriverClass()));
