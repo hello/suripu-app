@@ -3,6 +3,8 @@ package com.hello.suripu.app.resources.v1;
 import com.amazonaws.AmazonServiceException;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
@@ -11,7 +13,7 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
-import com.yammer.metrics.annotation.Timed;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;

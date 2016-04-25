@@ -1,11 +1,13 @@
 package com.hello.suripu.app.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.yammer.dropwizard.config.Configuration;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
-public class QuestionConfiguration extends Configuration{
+import io.dropwizard.Configuration;
+
+public class QuestionConfiguration extends Configuration {
 
     @Valid
     @NotNull

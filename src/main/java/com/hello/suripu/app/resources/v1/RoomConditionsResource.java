@@ -4,6 +4,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
@@ -19,9 +21,10 @@ import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
-import com.hello.suripu.coredw.resources.BaseResource;
+
 import com.hello.suripu.core.util.SmoothSample;
-import com.yammer.metrics.annotation.Timed;
+import com.hello.suripu.coredw8.resources.BaseResource;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;

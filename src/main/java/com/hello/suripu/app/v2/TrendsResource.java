@@ -1,15 +1,17 @@
 package com.hello.suripu.app.v2;
 
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
-import com.hello.suripu.coredw.resources.BaseResource;
+
 import com.hello.suripu.core.trends.v2.TimeScale;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.trends.v2.TrendsResult;
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-import com.yammer.metrics.annotation.Timed;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

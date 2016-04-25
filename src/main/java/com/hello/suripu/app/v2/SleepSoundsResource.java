@@ -1,5 +1,6 @@
 package com.hello.suripu.app.v2;
 
+import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
@@ -23,9 +24,10 @@ import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.coredw.resources.BaseResource;
+
 import com.hello.suripu.core.util.JsonError;
-import com.yammer.metrics.annotation.Timed;
+import com.hello.suripu.coredw8.resources.BaseResource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

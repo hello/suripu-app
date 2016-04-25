@@ -2,10 +2,10 @@ package com.hello.suripu.app.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-
-import com.yammer.dropwizard.config.Configuration;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import io.dropwizard.Configuration;
 
 public class EmailConfiguration extends Configuration {
 

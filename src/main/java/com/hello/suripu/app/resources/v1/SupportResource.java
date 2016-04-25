@@ -1,11 +1,12 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.support.SupportTopic;
-import com.yammer.metrics.annotation.Timed;
+
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

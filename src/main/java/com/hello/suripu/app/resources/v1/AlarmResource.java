@@ -4,6 +4,8 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -18,7 +20,7 @@ import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.AlarmUtils;
 import com.hello.suripu.core.util.JsonError;
-import com.yammer.metrics.annotation.Timed;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;

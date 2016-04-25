@@ -2,6 +2,8 @@ package com.hello.suripu.app.v2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.TrendsInsightsDAO;
 import com.hello.suripu.core.models.Insights.InfoInsightCards;
@@ -11,7 +13,6 @@ import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.InsightProcessor;
 import com.hello.suripu.core.processors.insights.IntroductionInsights;
-import com.yammer.metrics.annotation.Timed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

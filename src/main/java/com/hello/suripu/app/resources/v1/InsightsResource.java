@@ -3,6 +3,8 @@ package com.hello.suripu.app.resources.v1;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
@@ -19,11 +21,12 @@ import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.InsightProcessor;
 import com.hello.suripu.core.processors.insights.IntroductionInsights;
-import com.hello.suripu.coredw.resources.BaseResource;
+
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TrendGraphUtils;
+import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-import com.yammer.metrics.annotation.Timed;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
