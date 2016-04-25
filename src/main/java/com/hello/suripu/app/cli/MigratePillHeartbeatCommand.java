@@ -2,18 +2,22 @@ package com.hello.suripu.app.cli;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeat;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw.configuration.DynamoDBConfiguration;
-import com.yammer.dropwizard.cli.ConfiguredCommand;
-import com.yammer.dropwizard.config.Bootstrap;
+import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
@@ -28,6 +32,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.setup.Bootstrap;
 
 /**
  * Created by kingshy on 10/20/15.
@@ -90,12 +97,11 @@ public class MigratePillHeartbeatCommand extends ConfiguredCommand<SuripuAppConf
             return;
         }
 
-        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final DynamoDBConfiguration config = configuration.getPillHeartBeatConfiguration();
-        final String tableName = config.getTableName();
-        client.setEndpoint(config.getEndpoint());
-        final PillHeartBeatDAODynamoDB pillHeartBeatDAODynamoDB = PillHeartBeatDAODynamoDB.create(client, tableName);
-
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider);
+        final AmazonDynamoDB pillHeartBeatDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PILL_HEARTBEAT);
+        final PillHeartBeatDAODynamoDB pillHeartBeatDAODynamoDB = PillHeartBeatDAODynamoDB.create(pillHeartBeatDynamoDBClient, tableNames.get(DynamoDBTableName.PILL_HEARTBEAT));
+        
         final ExecutorService service = Executors.newFixedThreadPool(this.threadSize);
 
         final File csvFile = new File(this.pillDataFilename);

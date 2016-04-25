@@ -14,6 +14,7 @@
         <jodatime.version>20150319</jodatime.version>
         <metrics.version>3.1.0</metrics.version>
         <suripu.version>0.7.14-SNAPSHOT</suripu.version>
+        <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -244,6 +245,11 @@
                     <artifactId>guava</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>${opencsv.version}</version>
         </dependency>
     </dependencies>
     <build>

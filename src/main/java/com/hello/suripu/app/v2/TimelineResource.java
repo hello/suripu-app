@@ -2,6 +2,8 @@ package com.hello.suripu.app.v2;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
@@ -21,15 +23,15 @@ import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.TimelineProcessor;
-import com.hello.suripu.coredw.resources.BaseResource;
+
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeedbackUtils;
 import com.hello.suripu.core.util.JsonError;
-import com.hello.suripu.coredw.util.PATCH;
-import com.hello.suripu.coredw.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-import com.yammer.metrics.annotation.Timed;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -49,6 +51,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
+
+import io.dropwizard.jersey.PATCH;
 
 @Path("/v2/timeline")
 public class TimelineResource extends BaseResource {

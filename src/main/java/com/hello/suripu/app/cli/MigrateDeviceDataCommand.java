@@ -2,12 +2,14 @@ package com.hello.suripu.app.cli;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.DeviceDataDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
@@ -18,16 +20,9 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw.configuration.DynamoDBConfiguration;
+import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.opencsv.CSVReader;
-import com.yammer.dropwizard.cli.ConfiguredCommand;
-import com.yammer.dropwizard.config.Bootstrap;
-import com.yammer.dropwizard.db.ManagedDataSource;
-import com.yammer.dropwizard.db.ManagedDataSourceFactory;
-import com.yammer.dropwizard.jdbi.ImmutableListContainerFactory;
-import com.yammer.dropwizard.jdbi.ImmutableSetContainerFactory;
-import com.yammer.dropwizard.jdbi.OptionalContainerFactory;
-import com.yammer.dropwizard.jdbi.args.OptionalArgumentFactory;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.joda.time.DateTime;
@@ -52,6 +47,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
+
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.db.ManagedDataSource;
+import io.dropwizard.jdbi.ImmutableListContainerFactory;
+import io.dropwizard.jdbi.ImmutableSetContainerFactory;
+import io.dropwizard.jdbi.OptionalContainerFactory;
+import io.dropwizard.jdbi.args.OptionalArgumentFactory;
+import io.dropwizard.setup.Bootstrap;
 
 public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrateDeviceDataCommand.class);
@@ -161,17 +164,16 @@ public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfigu
         final Map<String, String> accountToExternalMapping = readIdMapping(mappingFile, DeviceMapColumns.EXTERNAL_SENSE_ID);
         LOGGER.debug("Loaded {} id mapping entries", accountToExternalMapping.size());
 
-        final AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(provider);
-        final DynamoDBConfiguration deviceDataConfiguration = suripuAppConfiguration.getDeviceDataConfiguration();
-        dynamoDBClient.withEndpoint(deviceDataConfiguration.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = suripuAppConfiguration.dynamoDBConfiguration().tables();
+        final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider);
+        final AmazonDynamoDB deviceDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.DEVICE_DATA);
+        final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(deviceDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.DEVICE_DATA));
 
-        final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(dynamoDBClient,
-                deviceDataConfiguration.getTableName());
 
         LOGGER.debug("DynamoDB client set up for {}/'{}'",
-                deviceDataConfiguration.getTableName(),
-                deviceDataConfiguration.getEndpoint());
+            tableNames.get(DynamoDBTableName.DEVICE_DATA),
+            DynamoDBTableName.DEVICE_DATA);
 
 
         // choose which task to perform, migration or test results

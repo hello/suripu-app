@@ -1,5 +1,6 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.MobilePushRegistration;
 import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
@@ -7,7 +8,6 @@ import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
-import com.yammer.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

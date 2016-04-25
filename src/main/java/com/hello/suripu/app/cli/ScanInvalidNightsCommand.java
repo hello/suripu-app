@@ -7,14 +7,7 @@ import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.yammer.dropwizard.cli.ConfiguredCommand;
-import com.yammer.dropwizard.config.Bootstrap;
-import com.yammer.dropwizard.db.ManagedDataSource;
-import com.yammer.dropwizard.db.ManagedDataSourceFactory;
-import com.yammer.dropwizard.jdbi.ImmutableListContainerFactory;
-import com.yammer.dropwizard.jdbi.ImmutableSetContainerFactory;
-import com.yammer.dropwizard.jdbi.OptionalContainerFactory;
-import com.yammer.dropwizard.jdbi.args.OptionalArgumentFactory;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -23,6 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.db.ManagedDataSource;
+import io.dropwizard.jdbi.ImmutableListContainerFactory;
+import io.dropwizard.jdbi.ImmutableSetContainerFactory;
+import io.dropwizard.jdbi.OptionalContainerFactory;
+import io.dropwizard.jdbi.args.OptionalArgumentFactory;
+import io.dropwizard.setup.Bootstrap;
 
 /**
  * Created by pangwu on 4/24/15.

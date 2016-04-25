@@ -2,10 +2,11 @@ package com.hello.suripu.app.resources.v1;
 
 
 import com.google.common.base.Optional;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.Application;
 import com.hello.suripu.core.oauth.ApplicationRegistration;
 import com.hello.suripu.core.oauth.ClientAuthenticationException;
@@ -17,8 +18,9 @@ import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.oauth.stores.ApplicationStore;
 import com.hello.suripu.core.oauth.stores.OAuthTokenStore;
 import com.hello.suripu.core.util.PasswordUtil;
-import com.hello.suripu.coredw.oauth.GrantTypeParam;
-import com.yammer.metrics.annotation.Timed;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.GrantTypeParam;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,26 +2,21 @@ package com.hello.suripu.app.cli;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.TrackerMotionDAO;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw.configuration.DynamoDBConfiguration;
+import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.opencsv.CSVReader;
-import com.yammer.dropwizard.cli.ConfiguredCommand;
-import com.yammer.dropwizard.config.Bootstrap;
-import com.yammer.dropwizard.db.ManagedDataSource;
-import com.yammer.dropwizard.db.ManagedDataSourceFactory;
-import com.yammer.dropwizard.jdbi.ImmutableListContainerFactory;
-import com.yammer.dropwizard.jdbi.ImmutableSetContainerFactory;
-import com.yammer.dropwizard.jdbi.OptionalContainerFactory;
-import com.yammer.dropwizard.jdbi.args.OptionalArgumentFactory;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.joda.time.DateTime;
@@ -49,6 +44,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
+
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.db.ManagedDataSource;
+import io.dropwizard.jdbi.ImmutableListContainerFactory;
+import io.dropwizard.jdbi.ImmutableSetContainerFactory;
+import io.dropwizard.jdbi.OptionalContainerFactory;
+import io.dropwizard.jdbi.args.OptionalArgumentFactory;
+import io.dropwizard.setup.Bootstrap;
 
 public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MovePillDataToDynamoDBCommand.class);
@@ -148,18 +151,16 @@ public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppCo
         final Map<String, String> accountToExternalMapping = readIdMapping(mappingFile, PillMapColumns.EXTERNAL_PILL_ID);
         LOGGER.debug("Loaded {} id mapping entries", accountToExternalMapping.size());
 
-        final AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(provider);
-        final DynamoDBConfiguration pillDataConfiguration = suripuAppConfiguration.getPillDataConfiguration();
-        dynamoDBClient.withEndpoint(pillDataConfiguration.getEndpoint());
+        final ImmutableMap<DynamoDBTableName, String> tableNames = suripuAppConfiguration.dynamoDBConfiguration().tables();
+        final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider);
 
-        final PillDataDAODynamoDB pillDataDAODynamoDB = new PillDataDAODynamoDB(dynamoDBClient,
-                pillDataConfiguration.getTableName());
+        final AmazonDynamoDB pillDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PILL_DATA);
+        final PillDataDAODynamoDB pillDataDAODynamoDB = new PillDataDAODynamoDB(pillDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.PILL_DATA));
 
         LOGGER.debug("DynamoDB client set up for {}/'{}'",
-                pillDataConfiguration.getTableName(),
-                pillDataConfiguration.getEndpoint());
-
+            tableNames.get(DynamoDBTableName.PILL_DATA),
+            DynamoDBTableName.PILL_DATA);
 
         // choose which task to perform, migration or test results
         final String task = namespace.getString("task");

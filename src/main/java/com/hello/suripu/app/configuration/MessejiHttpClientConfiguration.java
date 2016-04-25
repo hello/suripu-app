@@ -1,10 +1,12 @@
 package com.hello.suripu.app.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.yammer.dropwizard.client.HttpClientConfiguration;
+
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import io.dropwizard.client.HttpClientConfiguration;
 
 /**
  * Created by jakepiccolo on 2/23/16.
