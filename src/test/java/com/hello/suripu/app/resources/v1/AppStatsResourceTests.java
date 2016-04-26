@@ -13,11 +13,14 @@ import com.hello.suripu.core.models.AppStats;
 import com.hello.suripu.core.models.AppUnreadStats;
 import com.hello.suripu.core.models.Choice;
 import com.hello.suripu.core.models.Insights.InsightCard;
+
+
 import com.hello.suripu.core.models.Question;
-import com.hello.suripu.core.models.questions.QuestionCategory;
-import com.hello.suripu.core.oauth.AccessToken;
+import com.hello.suripu.core.models.Questions.QuestionCategory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;

@@ -1,14 +1,18 @@
 package com.hello.suripu.app.messeji;
 
 import com.google.common.base.Optional;
+
+import com.codahale.metrics.MetricRegistry;
 import com.hello.messeji.api.AudioCommands;
 import com.hello.messeji.api.Messeji;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
-import com.yammer.dropwizard.client.HttpClientBuilder;
+
 import org.apache.http.client.HttpClient;
 import org.junit.Before;
 import org.junit.Test;
+
+import io.dropwizard.client.HttpClientBuilder;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,7 +26,8 @@ public class MessejiHttpClientIT {
 
     @Before
     public void setUp() {
-        final HttpClient httpClient = new HttpClientBuilder().build();
+        final MetricRegistry registry = new MetricRegistry();
+        final HttpClient httpClient = new HttpClientBuilder(registry).build("messejiIT");
         client = MessejiHttpClient.create(httpClient, "http", "messeji-dev.hello.is", 80);
     }
 

@@ -14,12 +14,13 @@ import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.UserInfo;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.AlarmUtils;
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -61,10 +62,11 @@ public class AlarmResource {
         this.amazonS3 = amazonS3;
     }
 
+    @ScopesAllowed({OAuthScope.ALARM_READ})
     @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Alarm> getAlarms(@Scope({OAuthScope.ALARM_READ}) final AccessToken token){
+    public List<Alarm> getAlarms(@Auth final AccessToken token){
         LOGGER.debug("Before getting device account map from account_id");
         final List<DeviceAccountPair> deviceAccountMap = this.deviceDAO.getSensesForAccountId(token.accountId);
         if(deviceAccountMap.size() == 0){
@@ -111,12 +113,13 @@ public class AlarmResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.ALARM_WRITE})
     @Timed
     @POST
     @Path("/{client_time_utc}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Alarm> setAlarms(@Scope({OAuthScope.ALARM_WRITE}) final AccessToken token,
+    public List<Alarm> setAlarms(@Auth final AccessToken token,
                           @PathParam("client_time_utc") long clientTime,
                           final List<Alarm> alarms){
 
@@ -187,12 +190,12 @@ public class AlarmResource {
 
     }
 
-
+    @ScopesAllowed({OAuthScope.ALARM_READ})
     @Timed
     @GET
     @Path("/sounds")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<AlarmSound> getAlarmSounds(@Scope(OAuthScope.ALARM_READ) final AccessToken accessToken) {
+    public List<AlarmSound> getAlarmSounds(@Auth final AccessToken accessToken) {
         final List<AlarmSound> alarmSounds = Lists.newArrayList();
 
 

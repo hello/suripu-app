@@ -18,18 +18,20 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
-
 import com.hello.suripu.core.util.SmoothSample;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
+import com.librato.rollout.RolloutClient;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -45,6 +47,9 @@ import java.util.Map;
 
 @Path("/v1/room")
 public class RoomConditionsResource extends BaseResource {
+
+    @Inject
+    RolloutClient feature;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomConditionsResource.class);
     private final static ImmutableSet<String> hiddenSensors = ImmutableSet.copyOf(Sets.newHashSet("light_variance", "light_peakiness", "dust_min", "dust_max", "dust_variance"));
@@ -71,11 +76,12 @@ public class RoomConditionsResource extends BaseResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/current")
     @Produces(MediaType.APPLICATION_JSON)
-    public CurrentRoomState current(@Scope({OAuthScope.SENSORS_BASIC}) final AccessToken token,
+    public CurrentRoomState current(@Auth final AccessToken token,
                                     @DefaultValue("c") @QueryParam("temp_unit") final String unit) {
 
 
@@ -128,12 +134,13 @@ public class RoomConditionsResource extends BaseResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/{sensor}/week")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastWeek(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") final String sensor,
             @QueryParam("from") Long queryEndTimestampUTC) { // utc or local???
 
@@ -146,12 +153,13 @@ public class RoomConditionsResource extends BaseResource {
 
 
     // TODO this should be deprecated
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/all_sensors/week")
     @Produces(MediaType.APPLICATION_JSON)
     public Map<Sensor, List<Sample>> getAllSensorsLastWeek(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
         return retrieveAllSensorsWeekData(accessToken.accountId, queryEndTimestampUTC);
     }
@@ -160,12 +168,13 @@ public class RoomConditionsResource extends BaseResource {
     * This is the correct implementation of get the last 24 hours' data
     * from the timestamp provided by the client.
      */
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/{sensor}/24hours")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLast24hours(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") String sensor,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
@@ -199,12 +208,13 @@ public class RoomConditionsResource extends BaseResource {
         return adjustTimeSeries(timeSeries, sensor, deviceIdPair.get().externalDeviceId);
     }
 
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/all_sensors/24hours")
     @Produces(MediaType.APPLICATION_JSON)
     public  Map<Sensor, List<Sample>> getAllSensorsLast24hours(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") String sensor,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
@@ -248,12 +258,13 @@ public class RoomConditionsResource extends BaseResource {
         return getDisplayData(adjustedSensorData.getAllData(), hasCalibrationEnabled(deviceIdPair.get().externalDeviceId));
     }
 
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/all_sensors/hours")
     @Produces(MediaType.APPLICATION_JSON)
     public  Map<Sensor, List<Sample>> getAllSensorsLastHours(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @QueryParam("quantity") Integer quantity,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
@@ -302,12 +313,13 @@ public class RoomConditionsResource extends BaseResource {
     * It gives the data of last DAY, which is from a certain local timestamp
     * to that timestamp plus one DAY, keep in mind that one day can be more/less than 24 hours
      */
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/{sensor}/day")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastDay(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") String sensor,
 
             // The @QueryParam("from") should be named as @QueryParam("from_local_utc")
@@ -325,12 +337,13 @@ public class RoomConditionsResource extends BaseResource {
     * It gives the data of last DAY, which is from a certain local timestamp
     * to that timestamp plus one DAY, keep in mind that one day can be more/less than 24 hours
      */
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/{sensor}/{device_name}/day")   // One DAY is not 24 hours, be careful on the naming.
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastDayDeviceName(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") String sensor,
             @PathParam("device_name") String deviceName,
 
@@ -380,12 +393,13 @@ public class RoomConditionsResource extends BaseResource {
     * This is the correct implementation of get the last 24 hours' data
     * from the timestamp provided by the client.
      */
+    @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     @GET
     @Path("/{sensor}/{device_name}/24hours")   // One DAY is not 24 hours, be careful on the naming.
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLast24hoursDeviceName(
-            @Scope({OAuthScope.SENSORS_BASIC}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("sensor") String sensor,
             @PathParam("device_name") String deviceName,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {

@@ -19,9 +19,7 @@ import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.models.timeline.v2.EventType;
 import com.hello.suripu.core.models.timeline.v2.Timeline;
 import com.hello.suripu.core.models.timeline.v2.TimelineEvent;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.TimelineProcessor;
 
 import com.hello.suripu.core.translations.English;
@@ -29,6 +27,9 @@ import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeedbackUtils;
 import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
@@ -86,23 +87,24 @@ public class TimelineResource extends BaseResource {
         this.timelineLogDAOV2 = timelineLogDAOV2;
     }
 
+    @ScopesAllowed({OAuthScope.SLEEP_TIMELINE})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{date}")
-    public Timeline getTimelineForNight(@Scope(OAuthScope.SLEEP_TIMELINE) final AccessToken accessToken,
+    public Timeline getTimelineForNight(@Auth final AccessToken accessToken,
                                         @PathParam("date") final String night) {
 
         return getTimelineForNightInternal(accessToken.accountId, night, Optional.<TimelineFeedback>absent());
     }
 
-
+    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
     @PATCH
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{date}/events/{type}/{timestamp}")
-    public Timeline amendTimeOfEvent(@Scope(OAuthScope.SLEEP_FEEDBACK) final AccessToken accessToken,
+    public Timeline amendTimeOfEvent(@Auth final AccessToken accessToken,
                                      @PathParam("date") String date,
                                      @PathParam("type") String type,
                                      @PathParam("timestamp") long timestamp,
@@ -133,11 +135,12 @@ public class TimelineResource extends BaseResource {
         return timeline;
     }
 
+    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
     @DELETE
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{date}/events/{type}/{timestamp}")
-    public Response deleteEvent(@Scope(OAuthScope.SLEEP_FEEDBACK) final AccessToken accessToken,
+    public Response deleteEvent(@Auth final AccessToken accessToken,
                                 @PathParam("date") String date,
                                 @PathParam("type") String type,
                                 @PathParam("timestamp") long timestamp) {
@@ -159,16 +162,15 @@ public class TimelineResource extends BaseResource {
                 .build();
     }
 
+    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
     @PUT
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{date}/events/{type}/{timestamp}")
-    public Response validateEvent(@Scope(OAuthScope.SLEEP_FEEDBACK) final AccessToken accessToken,
+    public Response validateEvent(@Auth final AccessToken accessToken,
                                   @PathParam("date") String date,
                                   @PathParam("type") String type,
                                   @PathParam("timestamp") long timestamp) {
-
-
 
         final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
 

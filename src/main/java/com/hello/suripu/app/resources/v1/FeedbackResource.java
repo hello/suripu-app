@@ -4,9 +4,11 @@ import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.core.models.SleepFeedback;
 import com.hello.suripu.core.models.TimelineFeedback;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+
 import org.joda.time.DateTime;
 
 import javax.ws.rs.Consumes;
@@ -26,17 +28,19 @@ public class FeedbackResource {
         this.timelineDAODynamoDB = timelineDAODynamoDB;
     }
 
+    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public void saveFeedback(@Scope(OAuthScope.SLEEP_FEEDBACK) final AccessToken accessToken, final SleepFeedback feedback) {
+    public void saveFeedback(@Auth final AccessToken accessToken, final SleepFeedback feedback) {
         // NOOP
     }
 
 
+    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
     @POST
     @Path("/sleep")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void saveTimelineFeedback(@Scope(OAuthScope.SLEEP_FEEDBACK) final AccessToken accessToken, final TimelineFeedback feedback) {
+    public void saveTimelineFeedback(@Auth final AccessToken accessToken, final TimelineFeedback feedback) {
         feedbackDAO.insertTimelineFeedback(accessToken.accountId, feedback);
         timelineDAODynamoDB.invalidateCache(accessToken.accountId, feedback.dateOfNight, DateTime.now());
     }

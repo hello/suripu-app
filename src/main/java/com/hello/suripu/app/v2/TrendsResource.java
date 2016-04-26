@@ -1,14 +1,15 @@
 package com.hello.suripu.app.v2;
 
 import com.codahale.metrics.annotation.Timed;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 
 import com.hello.suripu.core.trends.v2.TimeScale;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.trends.v2.TrendsResult;
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
@@ -39,11 +40,12 @@ public class TrendsResource extends BaseResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @GET
     @Timed
     @Path("/{time_scale}")
     @Produces(MediaType.APPLICATION_JSON)
-    public TrendsResult getTrends(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken,
+    public TrendsResult getTrends(@Auth final AccessToken accessToken,
                                       @PathParam("time_scale") String timeScaleString) {
 
         try {

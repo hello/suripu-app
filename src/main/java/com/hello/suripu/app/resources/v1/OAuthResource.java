@@ -14,12 +14,13 @@ import com.hello.suripu.core.oauth.ClientCredentials;
 import com.hello.suripu.core.oauth.ClientDetails;
 import com.hello.suripu.core.oauth.GrantType;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.oauth.stores.ApplicationStore;
 import com.hello.suripu.core.oauth.stores.OAuthTokenStore;
 import com.hello.suripu.core.util.PasswordUtil;
 import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.GrantTypeParam;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,10 +184,11 @@ public class OAuthResource {
 //        return Response.temporaryRedirect(URI.create(uri)).build();
     }
 
+    @ScopesAllowed({OAuthScope.AUTH})
     @DELETE
     @Path("/token")
     @Timed
-    public void delete(@Scope({OAuthScope.AUTH}) final AccessToken accessToken) {
+    public void delete(@Auth final AccessToken accessToken) {
         tokenStore.disable(accessToken);
         LOGGER.debug("AccessToken {} deleted", accessToken);
         if(accessToken.hasScope(OAuthScope.PUSH_NOTIFICATIONS)) {

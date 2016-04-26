@@ -2,9 +2,10 @@ package com.hello.suripu.app.v2;
 
 import com.hello.suripu.core.store.StoreFeedback;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import javax.validation.Valid;
 import javax.ws.rs.POST;
@@ -19,8 +20,9 @@ public class StoreFeedbackResource {
         this.storeFeedbackDAO = storeFeedbackDAO;
     }
 
+    @ScopesAllowed({OAuthScope.STORE_FEEDBACK})
     @POST
-    public Response post(@Scope(OAuthScope.STORE_FEEDBACK) final AccessToken accessToken,
+    public Response post(@Auth final AccessToken accessToken,
                          @Valid StoreFeedback storeFeedback) {
 
         storeFeedbackDAO.save(StoreFeedback.forAccountId(storeFeedback, accessToken.accountId));

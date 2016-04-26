@@ -9,11 +9,11 @@ import com.hello.suripu.core.db.util.MatcherPatternsDB;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.PasswordUpdate;
 import com.hello.suripu.core.models.Registration;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
-
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
@@ -50,10 +50,11 @@ public class AccountResource {
         this.accountLocationDAO = accountLocationDAO;
     }
 
+    @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    public Account getAccount(@Scope({OAuthScope.USER_EXTENDED}) final AccessToken accessToken) {
+    public Account getAccount(@Auth final AccessToken accessToken) {
 
         LOGGER.debug("level=debug action=get-account access_token={}", accessToken);
         final Optional<Account> account = accountDAO.getById(accessToken.accountId);
@@ -104,12 +105,13 @@ public class AccountResource {
         throw new WebApplicationException(Response.serverError().build());
     }
 
+    @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @PUT
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Account modify(
-            @Scope({OAuthScope.USER_EXTENDED}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @Valid final Account account) {
 
         LOGGER.warn("level=warning action=modify-account account_id={} last_modified={}", accessToken.accountId, account.lastModified);
@@ -141,13 +143,14 @@ public class AccountResource {
         return optionalAccount.get();
     }
 
+    @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @POST
     @Timed
     @Path("/password")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public void password(
-            @Scope({OAuthScope.USER_EXTENDED}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @Valid final PasswordUpdate passwordUpdate) {
 
         final Optional<Registration.RegistrationError> error = Registration.validatePassword(passwordUpdate.newPassword);
@@ -163,13 +166,14 @@ public class AccountResource {
         // TODO: remove all tokens for this user
     }
 
+    @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @POST
     @Timed
     @Path("/email")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Account updateEmail(
-            @Scope({OAuthScope.USER_EXTENDED}) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @Valid final Account account) {
         LOGGER.info("level=info action=update-account-email email={}", account.email);
         final Account accountWithId = Account.normalizeWithId(account, accessToken.accountId);

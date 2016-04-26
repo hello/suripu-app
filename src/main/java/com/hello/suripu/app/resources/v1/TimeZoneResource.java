@@ -10,9 +10,10 @@ import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.TimeZoneHistory;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -50,11 +51,12 @@ public class TimeZoneResource {
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
     }
 
+    @ScopesAllowed({OAuthScope.USER_BASIC})
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public TimeZoneHistory setTimeZone(@Scope({OAuthScope.USER_BASIC}) final AccessToken token,
+    public TimeZoneHistory setTimeZone(@Auth final AccessToken token,
                                        final TimeZoneHistory timeZoneHistory){
 
         final List<DeviceAccountPair> deviceAccountMap = this.deviceDAO.getSensesForAccountId(token.accountId);
@@ -100,10 +102,11 @@ public class TimeZoneResource {
 
     }
 
+    @ScopesAllowed({OAuthScope.TIMEZONE_READ})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    public TimeZoneHistory getTimeZone(@Scope({OAuthScope.TIMEZONE_READ}) final AccessToken token) {
+    public TimeZoneHistory getTimeZone(@Auth final AccessToken token) {
 
         final Optional<TimeZoneHistory> timeZoneHistoryOptional = getTimeZoneHistory(token.accountId);
         if (!timeZoneHistoryOptional.isPresent()) {

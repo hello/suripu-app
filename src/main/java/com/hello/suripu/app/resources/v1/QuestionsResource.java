@@ -10,10 +10,11 @@ import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.Choice;
 import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.TimeZoneHistory;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -51,11 +52,12 @@ public class QuestionsResource {
         this.questionProcessor = questionProcessor;
     }
 
+    @ScopesAllowed({OAuthScope.QUESTIONS_READ})
     @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> getQuestions(
-            @Scope(OAuthScope.QUESTIONS_READ) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @QueryParam("date") final String date) {
 
         LOGGER.debug("Returning list of questions for account id = {}", accessToken.accountId);
@@ -78,12 +80,13 @@ public class QuestionsResource {
         return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
     }
 
+    @ScopesAllowed({OAuthScope.QUESTIONS_READ})
     @Timed
     @GET
     @Path("/more")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> getMoreQuestions(
-            @Scope(OAuthScope.QUESTIONS_READ) final AccessToken accessToken) {
+            @Auth final AccessToken accessToken) {
 
         // user asked for more questions
         LOGGER.debug("Returning list of questions for account id = {}", accessToken.accountId);
@@ -102,11 +105,12 @@ public class QuestionsResource {
         return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_MORE_QUESTIONS, false);
     }
 
+    @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
     @Timed
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void saveAnswers(@Scope(OAuthScope.QUESTIONS_WRITE) final AccessToken accessToken,
+    public void saveAnswers(@Auth final AccessToken accessToken,
                            @QueryParam("account_question_id") final Long accountQuestionId,
                            @Valid final List<Choice> choice) {
         LOGGER.debug("Saving answer for account id = {}", accessToken.accountId);
@@ -120,11 +124,12 @@ public class QuestionsResource {
         this.questionProcessor.saveResponse(accessToken.accountId, questionId, accountQuestionId, choice);
     }
 
+    @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
     @Timed
     @PUT
     @Path("/skip")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void skipQuestion(@Scope(OAuthScope.QUESTIONS_WRITE) final AccessToken accessToken,
+    public void skipQuestion(@Auth final AccessToken accessToken,
                              @QueryParam("id") final Integer questionId,
                              @QueryParam("account_question_id") final Long accountQuestionId) {
         LOGGER.debug("Skipping question {} for account id = {}", questionId, accessToken.accountId);
@@ -134,21 +139,23 @@ public class QuestionsResource {
     }
 
     // keeping these for backward compatibility
+    @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
     @Timed
     @POST
     @Deprecated
     @Consumes(MediaType.APPLICATION_JSON)
-    public void saveAnswer(@Scope(OAuthScope.QUESTIONS_WRITE) final AccessToken accessToken, @Valid final Choice choice) {
+    public void saveAnswer(@Auth final AccessToken accessToken, @Valid final Choice choice) {
         LOGGER.debug("Saving answer for account id = {}", accessToken.accountId);
         LOGGER.debug("Choice was = {}", choice.id);
     }
 
+    @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
     @Timed
     @PUT
     @Deprecated
     @Path("/{question_id}/skip")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void skipQuestion(@Scope(OAuthScope.QUESTIONS_WRITE) final AccessToken accessToken,
+    public void skipQuestion(@Auth final AccessToken accessToken,
                              @PathParam("question_id") final Long questionId) {
         LOGGER.debug("Skipping question {} for account id = {}", questionId, accessToken.accountId);
     }

@@ -15,13 +15,14 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceStatus;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.UserInfo;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeat;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 
 import com.hello.suripu.core.util.PillColorUtil;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
@@ -69,11 +70,12 @@ public class DeviceResources extends BaseResource {
         this.pillHeartBeatDAODynamoDB = pillHeartBeatDAODynamoDB;
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @GET
     @Timed
     @Path("/info")
     @Produces(MediaType.APPLICATION_JSON)
-    public PairingInfo getPairedSensesByAccount(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public PairingInfo getPairedSensesByAccount(@Auth final AccessToken accessToken) {
         final Optional<DeviceAccountPair> optionalPair = deviceDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
         if(!optionalPair.isPresent()) {
             LOGGER.warn("No sense paired for account = {}", accessToken.accountId);
@@ -84,17 +86,19 @@ public class DeviceResources extends BaseResource {
         return PairingInfo.create(pair.externalDeviceId, pairs.size());
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Device> getDevices(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public List<Device> getDevices(@Auth final AccessToken accessToken) {
         return getDevicesByAccountId(accessToken.accountId);
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/pill/{pill_id}")
-    public void unregisterPill(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public void unregisterPill(@Auth final AccessToken accessToken,
                                @PathParam("pill_id") String externalPillId) {
         final Integer numRows = deviceDAO.deletePillPairing(externalPillId, accessToken.accountId);
         if(numRows == 0) {
@@ -120,10 +124,11 @@ public class DeviceResources extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/sense/{sense_id}")
-    public void unregisterSense(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public void unregisterSense(@Auth final AccessToken accessToken,
                                @PathParam("sense_id") String senseId) {
         final Integer numRows = deviceDAO.deleteSensePairing(senseId, accessToken.accountId);
         final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.unlinkAccountToDevice(accessToken.accountId, senseId);
@@ -138,10 +143,11 @@ public class DeviceResources extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/sense/{sense_id}/all")
-    public void unregisterSenseByUser(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public void unregisterSenseByUser(@Auth final AccessToken accessToken,
                                       @PathParam("sense_id") final String senseId) {
         final List<UserInfo> pairedUsers = mergedUserInfoDynamoDB.getInfo(senseId);
 

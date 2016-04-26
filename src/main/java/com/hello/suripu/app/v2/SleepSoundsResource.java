@@ -20,12 +20,13 @@ import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.SleepSoundStatus;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.models.sleep_sounds.SoundMap;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 
 import org.slf4j.Logger;
@@ -156,11 +157,12 @@ public class SleepSoundsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @Timed
     @POST
     @Path("/play")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response play(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response play(@Auth final AccessToken accessToken,
                          @Valid final PlayRequest playRequest)
     {
         final Optional<Duration> durationOptional = durationDAO.getById(playRequest.durationId);
@@ -217,10 +219,11 @@ public class SleepSoundsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @Timed
     @POST
     @Path("/stop")
-    public Response stop(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response stop(@Auth final AccessToken accessToken,
                          @Valid final StopRequest stopRequest) {
         final Long accountId = accessToken.accountId;
 
@@ -264,11 +267,12 @@ public class SleepSoundsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @Timed
     @GET
     @Path("combined_state")
     @Produces(MediaType.APPLICATION_JSON)
-    public CombinedState getCombinedState(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public CombinedState getCombinedState(@Auth final AccessToken accessToken) {
         final Long accountId = accessToken.accountId;
         final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if (!deviceIdPair.isPresent()) {
@@ -300,11 +304,12 @@ public class SleepSoundsResource extends BaseResource {
         return result;
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @Timed
     @GET
     @Path("/sounds")
     @Produces(MediaType.APPLICATION_JSON)
-    public SleepSoundsProcessor.SoundResult getSounds(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public SleepSoundsProcessor.SoundResult getSounds(@Auth final AccessToken accessToken) {
         final Long accountId = accessToken.accountId;
         final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if (!deviceIdPair.isPresent()) {
@@ -339,11 +344,12 @@ public class SleepSoundsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @Timed
     @GET
     @Path("/durations")
     @Produces(MediaType.APPLICATION_JSON)
-    public DurationResult getDurations(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public DurationResult getDurations(@Auth final AccessToken accessToken) {
         final List<Duration> durations = durationDAO.all();
         return new DurationResult(durations);
     }
@@ -396,11 +402,12 @@ public class SleepSoundsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @Timed
     @GET
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public SleepSoundStatus getStatus(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public SleepSoundStatus getStatus(@Auth final AccessToken accessToken) {
         final SleepSoundStatus NOT_PLAYING = SleepSoundStatus.create();
         final Long accountId = accessToken.accountId;
 

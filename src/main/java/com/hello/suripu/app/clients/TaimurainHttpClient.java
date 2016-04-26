@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class TaimurainHttpClient implements NeuralNetEndpoint {
     public final static String EVALUATION_ENDPOINT = "/v1/neuralnet/evaluate";
-    public static TaimurainHttpClient create(final HttpClient httpClient,final String endpoint) {
+    public static TaimurainHttpClient create(final HttpClient httpClient, final String endpoint) {
        return new TaimurainHttpClient(httpClient,endpoint);
     }
 

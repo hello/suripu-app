@@ -16,14 +16,15 @@ import com.hello.suripu.core.models.Insights.DowSample;
 import com.hello.suripu.core.models.Insights.InfoInsightCards;
 import com.hello.suripu.core.models.Insights.InsightCard;
 import com.hello.suripu.core.models.Insights.TrendGraph;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.InsightProcessor;
 import com.hello.suripu.core.processors.insights.IntroductionInsights;
 
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TrendGraphUtils;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
@@ -76,11 +77,12 @@ public class InsightsResource extends BaseResource {
     /**
      * get insights
      */
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Deprecated
     @Produces(MediaType.APPLICATION_JSON)
-    public List<InsightCard> getInsights(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken) {
+    public List<InsightCard> getInsights(@Auth final AccessToken accessToken) {
 
         LOGGER.debug("Returning list of insights for account id = {}", accessToken.accountId);
         final Boolean chronological = false; // reverse chronological
@@ -98,12 +100,13 @@ public class InsightsResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Path("/info/{category}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<InfoInsightCards> getGenericInsightCards(
-            @Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("category") final String value) {
 
         final InsightCard.Category category = InsightCard.Category.fromString(value);
@@ -112,11 +115,12 @@ public class InsightsResource extends BaseResource {
         return cards;
     }
 
-        @Timed
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
+    @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/light")
-    public ImmutableList<InsightCard> getLightInsights(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken) {
+    public ImmutableList<InsightCard> getLightInsights(@Auth final AccessToken accessToken) {
         final int limit = 5;
         final ImmutableList<InsightCard> cards = insightsDAODynamoDB.getInsightsByCategory(accessToken.accountId,
                 InsightCard.Category.LIGHT, limit);
@@ -126,11 +130,12 @@ public class InsightsResource extends BaseResource {
     /**
      * get a specific graph
      */
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Path("/trends/graph")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<TrendGraph> getTrends(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken,
+    public List<TrendGraph> getTrends(@Auth final AccessToken accessToken,
                                 @QueryParam("data_type") String dataType,
                                 @QueryParam("time_period") String timePeriod) {
 
@@ -159,11 +164,12 @@ public class InsightsResource extends BaseResource {
     /**
      * get a list of available trend graphs
      */
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Path("/trends/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<AvailableGraph> getTrendsList(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken) {
+    public List<AvailableGraph> getTrendsList(@Auth final AccessToken accessToken) {
 
         LOGGER.debug("Returning list of available graphs account id = {}", accessToken.accountId);
 
@@ -181,11 +187,12 @@ public class InsightsResource extends BaseResource {
     /**
      * get all default graphs
      */
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Path("/trends/all")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<TrendGraph> getAllTrends(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken,
+    public List<TrendGraph> getAllTrends(@Auth final AccessToken accessToken,
                                          @QueryParam("option") String timePeriodOption) {
 
         LOGGER.debug("Returning ALL available default graphs for account id = {}", accessToken.accountId);

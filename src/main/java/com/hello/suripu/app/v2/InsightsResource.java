@@ -8,11 +8,12 @@ import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.TrendsInsightsDAO;
 import com.hello.suripu.core.models.Insights.InfoInsightCards;
 import com.hello.suripu.core.models.Insights.InsightCard;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.InsightProcessor;
 import com.hello.suripu.core.processors.insights.IntroductionInsights;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -45,10 +46,11 @@ public class InsightsResource {
         this.trendsInsightsDAO = trendsInsightsDAO;
     }
 
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<InsightCard> getInsights(@Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken) {
+    public List<InsightCard> getInsights(@Auth final AccessToken accessToken) {
 
         LOGGER.debug("Returning list of insights for account id = {}", accessToken.accountId);
         final Boolean chronological = false; // reverse chronological
@@ -66,12 +68,13 @@ public class InsightsResource {
         return insightCardsWithInfoPreviewAndMissingImages(cards);
     }
 
+    @ScopesAllowed({OAuthScope.INSIGHTS_READ})
     @Timed
     @GET
     @Path("/info/{category}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<InfoInsightCards> getGenericInsightCards(
-            @Scope(OAuthScope.INSIGHTS_READ) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("category") final String value) {
         try {
             final InsightCard.Category category = InsightCard.Category.fromString(value);

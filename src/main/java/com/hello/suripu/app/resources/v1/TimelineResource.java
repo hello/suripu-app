@@ -15,10 +15,11 @@ import com.hello.suripu.core.db.TimelineLogDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.Timeline;
 import com.hello.suripu.core.models.TimelineResult;
-import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.DateTimeUtil;
@@ -149,12 +150,13 @@ public class TimelineResource extends BaseResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.SLEEP_TIMELINE})
     @Timed
     @Path("/{date}")
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     public List<Timeline> getTimelines(
-            @Scope(OAuthScope.SLEEP_TIMELINE)final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("date") String date) {
 
         if(isTimelineViewUnavailable(accessToken.accountId)) {
@@ -171,12 +173,13 @@ public class TimelineResource extends BaseResource {
 
     }
 
+    @ScopesAllowed({OAuthScope.ADMINISTRATION_READ})
     @Timed
     @Path("/admin/{email}/{date}")
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     public List<Timeline> getAdminTimelines(
-            @Scope(OAuthScope.ADMINISTRATION_READ)final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("email") String email,
             @PathParam("date") String date) {
         final Optional<Long> accountId = getAccountIdByEmail(email);
@@ -189,12 +192,13 @@ public class TimelineResource extends BaseResource {
         return timelineResult.timelines;
     }
 
+    @ScopesAllowed({OAuthScope.ADMINISTRATION_WRITE})
     @Timed
     @Path("/admin/invalidate/{email}/{date}")
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     public Boolean invalidateTimelineCache(
-            @Scope(OAuthScope.ADMINISTRATION_WRITE)final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("email") String email,
             @PathParam("date") String date) {
         final Optional<Long> accountId = getAccountIdByEmail(email);
@@ -206,12 +210,13 @@ public class TimelineResource extends BaseResource {
         return this.timelineDAODynamoDB.invalidateCache(accountId.get(), targetDate, DateTime.now());
     }
 
+    @ScopesAllowed({OAuthScope.ADMINISTRATION_READ})
     @Timed
     @Path("/admin/algo/{email}/{date}")
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     public com.hello.suripu.core.models.TimelineLog getTimelineAlgorithm(
-            @Scope(OAuthScope.ADMINISTRATION_READ)final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @PathParam("email") String email,
             @PathParam("date") String date) {
 

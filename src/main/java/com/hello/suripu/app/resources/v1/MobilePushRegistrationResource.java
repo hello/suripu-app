@@ -5,9 +5,11 @@ import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.MobilePushRegistration;
 import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +40,12 @@ public class MobilePushRegistrationResource {
         this.accountDAO = accountDAO;
     }
 
+    @ScopesAllowed({OAuthScope.PUSH_NOTIFICATIONS})
     @Timed
     @POST
     @Path("/registration")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void registerDevice(@Scope(OAuthScope.PUSH_NOTIFICATIONS) final AccessToken accessToken,
+    public void registerDevice(@Auth final AccessToken accessToken,
                                final @Valid MobilePushRegistration mobilePushRegistration) {
 
         LOGGER.debug("Receive push notification registration for account_id {}. {}", accessToken.accountId, mobilePushRegistration);
@@ -50,12 +53,13 @@ public class MobilePushRegistrationResource {
         notificationSubscriptionDAOWrapper.subscribe(accessToken.accountId, mobilePushRegistrationWithOauthToken);
     }
 
+    @ScopesAllowed({OAuthScope.PUSH_NOTIFICATIONS})
     @DELETE
     @Timed
     @Path("/registration")
     @Consumes(MediaType.APPLICATION_JSON)
     public void delete(
-            @Scope(OAuthScope.PUSH_NOTIFICATIONS) final AccessToken accessToken,
+            @Auth final AccessToken accessToken,
             @Valid MobilePushRegistration mobilePushRegistration) {
 
         boolean deleted = notificationSubscriptionDAOWrapper.unsubscribe(accessToken.accountId, mobilePushRegistration.deviceToken);

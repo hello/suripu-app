@@ -15,10 +15,12 @@ import com.hello.suripu.core.models.AppUnreadStats;
 import com.hello.suripu.core.models.Insights.InsightCard;
 import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.TimeZoneHistory;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -55,19 +57,21 @@ public class AppStatsResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public AppStats getLastViewed(@Scope(OAuthScope.APP_STATS) final AccessToken accessToken) {
+    public AppStats getLastViewed(@Auth final AccessToken accessToken) {
         final Optional<DateTime> insightsLastViewed = appStatsDAO.getInsightsLastViewed(accessToken.accountId);
         final Optional<DateTime> questionsLastViewed = appStatsDAO.getQuestionsLastViewed(accessToken.accountId);
         return new AppStats(insightsLastViewed, questionsLastViewed);
     }
 
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response updateLastViewed(@Scope(OAuthScope.APP_STATS) final AccessToken accessToken,
+    public Response updateLastViewed(@Auth final AccessToken accessToken,
                                      @Valid final AppStats appStats) {
         if (appStats.insightsLastViewed.isPresent()) {
             final DateTime insightsLastViewed = appStats.insightsLastViewed.get();
@@ -86,11 +90,12 @@ public class AppStatsResource {
         return Response.status(Response.Status.NOT_MODIFIED).build();
     }
 
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @GET
     @Path("/unread")
     @Produces(MediaType.APPLICATION_JSON)
-    public AppUnreadStats unread(@Scope(OAuthScope.APP_STATS) final AccessToken accessToken) {
+    public AppUnreadStats unread(@Auth final AccessToken accessToken) {
         final Long accountId = accessToken.accountId;
 
         final Optional<DateTime> insightsLastViewed = appStatsDAO.getInsightsLastViewed(accountId);

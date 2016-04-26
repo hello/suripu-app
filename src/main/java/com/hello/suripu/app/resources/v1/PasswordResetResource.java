@@ -6,15 +6,16 @@ import com.google.common.collect.Lists;
 import com.hello.suripu.app.configuration.EmailConfiguration;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
 import com.hello.suripu.core.passwordreset.PasswordReset;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.passwordreset.PasswordResetRequest;
 import com.hello.suripu.core.passwordreset.UpdatePasswordRequest;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.microtripit.mandrillapp.lutung.MandrillApi;
 import com.microtripit.mandrillapp.lutung.model.MandrillApiError;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessage;
@@ -67,11 +68,11 @@ public class PasswordResetResource {
         return new PasswordResetResource(accountDAO, passwordResetDB, mandrillApi, emailConfiguration);
     }
 
-
+    @ScopesAllowed({OAuthScope.PASSWORD_RESET})
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(@Scope(OAuthScope.PASSWORD_RESET) final AccessToken accessToken, @Valid final PasswordResetRequest passwordResetRequest) {
+    public Response create(@Auth final AccessToken accessToken, @Valid final PasswordResetRequest passwordResetRequest) {
         final String email = passwordResetRequest.email.toLowerCase();
         LOGGER.info("email={} action=password-reset", email);
         final Optional<Account> accountOptional = accountDAO.getByEmail(email);
@@ -90,10 +91,11 @@ public class PasswordResetResource {
         return Response.serverError().build();
     }
 
+    @ScopesAllowed({OAuthScope.PASSWORD_RESET})
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{uuid}/{state}")
-    public Response exists(@Scope(OAuthScope.PASSWORD_RESET) final AccessToken accessToken, @PathParam("uuid") final UUID uuid, @PathParam("state") String state) {
+    public Response exists(@Auth final AccessToken accessToken, @PathParam("uuid") final UUID uuid, @PathParam("state") String state) {
         final Optional<PasswordReset> passwordResetOptional = passwordResetDB.get(uuid);
 
         if(!passwordResetOptional.isPresent()) {
@@ -108,11 +110,12 @@ public class PasswordResetResource {
         return Response.noContent().build();
     }
 
+    @ScopesAllowed({OAuthScope.PASSWORD_RESET})
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePassword(@Scope(OAuthScope.PASSWORD_RESET) final AccessToken accessToken, @Valid final UpdatePasswordRequest passwordUpdate) {
+    public Response updatePassword(@Auth final AccessToken accessToken, @Valid final UpdatePasswordRequest passwordUpdate) {
 
         final Optional<UpdatePasswordRequest> updatePasswordRequestOptional = UpdatePasswordRequest.encrypt(passwordUpdate);
         if(!updatePasswordRequestOptional.isPresent()) {

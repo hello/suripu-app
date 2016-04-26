@@ -8,9 +8,10 @@ import com.hello.suripu.core.models.WifiInfo;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
-import com.hello.suripu.core.oauth.AccessToken;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.oauth.Scope;
+import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.hello.suripu.core.util.JsonError;
 
@@ -40,10 +41,11 @@ public class DeviceResource extends BaseResource {
         this.deviceProcessor = deviceProcessor;
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    public Devices getDevices(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public Devices getDevices(@Auth final AccessToken accessToken) {
         final DeviceQueryInfo deviceQueryInfo = DeviceQueryInfo.create(
                 accessToken.accountId,
                 this.isSenseLastSeenDynamoDBReadEnabled(accessToken.accountId),
@@ -53,11 +55,12 @@ public class DeviceResource extends BaseResource {
 
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
     @GET
     @Timed
     @Path("/info")
     @Produces(MediaType.APPLICATION_JSON)
-    public PairingInfo getPairingInfo(@Scope(OAuthScope.DEVICE_INFORMATION_READ) final AccessToken accessToken) {
+    public PairingInfo getPairingInfo(@Auth final AccessToken accessToken) {
 
         final Optional<PairingInfo> pairingInfoOptional = deviceProcessor.getPairingInfo(accessToken.accountId);
         if (!pairingInfoOptional.isPresent()) {
@@ -67,42 +70,43 @@ public class DeviceResource extends BaseResource {
     }
 
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/pill/{pill_id}")
-    public Response unregisterPill(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response unregisterPill(@Auth final AccessToken accessToken,
                                    @PathParam("pill_id") final String pillId) {
 
         deviceProcessor.unregisterPill(accessToken.accountId, pillId);
         return Response.noContent().build();
     }
 
-
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/sense/{sense_id}")
-    public Response unregisterSense(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response unregisterSense(@Auth final AccessToken accessToken,
                                     @PathParam("sense_id") final String senseId) {
         deviceProcessor.unregisterSense(accessToken.accountId, senseId);
         return Response.noContent().build();
     }
 
-
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @DELETE
     @Timed
     @Path("/sense/{sense_id}/all")
-    public Response factoryReset(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response factoryReset(@Auth final AccessToken accessToken,
                                  @PathParam("sense_id") final String senseId) {
         deviceProcessor.factoryReset(accessToken.accountId, senseId);
         return Response.noContent().build();
     }
 
-
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/wifi_info")
-    public Response updateWifiInfo(@Scope(OAuthScope.DEVICE_INFORMATION_WRITE) final AccessToken accessToken,
+    public Response updateWifiInfo(@Auth final AccessToken accessToken,
                                    @Valid final WifiInfo wifiInfo){
         try {
             final Boolean hasUpserted = deviceProcessor.upsertWifiInfo(accessToken.accountId, wifiInfo);
