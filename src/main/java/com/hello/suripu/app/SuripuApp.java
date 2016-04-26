@@ -98,6 +98,7 @@ import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
+import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.logging.KinesisLoggerFactory;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
@@ -133,7 +134,9 @@ import com.hello.suripu.coredw8.oauth.OAuthAuthorizer;
 import com.hello.suripu.coredw8.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
+import com.librato.rollout.RolloutClient;
 
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -339,6 +342,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
         ObjectGraphRoot.getInstance().init(module);
 
+        environment.jersey().register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(new RolloutClient(new DynamoDBAdapter(featureStore, 30))).to(RolloutClient.class);
+            }
+        });
+
         final AmazonDynamoDB senseKeyStoreDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStore senseKeyStore = new KeyStoreDynamoDB(
                 senseKeyStoreDynamoDBClient,
@@ -407,8 +417,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new OAuthResource(accessTokenStore, applicationStore, accountDAO, notificationSubscriptionDAOWrapper));
         environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO));
-//        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(),senseColorDAO, calibrationDAO));
-//        environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
+        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(),senseColorDAO, calibrationDAO));
+        environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
 
         final S3BucketConfiguration provisionKeyConfiguration = configuration.getProvisionKeyConfiguration();
 
@@ -439,7 +449,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 taimurainHttpClient);
 
 
-//        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
+        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
         environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
 
@@ -454,11 +464,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         // data science resource stuff
         environment.jersey().register(new AccountPreferencesResource(accountPreferencesDAO));
-//        environment.jersey().register(new InsightsResource(accountDAO, trendsInsightsDAO, insightsDAODynamoDB, sleepStatsDAODynamoDB));
+        environment.jersey().register(new InsightsResource(accountDAO, trendsInsightsDAO, insightsDAODynamoDB, sleepStatsDAODynamoDB));
         environment.jersey().register(new com.hello.suripu.app.v2.InsightsResource(insightsDAODynamoDB, trendsInsightsDAO));
         environment.jersey().register(PasswordResetResource.create(accountDAO, passwordResetDB, configuration.emailConfiguration()));
         environment.jersey().register(new SupportResource(supportDAO));
-//        environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB,timelineLogger));
+        environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB,timelineLogger));
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
             .withDeviceDAO(deviceDAO)
             .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
@@ -468,22 +478,22 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             .withSenseColorDAO(senseColorDAO)
             .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
             .build();
-//        environment.jersey().register(new DeviceResource(deviceProcessor));
+        environment.jersey().register(new DeviceResource(deviceProcessor));
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
         environment.jersey().register(new StoreFeedbackResource(storeFeedbackDAO));
         environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB));
 
         final TrendsProcessor trendsProcessor = new TrendsProcessor(sleepStatsDAODynamoDB, accountDAO, timeZoneHistoryDAODynamoDB);
-//        environment.jersey().register(new TrendsResource(trendsProcessor));
+        environment.jersey().register(new TrendsResource(trendsProcessor));
 
         final DurationDAO durationDAO = commonDB.onDemand(DurationDAO.class);
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = configuration.getMessejiHttpClientConfiguration();
         final MessejiClient messejiClient = MessejiHttpClient.create(
                 new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
                 messejiHttpClientConfiguration.getEndpoint());
-//        environment.jersey().register(SleepSoundsResource.create(
-//                durationDAO, senseStateDynamoDB, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
-//                configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
+        environment.jersey().register(SleepSoundsResource.create(
+                durationDAO, senseStateDynamoDB, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
     }
 }
