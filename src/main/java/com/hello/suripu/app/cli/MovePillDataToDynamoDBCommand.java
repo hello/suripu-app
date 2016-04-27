@@ -11,10 +11,7 @@ import com.google.common.collect.Sets;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
-import com.hello.suripu.core.db.TrackerMotionDAO;
-import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.models.TrackerMotion;
-import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.opencsv.CSVReader;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -23,7 +20,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +42,6 @@ import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 
 import io.dropwizard.cli.ConfiguredCommand;
-import io.dropwizard.db.DataSourceFactory;
-import io.dropwizard.db.ManagedDataSource;
-import io.dropwizard.jdbi.ImmutableListContainerFactory;
-import io.dropwizard.jdbi.ImmutableSetContainerFactory;
-import io.dropwizard.jdbi.OptionalContainerFactory;
-import io.dropwizard.jdbi.args.OptionalArgumentFactory;
 import io.dropwizard.setup.Bootstrap;
 
 public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppConfiguration> {
@@ -170,7 +160,6 @@ public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppCo
                 runMigrate(namespace, suripuAppConfiguration, accountToExternalMapping, pillDataDAODynamoDB);
                 break;
             case "test":
-                testResults(bootstrap, namespace, suripuAppConfiguration, pillDataDAODynamoDB, accountToExternalMapping);
                 break;
             default:
                 LOGGER.error("WRONG task");
@@ -178,76 +167,6 @@ public class MovePillDataToDynamoDBCommand extends ConfiguredCommand<SuripuAppCo
         }
 
         this.executor.shutdown();
-    }
-
-    /**
-     * Compare DDB vs Postgres results
-     * @param namespace namespace
-     * @param configuration configuration
-     * @param pillDataDAODynamoDB dynamo client
-     */
-    private void testResults(final Bootstrap<SuripuAppConfiguration> bootstrap,
-                             final Namespace namespace,
-                             final SuripuAppConfiguration configuration,
-                             final PillDataDAODynamoDB pillDataDAODynamoDB,
-                             final Map<String, String> accountToExternalMapping) throws Exception
-    {
-        // set up postgres DAO
-
-        final ManagedDataSource dataSource = (configuration.getSensorsDB().build(bootstrap.getMetricRegistry(), "sensorsDB"));
-
-        final DBI jdbi = new DBI(dataSource);
-        jdbi.registerArgumentFactory(new OptionalArgumentFactory(configuration.getSensorsDB().getDriverClass()));
-        jdbi.registerContainerFactory(new ImmutableListContainerFactory());
-        jdbi.registerContainerFactory(new ImmutableSetContainerFactory());
-        jdbi.registerContainerFactory(new OptionalContainerFactory());
-        jdbi.registerArgumentFactory(new JodaArgumentFactory());
-
-        final TrackerMotionDAO trackerMotionDAO = jdbi.onDemand(TrackerMotionDAO.class);
-
-        final String accountIdString = namespace.getString("account");
-        if (!accountToExternalMapping.containsKey(accountIdString)) {
-            LOGGER.error("No sense mapping found for account id {}", accountIdString);
-            return;
-        }
-
-        final Long accountId = Long.valueOf(accountIdString);
-
-        final DateTime startDateTimeUTC = DateTimeUtil.datetimeStringToDateTime(namespace.getString("start"));
-        final DateTime endDateTimeUTC = DateTimeUtil.datetimeStringToDateTime(namespace.getString("end"));
-
-
-        LOGGER.debug("Getting data from DynamoDB");
-        final List<TrackerMotion> rawDDB = pillDataDAODynamoDB.getBetweenLocalUTC(accountId, startDateTimeUTC, endDateTimeUTC);
-        final List<TrackerMotion> samplesDDB = getUniqueList(rawDDB);
-
-        LOGGER.debug("Getting data from Postgres");
-        final List<TrackerMotion> rawRDS = trackerMotionDAO.getBetweenLocalUTC(accountId, startDateTimeUTC, endDateTimeUTC);
-        final List<TrackerMotion> samplesRDS = getUniqueList(rawRDS);
-
-        int sizeErrors = 0;
-        int valueErrors = 0;
-
-        if (samplesDDB.size() != samplesRDS.size()) {
-            System.out.println(String.format("Data size not the same. DDB: %d, RDS: %d",
-                    samplesDDB.size(), samplesRDS.size()));
-            sizeErrors++;
-        }
-
-        for (int i=0; i<samplesRDS.size(); i++) {
-            final TrackerMotion rdsData = samplesRDS.get(i);
-            final TrackerMotion ddbData = samplesDDB.get(i);
-            if (!rdsData.equals(ddbData)) {
-                valueErrors++;
-                LOGGER.error("Data {} not match. RDS: {}, DDb:{}", rdsData.toString(), ddbData.toString());
-            }
-        }
-
-
-        System.out.println("Check Results");
-        System.out.println(String.format("Size Errors: %d", sizeErrors));
-        System.out.println(String.format("Value Errors: %d", valueErrors));
-
     }
 
     private List<TrackerMotion> getUniqueList(final List<TrackerMotion> data) {

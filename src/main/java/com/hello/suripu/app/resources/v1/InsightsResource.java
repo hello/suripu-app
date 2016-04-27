@@ -84,12 +84,13 @@ public class InsightsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<InsightCard> getInsights(@Auth final AccessToken accessToken) {
 
-        LOGGER.debug("Returning list of insights for account id = {}", accessToken.accountId);
         final Boolean chronological = false; // reverse chronological
         final DateTime queryDate = DateTime.now(DateTimeZone.UTC).plusDays(1);
+        LOGGER.debug("action=get_insight account_id={} querydate={}", accessToken.accountId, queryDate);
         final ImmutableList<InsightCard> cards = insightsDAODynamoDB.getInsightsByDate(accessToken.accountId,
                 queryDate, chronological, MAX_INSIGHTS_NUM);
 
+        LOGGER.debug("action=insight_results account_id={} size={}", accessToken.accountId, cards.size());
         if (cards.size() == 0) {
             // no insights generated yet, probably a new user, send introduction cards
             final List<InsightCard> introCards = IntroductionInsights.getIntroCards(accessToken.accountId);

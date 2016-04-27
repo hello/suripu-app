@@ -60,10 +60,10 @@ public class QuestionsResource {
             @Auth final AccessToken accessToken,
             @QueryParam("date") final String date) {
 
-        LOGGER.debug("Returning list of questions for account id = {}", accessToken.accountId);
+        LOGGER.debug("action=get_questions account_id={}", accessToken.accountId);
         final Optional<Integer> accountAgeInDays = this.getAccountAgeInDays(accessToken.accountId);
         if (!accountAgeInDays.isPresent()) {
-            LOGGER.warn("Fail to get account age for {}", accessToken.accountId);
+            LOGGER.warn("warning=fail-to-get-account-age account_id={}", accessToken.accountId);
             throw new WebApplicationException(404);
         }
 
@@ -89,17 +89,17 @@ public class QuestionsResource {
             @Auth final AccessToken accessToken) {
 
         // user asked for more questions
-        LOGGER.debug("Returning list of questions for account id = {}", accessToken.accountId);
+        LOGGER.debug("action=get_more_questions account_id={}", accessToken.accountId);
         final Optional<Integer> accountAgeInDays = this.getAccountAgeInDays(accessToken.accountId);
         if (!accountAgeInDays.isPresent()) {
-            LOGGER.warn("Fail to get account age for {}", accessToken.accountId);
+            LOGGER.warn("warning=fail-to-get-account-age account_id={}", accessToken.accountId);
             throw new WebApplicationException(404);
         }
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
 
         final DateTime today = DateTime.now(DateTimeZone.UTC).plusMillis(timeZoneOffset).withTimeAtStartOfDay();
-        LOGGER.debug("More questions for today = {}", today);
+        LOGGER.debug("action=found_more_questions account_id={} today={}", accessToken.accountId, today);
 
         // get question
         return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_MORE_QUESTIONS, false);
@@ -113,7 +113,7 @@ public class QuestionsResource {
     public void saveAnswers(@Auth final AccessToken accessToken,
                            @QueryParam("account_question_id") final Long accountQuestionId,
                            @Valid final List<Choice> choice) {
-        LOGGER.debug("Saving answer for account id = {}", accessToken.accountId);
+        LOGGER.debug("action=save_response account_id={} account_question_id={}", accessToken.accountId, accountQuestionId);
 
         final Optional<Integer> questionIdOptional = choice.get(0).questionId;
         Integer questionId = 0;
@@ -132,7 +132,7 @@ public class QuestionsResource {
     public void skipQuestion(@Auth final AccessToken accessToken,
                              @QueryParam("id") final Integer questionId,
                              @QueryParam("account_question_id") final Long accountQuestionId) {
-        LOGGER.debug("Skipping question {} for account id = {}", questionId, accessToken.accountId);
+        LOGGER.debug("action=skip_question question_id={} account_id={}", questionId, accessToken.accountId);
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
         this.questionProcessor.skipQuestion(accessToken.accountId, questionId, accountQuestionId, timeZoneOffset);
