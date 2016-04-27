@@ -27,6 +27,8 @@ common_db:
   # the SQL query to run when validating a connection's liveness
   validationQuery: "/* MyService Health Check */ SELECT 1"
 
+  initialSize: 2
+
   # the minimum number of connections to keep open
   minSize: 2
 
@@ -36,11 +38,11 @@ common_db:
   # whether or not idle connections should be validated
   checkConnectionWhileIdle: false
 
-  # how long a connection must be held before it can be validated
-  checkConnectionHealthWhenIdleFor: 10s
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
 
-  # the maximum lifetime of an idle connection
-  closeConnectionIfIdleFor: 1 minute
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
 
 insights_db:
   driverClass: org.postgresql.Driver
@@ -60,6 +62,8 @@ insights_db:
   # the SQL query to run when validating a connection's liveness
   validationQuery: "/* MyService Health Check */ SELECT 1"
 
+  initialSize: 2
+
   # the minimum number of connections to keep open
   minSize: 2
 
@@ -69,11 +73,11 @@ insights_db:
   # whether or not idle connections should be validated
   checkConnectionWhileIdle: false
 
-  # how long a connection must be held before it can be validated
-  checkConnectionHealthWhenIdleFor: 10s
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
 
-  # the maximum lifetime of an idle connection
-  closeConnectionIfIdleFor: 1 minute
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
 
 # to allow queries with clocks out of sync
 # 12 * 3600s = 43200 sec -> 12h window
@@ -82,50 +86,51 @@ allowed_query_range_seconds: 43200
 sleep_sound_cache_seconds: 30
 sleep_sound_duration_cache_seconds: 30
 
-http:
-
-  # The port on which the HTTP server listens for service requests.
-  # Because Java cannot drop privileges in a POSIX system, these
-  # ports cannot be in the range 1-1024. A port value of 0 will
-  # make the OS use an arbitrary unused port.
-  port: 9999
-
-  # The port on which the HTTP server listens for administrative
-  # requests. Subject to the same limitations as "port".
-  adminPort: 9998
-
+server:
+  adminMinThreads: 1
+  adminMaxThreads: 64
+  adminContextPath: /
+  applicationContextPath: /
+  applicationConnectors:
+    - type: http
+      port: 9999
+      idleTimeout: 25 seconds
+  adminConnectors:
+    - type: http
+      port: 9998
+      idleTimeout: 25 seconds
   requestLog:
-    file:
-      enabled: true
-      timeZone: UTC
-      currentLogFilename: /var/log/suripu-app/suripu-app-access.log
-      archive: true
-      archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-access-%d{yyyy-MM-dd}.log.gz
-      archivedFileCount: 7
-# Logging settings.
-logging:
-
-  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
-  level: INFO
-
-  # Logger-specific levels.
-  loggers:
-
-    # Sets the level for 'com.example.app' to DEBUG.
-    com.hello.suripu: DEBUG
-
-  file:
-    enabled: true
-    threshold: DEBUG
-    currentLogFilename: /var/log/suripu-app/suripu-app.log
-    # When the log file rotates, the archived log will be renamed to this and gzipped. The
-    # %d is replaced with the previous day (yyyy-MM-dd). Custom rolling windows can be created
-    # by passing a SimpleDateFormat-compatible format as an argument: "%d{yyyy-MM-dd-hh}".
-    archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-%d{yyyy-MM-dd}.log.gz
-    # The number of archived files to keep.
-    archivedFileCount: 7
-    # The timezone used to format dates. HINT: USE THE DEFAULT, UTC.
     timeZone: UTC
+    appenders:
+      - type: file
+        currentLogFilename: /var/log/suripu-app/suripu-app-access.log
+        threshold: ALL
+        archive: true
+        archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-access-%d{yyyy-MM-dd}.log.gz
+        archivedFileCount: 7
+      - type: papertrail
+        host: logs2.papertrailapp.com
+        port: 11366
+        ident: suripu-app-prod
+
+logging:
+  level: INFO
+  loggers:
+    com.hello.suripu: DEBUG
+    com.amazonaws: WARN
+  appenders:
+    - type: file
+      threshold: DEBUG
+      currentLogFilename: /var/log/suripu-app/suripu-app.log
+      archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-%d{yyyy-MM-dd}.log.gz
+      archivedFileCount: 7
+    - type: papertrail
+      host: logs2.papertrailapp.com
+      port: 11366
+      ident: suripu-service-prod
+      # timezone: UTC
+      # facility: USER
+      # sendLocalName: true
 
 score_threshold : 15 # minutes bucket for sleep-scores
 
@@ -189,12 +194,10 @@ dynamodb:
     app_stats: prod_app_stats
     calibration: prod_calibration
     device_data: prod_sense_data
-    event: prod_event
     feature_extraction_models: prod_feature_extraction_models
     features: features
     file_manifest: prod_file_manifest
-    fw_path: fw_upgrade_path
-    insights_dynamo: prod_insights
+    insights: prod_insights
     marketing_insights_seen: prod_marketing_insights_seen
     notifications: prod_notifications
     online_hmm_models: prod_online_hmm_models
@@ -204,16 +207,17 @@ dynamodb:
     pill_heartbeat: prod_pill_heartbeat
     pill_key_store: pill_key_store
     preferences: prod_preferences
-    sync_response_commands: prod_response_commands
-    ring_history: prod_ring_history_by_account
     ring_time: prod_ring_time
+    ring_time_history: prod_ring_history_by_account
+    sense_events: prod_event
     sense_key_store: key_store
     sense_last_seen: prod_sense_last_seen
     sense_state: prod_sense_state
-    sleephmm: prod_sleephmm
+    sleep_hmm: prod_sleephmm
     sleep_score: prod_sleep_score
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
+    sync_response_commands: prod_response_commands
     teams: teams
     timeline: prod_timeline
     timeline_log: prod_timeline_log
@@ -223,16 +227,13 @@ dynamodb:
   endpoints:
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
-    algorithm_test: http://dynamodb.us-east-1.amazonaws.com
     app_stats: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
-    event: http://dynamodb.us-east-1.amazonaws.com
     feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
     features: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
-    fw_path: http://dynamodb.us-east-1.amazonaws.com
-    insights_dynamo: http://dynamodb.us-east-1.amazonaws.com
+    insights: http://dynamodb.us-east-1.amazonaws.com
     marketing_insights_seen: http://dynamodb.us-east-1.amazonaws.com
     notifications: http://dynamodb.us-east-1.amazonaws.com
     online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
@@ -243,12 +244,12 @@ dynamodb:
     pill_key_store: http://dynamodb.us-east-1.amazonaws.com
     preferences: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
-    ring_history: http://dynamodb.us-east-1.amazonaws.com
+    ring_time_history: http://dynamodb.us-east-1.amazonaws.com
     ring_time: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
     sense_last_seen: http://dynamodb.us-east-1.amazonaws.com
     sense_state: http://dynamodb.us-east-1.amazonaws.com
-    sleephmm: http://dynamodb.us-east-1.amazonaws.com
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
     sleep_score: http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com

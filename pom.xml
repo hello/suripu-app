@@ -13,7 +13,7 @@
         <java.version>1.7</java.version>
         <jodatime.version>20150319</jodatime.version>
         <metrics.version>3.1.0</metrics.version>
-        <suripu.version>0.7.16-SNAPSHOT</suripu.version>
+        <suripu.version>0.7.16</suripu.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -255,6 +255,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.dcsquare</groupId>
+            <artifactId>dropwizard-papertrail</artifactId>
+            <version>1.1</version>
         </dependency>
     </dependencies>
     <build>

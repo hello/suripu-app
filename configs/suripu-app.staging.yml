@@ -27,6 +27,8 @@ common_db:
   # the SQL query to run when validating a connection's liveness
   validationQuery: "/* MyService Health Check */ SELECT 1"
 
+  initialSize: 2
+
   # the minimum number of connections to keep open
   minSize: 2
 
@@ -36,11 +38,11 @@ common_db:
   # whether or not idle connections should be validated
   checkConnectionWhileIdle: false
 
-  # how long a connection must be held before it can be validated
-  checkConnectionHealthWhenIdleFor: 10s
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
 
-  # the maximum lifetime of an idle connection
-  closeConnectionIfIdleFor: 1 minute
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
 
 insights_db:
   driverClass: org.postgresql.Driver
@@ -60,6 +62,8 @@ insights_db:
   # the SQL query to run when validating a connection's liveness
   validationQuery: "/* MyService Health Check */ SELECT 1"
 
+  initialSize: 2
+
   # the minimum number of connections to keep open
   minSize: 2
 
@@ -69,11 +73,11 @@ insights_db:
   # whether or not idle connections should be validated
   checkConnectionWhileIdle: false
 
-  # how long a connection must be held before it can be validated
-  checkConnectionHealthWhenIdleFor: 10s
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
 
-  # the maximum lifetime of an idle connection
-  closeConnectionIfIdleFor: 1 minute
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
 
 # to allow queries with clocks out of sync
 # 12 * 3600s = 43200 sec -> 12h window
@@ -82,65 +86,51 @@ allowed_query_range_seconds: 43200
 sleep_sound_cache_seconds: 5
 sleep_sound_duration_cache_seconds: 5
 
-http:
-
-  # The port on which the HTTP server listens for service requests.
-  # Because Java cannot drop privileges in a POSIX system, these
-  # ports cannot be in the range 1-1024. A port value of 0 will
-  # make the OS use an arbitrary unused port.
-  port: 9999
-
-  # The port on which the HTTP server listens for administrative
-  # requests. Subject to the same limitations as "port".
-  adminPort: 9998
+server:
+  adminMinThreads: 1
+  adminMaxThreads: 64
+  adminContextPath: /
+  applicationContextPath: /
+  applicationConnectors:
+    - type: http
+      port: 9999
+      idleTimeout: 25 seconds
+  adminConnectors:
+    - type: http
+      port: 9998
+      idleTimeout: 25 seconds
   requestLog:
-    file:
-      enabled: true
-      timeZone: UTC
-      currentLogFilename: /var/log/suripu-app/suripu-app-access.log
-      archive: true
-      archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-access-%d{yyyy-MM-dd}.log.gz
-      archivedFileCount: 7
-
-# Logging settings.
-logging:
-
-  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
-  level: INFO
-
-  # Logger-specific levels.
-  loggers:
-
-    # Sets the level for 'com.example.app' to DEBUG.
-    com.hello.suripu: DEBUG
-
-  file:
-    enabled: true
-    threshold: DEBUG
-    currentLogFilename: /var/log/suripu-app/suripu-app.log
-    # When the log file rotates, the archived log will be renamed to this and gzipped. The
-    # %d is replaced with the previous day (yyyy-MM-dd). Custom rolling windows can be created
-    # by passing a SimpleDateFormat-compatible format as an argument: "%d{yyyy-MM-dd-hh}".
-    archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-%d{yyyy-MM-dd}.log.gz
-    # The number of archived files to keep.
-    archivedFileCount: 7
-    # The timezone used to format dates. HINT: USE THE DEFAULT, UTC.
     timeZone: UTC
+    appenders:
+      - type: file
+        currentLogFilename: /var/log/suripu-app/suripu-app-access.log
+        threshold: ALL
+        archive: true
+        archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-access-%d{yyyy-MM-dd}.log.gz
+        archivedFileCount: 7
+      - type: papertrail
+        host: logs2.papertrailapp.com
+        port: 11366
+        ident: suripu-app-dev
 
-event_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: event
-
-timezone_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: timezone_history
-
-alarm_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: alarm
+logging:
+  level: INFO
+  loggers:
+    com.hello.suripu: DEBUG
+    com.amazonaws: WARN
+  appenders:
+    - type: file
+      threshold: DEBUG
+      currentLogFilename: /var/log/suripu-app/suripu-app.log
+      archivedLogFilenamePattern: /var/log/suripu-app/suripu-app-%d{yyyy-MM-dd}.log.gz
+      archivedFileCount: 7
+    - type: papertrail
+      host: logs2.papertrailapp.com
+      port: 11366
+      ident: suripu-service-dev
+      # timezone: UTC
+      # facility: USER
+      # sendLocalName: true
 
 score_threshold : 15 # minutes bucket for sleep-scores
 
@@ -150,105 +140,6 @@ push_notifications:
     android: arn:aws:sns:us-east-1:053216739513:app/GCM/hello-sense-android-dev
 
   table_name: notifications #deprecate later
-
-notifications_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: notifications
-
-preferences_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: preferences
-
-ring_time_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: ring_time
-
-alarm_info_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: alarm_info
-
-# remember to update version when changing score methods
-# v0.1: pure movement
-sleep_score_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: sleep_score
-sleep_score_version: v_0_1
-
-features_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: features
-
-teams_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: teams
-
-insights_dynamo_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: insights
-
-sense_key_store_dynamo_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: key_store
-
-pill_key_store_dynamo_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: pill_key_store
-
-password_reset_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: password_reset
-
-kinesis:
-  endpoint : https://kinesis.us-east-1.amazonaws.com
-  streams :
-    audio_features : audio_features
-    activity_stream : activity_stream
-    registrations: registrations
-    encode_audio : encode_audio
-    batch_pill_data : batch_pill_data
-    sense_sensors_data : sense_sensors_data
-    logs : dev-logs
-
-question_configs:
-  num_skips : 5
-
-timeline_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: timeline
-
-email:
-   api_key: XnAIQfmDpMYIapDWGigfwA
-   link_host: http://account-staging-zpbsmunavw.elasticbeanstalk.com/password_update
-
-ring_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: ring_history_by_account
-
-sleephmm_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: sleephmm
-
-# store sleep scores and other stats
-# v0.2: score uses movement and duration
-sleep_stats_db:
-    endpoint : http://dynamodb.us-east-1.amazonaws.com
-    region: us-east-1
-    table_name: sleep_stats
-sleep_stats_version: v_0_2
 
 messeji_http_client:
   endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"
@@ -261,80 +152,15 @@ taimurain_http_client:
     keepAlive: 0s
     timeout: 10000ms
 
+question_configs:
+  num_skips : 5
+
+# store sleep scores and other stats
+# v0.2: score uses movement and duration
+sleep_stats_version: v_0_2
+sleep_score_version: v_0_1
 
 max_cache_refresh_days: 20
-
-algorithm_test_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: algorithm_test
-
-
-smart_alarm_log_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: smart_alarm_log
-
-timeline_log_db:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: timeline_log
-
-ota_history_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: ota_history
-
-resp_commands_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: response_commands
-
-fw_path_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: fw_upgrade_path
-
-
-sense_last_seen:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: sense_last_seen
-
-feature_extraction_models:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: feature_extraction_models
-
-online_hmm_models:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: online_hmm_models
-
-calibration:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: calibration
-
-wifi_info:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: wifi_info
-
-app_stats:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: app_stats
-
-pill_heartbeat:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: pill_heartbeat
-
-device_data:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: sense_data
 
 timeline_model_ensembles:
   bucket: hello-timeline-models
@@ -344,22 +170,91 @@ timeline_seed_model:
   bucket: hello-timeline-models
   key: normal4.base64
 
-pill_data:
-  endpoint: http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: pill_data
+email:
+   api_key: XnAIQfmDpMYIapDWGigfwA
+   link_host: https://account.hello.is/password_update
 
-sense_state_db:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: sense_state
+kinesis:
+  endpoint : https://kinesis.us-east-1.amazonaws.com
+  streams :
+    audio_features : audio_features
+    activity_stream : activity_stream
+    registrations: registrations
+    encode_audio : encode_audio
+    batch_pill_data : batch_pill_data
+    sense_sensors_data : sense_sensors_data
+    logs : logs
 
-file_manifest:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
+dynamodb:
   region: us-east-1
-  table_name: file_manifest
+  tables:
+    alarm: alarm
+    alarm_info: alarm_info
+    algorithm_test: algorithm_test
+    app_stats: app_stats
+    calibration: calibration
+    device_data: sense_data
+    feature_extraction_models: feature_extraction_models
+    features: features
+    file_manifest: file_manifest
+    insights: insights
+    marketing_insights_seen: marketing_insights_seen
+    notifications: notifications
+    online_hmm_models: online_hmm_models
+    ota_history: ota_history
+    password_reset: password_reset
+    pill_data: pill_data
+    pill_heartbeat: pill_heartbeat
+    pill_key_store: pill_key_store
+    preferences: preferences
+    ring_time: ring_time
+    ring_time_history: ring_history_by_account
+    sense_events: event
+    sense_key_store: key_store
+    sense_last_seen: sense_last_seen
+    sense_state: sense_state
+    sleep_hmm: sleephmm
+    sleep_score: sleep_score
+    sleep_stats: sleep_stats
+    smart_alarm_log: smart_alarm_log
+    sync_response_commands: response_commands
+    teams: teams
+    timeline: timeline
+    timeline_log: timeline_log
+    timezone_history: timezone_history
+    wifi_info: wifi_info
 
-marketing_insights_seen:
-  endpoint : http://dynamodb.us-east-1.amazonaws.com
-  region: us-east-1
-  table_name: marketing_insights_seen
+  endpoints:
+    alarm: http://dynamodb.us-east-1.amazonaws.com
+    alarm_info: http://dynamodb.us-east-1.amazonaws.com
+    app_stats: http://dynamodb.us-east-1.amazonaws.com
+    calibration: http://dynamodb.us-east-1.amazonaws.com
+    device_data: http://dynamodb.us-east-1.amazonaws.com
+    feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
+    features: http://dynamodb.us-east-1.amazonaws.com
+    file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    insights: http://dynamodb.us-east-1.amazonaws.com
+    marketing_insights_seen: http://dynamodb.us-east-1.amazonaws.com
+    notifications: http://dynamodb.us-east-1.amazonaws.com
+    online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
+    ota_history: http://dynamodb.us-east-1.amazonaws.com
+    password_reset: http://dynamodb.us-east-1.amazonaws.com
+    pill_data: http://dynamodb.us-east-1.amazonaws.com
+    pill_heartbeat: http://dynamodb.us-east-1.amazonaws.com
+    pill_key_store: http://dynamodb.us-east-1.amazonaws.com
+    preferences: http://dynamodb.us-east-1.amazonaws.com
+    sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
+    ring_time_history: http://dynamodb.us-east-1.amazonaws.com
+    ring_time: http://dynamodb.us-east-1.amazonaws.com
+    sense_key_store: http://dynamodb.us-east-1.amazonaws.com
+    sense_last_seen: http://dynamodb.us-east-1.amazonaws.com
+    sense_state: http://dynamodb.us-east-1.amazonaws.com
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    sleep_score: http://dynamodb.us-east-1.amazonaws.com
+    sleep_stats: http://dynamodb.us-east-1.amazonaws.com
+    smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
+    teams: http://dynamodb.us-east-1.amazonaws.com
+    timeline: http://dynamodb.us-east-1.amazonaws.com
+    timeline_log: http://dynamodb.us-east-1.amazonaws.com
+    timezone_history: http://dynamodb.us-east-1.amazonaws.com
+    wifi_info: http://dynamodb.us-east-1.amazonaws.com
