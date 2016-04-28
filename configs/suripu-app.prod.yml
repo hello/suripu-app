@@ -127,7 +127,7 @@ logging:
     - type: papertrail
       host: logs2.papertrailapp.com
       port: 11366
-      ident: suripu-service-prod
+      ident: suripu-app-prod
       # timezone: UTC
       # facility: USER
       # sendLocalName: true

@@ -66,16 +66,16 @@ server:
     appenders:
       - type: console
 #      - type: file
-#        currentLogFilename: ./log/suripu-service/suripu-service-access.log
+#        currentLogFilename: ./log/suripu-app/suripu-app-access.log
 #        threshold: ALL
 #        archive: true
-#        archivedLogFilenamePattern: ./log/suripu-service/suripu-service-%d{yyyy-MM-dd}.log.gz
+#        archivedLogFilenamePattern: ./log/suripu-app/suripu-app-%d{yyyy-MM-dd}.log.gz
 #        archivedFileCount: 7
 
 logging:
   level: INFO
   loggers:
-    com.hello.suripu.service: INFO
+    com.hello.suripu.app: INFO
     com.hello.suripu.core: DEBUG
     com.amazonaws: WARN
   appenders:
