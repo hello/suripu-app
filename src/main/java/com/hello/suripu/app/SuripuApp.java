@@ -133,6 +133,7 @@ import com.hello.suripu.coredw8.oauth.OAuthAuthorizer;
 import com.hello.suripu.coredw8.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
+import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -317,6 +318,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         AbstractServerFactory sf = (AbstractServerFactory) configuration.getServerFactory();
         // disable all default exception mappers
         sf.setRegisterDefaultExceptionMappers(false);
+
+        environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
 
         final PersistentAccessTokenStore tokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore);
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
