@@ -331,7 +331,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             .setPrefix("Bearer")
             .setLogger(activityLogger)
             .buildAuthFilter()));
-        environment.jersey().register(ScopesAllowedDynamicFeature.class);
+        environment.jersey().register(new ScopesAllowedDynamicFeature(applicationStore));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(AccessToken.class));
 
         //TODO: Determine if this is needed

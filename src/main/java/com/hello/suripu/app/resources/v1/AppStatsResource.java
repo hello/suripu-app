@@ -55,8 +55,7 @@ public class AppStatsResource {
         this.tzHistoryDAO = tzHistoryDAO;
     }
 
-    //TODO: Replace this with the correct OAuthScope (APP_STATS) once test is complete.
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -66,7 +65,7 @@ public class AppStatsResource {
         return new AppStats(insightsLastViewed, questionsLastViewed);
     }
 
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
@@ -89,7 +88,7 @@ public class AppStatsResource {
         return Response.status(Response.Status.NOT_MODIFIED).build();
     }
 
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
+    @ScopesAllowed({OAuthScope.APP_STATS})
     @Timed
     @GET
     @Path("/unread")
