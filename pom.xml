@@ -12,7 +12,7 @@
         <dropwizard.version>0.8.2</dropwizard.version>
         <java.version>1.7</java.version>
         <jodatime.version>20150319</jodatime.version>
-        <metrics.version>3.1.0</metrics.version>
+        <metrics.version>3.1.2</metrics.version>
         <suripu.version>0.7.21</suripu.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
