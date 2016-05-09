@@ -207,6 +207,7 @@ dynamodb:
     pill_heartbeat: pill_heartbeat
     pill_key_store: pill_key_store
     preferences: preferences
+    push_notification_event: push_notification_event
     ring_time: ring_time
     ring_time_history: ring_history_by_account
     sense_events: event
@@ -243,6 +244,7 @@ dynamodb:
     pill_heartbeat: http://dynamodb.us-east-1.amazonaws.com
     pill_key_store: http://dynamodb.us-east-1.amazonaws.com
     preferences: http://dynamodb.us-east-1.amazonaws.com
+    push_notification_event: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     ring_time_history: http://dynamodb.us-east-1.amazonaws.com
     ring_time: http://dynamodb.us-east-1.amazonaws.com

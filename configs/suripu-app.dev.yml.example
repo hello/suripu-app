@@ -156,6 +156,7 @@ dynamodb:
     pill_heartbeat: pill_heartbeat
     pill_key_store: pill_key_store
     preferences: preferences
+    push_notification_event: push_notification_event
     ring_time: ring_time
     ring_time_history: ring_history_by_account
     sense_events: event
@@ -188,6 +189,7 @@ dynamodb:
     pill_heartbeat: http://localhost:7777
     pill_key_store: http://localhost:7777
     preferences: http://localhost:7777
+    push_notification_event: http://localhost:7777
     ring_time_history: http://localhost:7777
     sense_key_store: http://localhost:7777
     sense_last_seen: http://localhost:7777
