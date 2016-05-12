@@ -26,6 +26,7 @@ import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.messeji.MessejiClient;
 import com.hello.suripu.app.messeji.MessejiHttpClient;
 import com.hello.suripu.app.modules.RolloutAppModule;
@@ -118,6 +119,7 @@ import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
+import com.hello.suripu.core.util.RequestRateLimiter;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
@@ -333,6 +335,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         //TODO: Determine if this is needed
 //        environment.getJerseyResourceConfig()
 //                .getResourceFilterFactories().add(CacheFilterFactory.class);
+
+        final RequestRateLimiter<String> requestRateLimiter = RequestRateLimiter.create(
+                configuration.getRateLimiterConfiguration().getMaxIpsToLimit(),
+                configuration.getRateLimiterConfiguration().getTokensAllowedPerSecond());
+        environment.jersey().register(new RateLimitingByIPFilter(requestRateLimiter, 1));
 
         final String namespace = (configuration.getDebug()) ? "dev" : "prod";
         final AmazonDynamoDB featuresDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FEATURES);

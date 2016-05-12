@@ -7,15 +7,13 @@ import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import com.hello.suripu.coredw8.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
-
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
 
 public class SuripuAppConfiguration extends Configuration {
 
@@ -185,4 +183,9 @@ public class SuripuAppConfiguration extends Configuration {
     @JsonProperty("sleep_sound_duration_cache_seconds")
     private Integer sleepSoundDurationCacheSeconds = 5;
     public Integer getSleepSoundDurationCacheSeconds() { return sleepSoundDurationCacheSeconds; }
+
+    @Valid
+    @JsonProperty("rate_limiter")
+    private RateLimiterConfiguration rateLimiterConfiguration = new RateLimiterConfiguration();
+    public RateLimiterConfiguration getRateLimiterConfiguration() { return rateLimiterConfiguration; }
 }
