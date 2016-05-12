@@ -10,6 +10,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -54,7 +55,6 @@ import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
-
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -139,16 +139,6 @@ import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
-
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -159,6 +149,14 @@ import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SuripuApp.class);
@@ -419,8 +417,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB pushNotificationDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
         final PushNotificationEventDynamoDB pushNotificationEventDynamoDB = new PushNotificationEventDynamoDB(
-            pushNotificationDynamoDBClient,
-            tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
+                pushNotificationDynamoDBClient,
+                tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
         final MobilePushNotificationProcessor mobilePushNotificationProcessor = new MobilePushNotificationProcessor(snsClient, notificationSubscriptionsDAO, pushNotificationEventDynamoDB);
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
