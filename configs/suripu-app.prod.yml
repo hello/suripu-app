@@ -206,7 +206,6 @@ dynamodb:
     pill_data: prod_pill_data
     pill_heartbeat: prod_pill_heartbeat
     pill_key_store: pill_key_store
-    push_notification_event: prod_push_notification_event
     preferences: prod_preferences
     push_notification_event: prod_push_notification_event
     ring_time: prod_ring_time
@@ -244,7 +243,6 @@ dynamodb:
     pill_data: http://dynamodb.us-east-1.amazonaws.com
     pill_heartbeat: http://dynamodb.us-east-1.amazonaws.com
     pill_key_store: http://dynamodb.us-east-1.amazonaws.com
-    push_notification_event: http://dynamodb.us-east-1.amazonaws.com
     preferences: http://dynamodb.us-east-1.amazonaws.com
     push_notification_event: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
