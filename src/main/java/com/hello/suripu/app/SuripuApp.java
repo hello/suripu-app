@@ -10,12 +10,14 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.codahale.metrics.MetricFilter;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -105,6 +107,7 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
+
 import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
 import com.hello.suripu.core.oauth.stores.PersistentApplicationStore;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
@@ -127,6 +130,7 @@ import com.hello.suripu.coredw8.db.AccessTokenDAO;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
+import com.hello.suripu.coredw8.metrics.RegexMetricFilter;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.AuthDynamicFeature;
 import com.hello.suripu.coredw8.oauth.AuthValueFactoryProvider;
@@ -297,13 +301,16 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             final String env = (configuration.getDebug()) ? "dev" : "prod";
             final String prefix = String.format("%s.%s.suripu-app", apiKey, env);
 
+            final ImmutableList<String> metrics = ImmutableList.copyOf(configuration.getGraphite().getIncludeMetrics());
+            final RegexMetricFilter metricFilter = new RegexMetricFilter(metrics);
+
             final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
 
             final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
                 .prefixedWith(prefix)
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .filter(MetricFilter.ALL)
+                .filter(metricFilter)
                 .build(graphite);
             reporter.start(interval, TimeUnit.SECONDS);
 
