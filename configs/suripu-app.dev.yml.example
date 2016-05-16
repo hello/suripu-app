@@ -104,6 +104,10 @@ taimurain_http_client:
 question_configs:
   num_skips : 5
 
+timeline_algorithm_configuration:
+  artificial_light_start_time: "21:30"
+  artificial_light_stop_time: "05:00"
+
 # store sleep scores and other stats
 # v0.2: score uses movement and duration
 sleep_stats_version: v_0_2
