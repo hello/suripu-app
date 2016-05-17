@@ -126,6 +126,7 @@ import com.hello.suripu.core.util.RequestRateLimiter;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
@@ -451,6 +452,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 new HttpClientBuilder(environment).using(taimurainHttpClientConfiguration.getHttpClientConfiguration()).build("taimurain"),
                 taimurainHttpClientConfiguration.getEndpoint());
 
+
+        final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = configuration.getTimelineAlgorithmConfiguration();
+
         final TimelineProcessor timelineProcessor = TimelineProcessor.createTimelineProcessor(
                 pillDataDAODynamoDB,
                 deviceDAO,
@@ -466,7 +470,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 calibrationDAO,
                 defaultModelEnsembleDAO,
                 userTimelineTestGroupDAO,
-                taimurainHttpClient);
+                taimurainHttpClient,
+                timelineAlgorithmConfiguration);
 
 
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
