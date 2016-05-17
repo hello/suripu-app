@@ -7,6 +7,7 @@ import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import com.hello.suripu.coredw8.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 
@@ -188,4 +189,9 @@ public class SuripuAppConfiguration extends Configuration {
     @JsonProperty("rate_limiter")
     private RateLimiterConfiguration rateLimiterConfiguration = new RateLimiterConfiguration();
     public RateLimiterConfiguration getRateLimiterConfiguration() { return rateLimiterConfiguration; }
+
+    @Valid
+    @JsonProperty("timeline_algorithm_configuration")
+    private TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = new TimelineAlgorithmConfiguration();
+    public TimelineAlgorithmConfiguration getTimelineAlgorithmConfiguration() {return timelineAlgorithmConfiguration;}
 }
