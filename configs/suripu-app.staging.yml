@@ -178,6 +178,9 @@ email:
    api_key: XnAIQfmDpMYIapDWGigfwA
    link_host: https://account.hello.is/password_update
 
+rate_limiter:
+  tokens_allowed_per_second: 100
+
 kinesis:
   endpoint : https://kinesis.us-east-1.amazonaws.com
   streams :

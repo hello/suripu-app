@@ -138,6 +138,9 @@ kinesis:
     sense_sensors_data : sense_sensors_data
     logs : logs
 
+rate_limiter:
+  tokens_allowed_per_second: 5
+
 dynamodb:
   region: us-east-1
   tables:
