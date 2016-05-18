@@ -56,7 +56,7 @@ public class AccountResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Account getAccount(@Auth final AccessToken accessToken) {
 
-        LOGGER.debug("level=debug action=get-account access_token={}", accessToken);
+        LOGGER.debug("level=debug action=get-account account_id={}", accessToken.accountId);
         final Optional<Account> account = accountDAO.getById(accessToken.accountId);
         if(!account.isPresent()) {
             LOGGER.warn("level=warning error_message=account-not-present account_id={}", accessToken.accountId);
