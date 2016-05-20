@@ -190,7 +190,7 @@ kinesis:
     logs : logs
 
 rate_limiter:
-  tokens_allowed_per_second: 15
+  tokens_allowed_per_second: 20
 
 dynamodb:
   region: us-east-1
