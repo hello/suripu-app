@@ -72,7 +72,7 @@ public class PhotoResource {
         final String cleanUUID = uuid.toString().replace("-","");
 
         final String key = FilenameUtils.normalize(
-                String.format("%s/%s.jpeg",
+                String.format("%s/%s.jpg",
                         config.profilePrefix(),
                         cleanUUID
                 ));
