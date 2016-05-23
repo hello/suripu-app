@@ -194,4 +194,11 @@ public class SuripuAppConfiguration extends Configuration {
     @JsonProperty("timeline_algorithm_configuration")
     private TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = new TimelineAlgorithmConfiguration();
     public TimelineAlgorithmConfiguration getTimelineAlgorithmConfiguration() {return timelineAlgorithmConfiguration;}
+
+    @Valid
+    @JsonProperty("photo_upload")
+    private PhotoUploadConfiguration photoUploadConfiguration;
+    public PhotoUploadConfiguration photoUploadConfiguration() {
+        return photoUploadConfiguration;
+    }
 }

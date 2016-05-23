@@ -141,6 +141,11 @@ kinesis:
 rate_limiter:
   tokens_allowed_per_second: 5
 
+photo_upload:
+  bucket_name: hello-accounts
+  profile_prefix: photos/profile/
+  max_upload_size_bytes: 5120000 # 5MB
+
 dynamodb:
   region: us-east-1
   tables:
