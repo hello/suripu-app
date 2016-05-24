@@ -422,6 +422,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
 
+        final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
+        final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
+
         if(configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
@@ -441,7 +444,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
 
         environment.jersey().register(new OAuthResource(accessTokenStore, applicationStore, accountDAO, notificationSubscriptionDAOWrapper));
-        environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO));
+        environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
         environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(),senseColorDAO, calibrationDAO));
         environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
 
@@ -526,7 +529,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
 
         environment.jersey().register(MultiPartFeature.class);
-        final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(appStatsDynamoDBClient, "profile_photo");
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
     }
 }
