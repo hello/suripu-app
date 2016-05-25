@@ -223,6 +223,7 @@ dynamodb:
     sense_state: prod_sense_state
     sleep_hmm: prod_sleephmm
     sleep_score: prod_sleep_score
+    sleep_score_parameters: prod_sleep_score_parameters
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
     sync_response_commands: prod_response_commands
@@ -260,6 +261,7 @@ dynamodb:
     sense_state: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
     sleep_score: http://dynamodb.us-east-1.amazonaws.com
+    sleep_score_parameters:  http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
