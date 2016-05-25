@@ -12,6 +12,7 @@ import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
@@ -43,13 +44,16 @@ public class QuestionsResource {
     private final AccountDAO accountDAO;
     private final TimeZoneHistoryDAODynamoDB tzHistoryDAO;
     private final QuestionProcessor questionProcessor;
+    private final QuestionSurveyProcessor questionSurveyProcessor;
 
     public QuestionsResource(final AccountDAO accountDAO,
                              final TimeZoneHistoryDAODynamoDB tzHistoryDAO,
-                             final QuestionProcessor questionProcessor) {
+                             final QuestionProcessor questionProcessor,
+                             final QuestionSurveyProcessor questionSurveyProcessor) {
         this.accountDAO = accountDAO;
         this.tzHistoryDAO = tzHistoryDAO;
         this.questionProcessor = questionProcessor;
+        this.questionSurveyProcessor = questionSurveyProcessor;
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})
@@ -77,7 +81,8 @@ public class QuestionsResource {
         }
 
         // get question
-        return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, questionProcessorQuestions);
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})

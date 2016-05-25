@@ -85,6 +85,7 @@ import com.hello.suripu.core.db.OnlineHmmModelsDAO;
 import com.hello.suripu.core.db.OnlineHmmModelsDAODynamoDB;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.QuestionResponseDAO;
+import com.hello.suripu.core.db.QuestionResponseReadDAO;
 import com.hello.suripu.core.db.RingTimeHistoryDAODynamoDB;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.SensorsViewsDynamoDB;
@@ -117,6 +118,7 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
@@ -214,6 +216,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final TrendsInsightsDAO trendsInsightsDAO = insightsDB.onDemand(TrendsInsightsDAO.class);
         final SupportDAO supportDAO = commonDB.onDemand(SupportDAO.class);
 
+        final QuestionResponseReadDAO questionResponseReadDAO = insightsDB.onDemand(QuestionResponseReadDAO.class);
         final QuestionResponseDAO questionResponseDAO = insightsDB.onDemand(QuestionResponseDAO.class);
         final FeedbackDAO feedbackDAO = commonDB.onDemand(FeedbackDAO.class);
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
@@ -489,7 +492,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepScoreParametersDAO,
                 taimurainHttpClient,
                 timelineAlgorithmConfiguration);
-
+a
 
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
@@ -500,7 +503,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withCheckSkipsNum(configuration.getQuestionConfigs().getNumSkips())
                 .withQuestions(questionResponseDAO)
                 .build();
-        environment.jersey().register(new QuestionsResource(accountDAO, timeZoneHistoryDAODynamoDB, questionProcessor));
+        final QuestionSurveyProcessor questionSurveyProcessor = new QuestionSurveyProcessor.Builder()
+                .withQuestionResponseDAO(questionResponseReadDAO, questionResponseDAO)
+                .withQuestions(questionResponseReadDAO)
+                .build();
+        environment.jersey().register(new QuestionsResource(accountDAO, timeZoneHistoryDAODynamoDB, questionProcessor, questionSurveyProcessor));
         environment.jersey().register(new FeedbackResource(feedbackDAO, timelineDAODynamoDB));
         environment.jersey().register(new AppCheckinResource(2015000000));
 
