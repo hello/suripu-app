@@ -184,6 +184,7 @@ dynamodb:
   endpoints:
     alarm: http://localhost:7777
     alarm_info: http://localhost:7777
+    algorithm_test: http://localhost:7777
     app_stats: http://localhost:7777
     calibration: http://localhost:7777
     device_data: http://localhost:7777

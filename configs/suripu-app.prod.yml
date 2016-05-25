@@ -236,6 +236,7 @@ dynamodb:
   endpoints:
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
+    algorithm_test: http://dynamodb.us-east-1.amazonaws.com
     app_stats: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
