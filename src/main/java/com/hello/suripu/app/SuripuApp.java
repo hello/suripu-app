@@ -22,6 +22,7 @@ import com.hello.suripu.app.cli.CreateDynamoDBTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
 import com.hello.suripu.app.cli.MigratePillHeartbeatCommand;
 import com.hello.suripu.app.cli.MovePillDataToDynamoDBCommand;
+import com.hello.suripu.app.cli.PopulateSleepScoreParametersDynamoDBTable;
 import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.MessejiHttpClientConfiguration;
@@ -176,6 +177,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MigratePillHeartbeatCommand());
         bootstrap.addCommand(new MigrateDeviceDataCommand());
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
+        bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
     }
 
     @Override
