@@ -141,6 +141,11 @@ kinesis:
 rate_limiter:
   tokens_allowed_per_second: 5
 
+photo_upload:
+  bucket_name: hello-accounts
+  profile_prefix: photos/profile/
+  max_upload_size_bytes: 5120000 # 5MB
+
 dynamodb:
   region: us-east-1
   tables:
@@ -163,6 +168,7 @@ dynamodb:
     pill_heartbeat: pill_heartbeat
     pill_key_store: pill_key_store
     preferences: preferences
+    profile_photo: profile_photo
     push_notification_event: push_notification_event
     ring_time: ring_time
     ring_time_history: ring_history_by_account
@@ -183,6 +189,7 @@ dynamodb:
   endpoints:
     alarm: http://localhost:7777
     alarm_info: http://localhost:7777
+    algorithm_test: http://localhost:7777
     app_stats: http://localhost:7777
     calibration: http://localhost:7777
     device_data: http://localhost:7777
@@ -190,19 +197,26 @@ dynamodb:
     features: http://localhost:7777
     file_manifest: http://localhost:7777
     insights: http://localhost:7777
+    marketing_insights_seen: http://localhost:7777
+    notifications: http://localhost:7777
     online_hmm_models: http://localhost:7777
+    ota_history: http://localhost:7777
     password_reset: http://localhost:7777
     pill_data: http://localhost:7777
     pill_heartbeat: http://localhost:7777
     pill_key_store: http://localhost:7777
     preferences: http://localhost:7777
+    profile_photo: http://localhost:7777
     push_notification_event: http://localhost:7777
     ring_time_history: http://localhost:7777
     sense_key_store: http://localhost:7777
     sense_last_seen: http://localhost:7777
     sleep_hmm: http://localhost:7777
+    sleep_score: http://localhost:7777
     sense_state: http://localhost:7777
     sleep_stats: http://localhost:7777
+    smart_alarm_log: http://localhost:7777
+    sync_response_commands: http://localhost:7777
     timeline: http://localhost:7777
     timeline_log: http://localhost:7777
     timezone_history: http://localhost:7777
