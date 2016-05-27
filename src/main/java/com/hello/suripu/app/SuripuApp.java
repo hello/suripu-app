@@ -10,14 +10,12 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -43,6 +41,7 @@ import com.hello.suripu.app.resources.v1.InsightsResource;
 import com.hello.suripu.app.resources.v1.MobilePushRegistrationResource;
 import com.hello.suripu.app.resources.v1.OAuthResource;
 import com.hello.suripu.app.resources.v1.PasswordResetResource;
+import com.hello.suripu.app.resources.v1.PhotoResource;
 import com.hello.suripu.app.resources.v1.ProvisionResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
@@ -107,7 +106,6 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
-
 import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
 import com.hello.suripu.core.oauth.stores.PersistentApplicationStore;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
@@ -117,6 +115,8 @@ import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.core.profile.ProfilePhotoStore;
+import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
@@ -153,6 +153,7 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -344,14 +345,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 //        environment.getJerseyResourceConfig()
 //                .getResourceFilterFactories().add(CacheFilterFactory.class);
 
-        final RequestRateLimiter<String> requestRateLimiter = RequestRateLimiter.create(
-                configuration.getRateLimiterConfiguration().getMaxIpsToLimit(),
-                configuration.getRateLimiterConfiguration().getTokensAllowedPerSecond());
-        environment.jersey().register(new RateLimitingByIPFilter(requestRateLimiter, 1));
-
         final String namespace = (configuration.getDebug()) ? "dev" : "prod";
         final AmazonDynamoDB featuresDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FEATURES);
         final FeatureStore featureStore = new FeatureStore(featuresDynamoDBClient, "features", namespace);
+
+        final RolloutClient rolloutClient = new RolloutClient(new DynamoDBAdapter(featureStore, 30));
 
         final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
         ObjectGraphRoot.getInstance().init(module);
@@ -362,9 +360,15 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new AbstractBinder() {
             @Override
             protected void configure() {
-                bind(new RolloutClient(new DynamoDBAdapter(featureStore, 30))).to(RolloutClient.class);
+                bind(rolloutClient).to(RolloutClient.class);
             }
         });
+
+        // Rate limit resources.
+        final RequestRateLimiter<String> requestRateLimiter = RequestRateLimiter.create(
+                configuration.getRateLimiterConfiguration().getMaxIpsToLimit(),
+                configuration.getRateLimiterConfiguration().getTokensAllowedPerSecond());
+        environment.jersey().register(new RateLimitingByIPFilter(requestRateLimiter, 1, rolloutClient));
 
         final AmazonDynamoDB senseKeyStoreDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStore senseKeyStore = new KeyStoreDynamoDB(
@@ -418,6 +422,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
 
+        final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
+        final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
+
         if(configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
@@ -437,7 +444,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
 
         environment.jersey().register(new OAuthResource(accessTokenStore, applicationStore, accountDAO, notificationSubscriptionDAOWrapper));
-        environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO));
+        environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
         environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(),senseColorDAO, calibrationDAO));
         environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
 
@@ -520,5 +527,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
+
+        environment.jersey().register(MultiPartFeature.class);
+        environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
     }
 }
