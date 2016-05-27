@@ -7,6 +7,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.*;
@@ -30,6 +32,9 @@ import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.TimeZone;
 
 
@@ -96,45 +101,43 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
         final SleepScoreParametersDynamoDB sleepScoreParametersDynamoDB = new SleepScoreParametersDynamoDB(sleepScoreParametersClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
 
         // compute custom parameters
-        final DateTime dateTime = DateTime.now(DateTimeZone.UTC);
-        long accountIdTemp = 0L;
-        String dateTemp;
-        int nightCount = 0;
-        long durationSum = 0;
-        int idealDuration = 0;
         final ImmutableList<AccountDate> allAccountsDates = questionResponseReadDAO.getAccountDatebyResponse(69);
-
-        //List of accountIds and Dates with 'great nights' ordered by account id, and date
-        //loops through paired account ids and dates. when account id changes, calculates mean ideal duration for previous account id and inserts parameter
-
+        final HashMap<Long, List<DateTime>> accountDates = Maps.newHashMap();
+        final DateTime dateTime = DateTime.now(DateTimeZone.UTC);
         for (final AccountDate accountDate : allAccountsDates) {
-            //initializes accountId
-            if (accountDate.accountId == 0) {
-                accountIdTemp = accountDate.accountId;
-            }
-            //Inserts ideal duration and resets count
-            else if (accountDate.accountId != accountIdTemp) {
-                if (nightCount > 0 && durationSum > 0) {
-                    idealDuration = (int) durationSum / nightCount;
-                    SleepScoreParameters parameter = new SleepScoreParameters(accountIdTemp, dateTime, idealDuration);
-                    sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountIdTemp, parameter);
-                }
-
-                nightCount = 0;
-                durationSum = 0;
-                idealDuration = 0;
-                accountIdTemp = accountDate.accountId;
-            }
-
-            dateTemp =  DateTimeUtil.dateToYmdString(accountDate.created); //need to change datetime to string
-            Optional<AggregateSleepStats> singleSleepStats = sleepStatsDAODynamoDB.getSingleStat(accountIdTemp, dateTemp);
-
-            //Sums nights and Duration per accountId
-            if (singleSleepStats.isPresent() && nightCount < MAX_NIGHT){
-                nightCount += 1;
-                durationSum += singleSleepStats.get().sleepStats.sleepDurationInMinutes;
+            if (accountDates.containsKey(accountDate.accountId)){
+                accountDates.get(accountDate.accountId).add(accountDate.created);
+            }else{
+                accountDates.put(accountDate.accountId, Lists.newArrayList(accountDate.created));
             }
         }
 
+        for (final HashMap.Entry<Long, List<DateTime>> item : accountDates.entrySet()){
+            final long accountId = item.getKey();
+            LOGGER.debug("key=compute-parameters account_id={} num_nights={}", accountId, item.getValue().size());
+            int nights = 0;
+            long totDuration = 0L;
+
+            for (final DateTime date : item.getValue()){
+                final String queryDate = DateTimeUtil.dateToYmdString(date);
+                final Optional<AggregateSleepStats> singleSleepStats = sleepStatsDAODynamoDB.getSingleStat(accountId, queryDate);
+                if (singleSleepStats.isPresent()){
+                    nights++;
+                    totDuration += singleSleepStats.get().sleepStats.sleepDurationInMinutes;
+                }
+                if (nights >= MAX_NIGHT){
+                    break;
+                }
+            }
+
+            if (nights > 0 ){
+                final int idealDuration = (int) totDuration/nights;
+                final SleepScoreParameters parameter = new SleepScoreParameters(accountId, dateTime, idealDuration);
+                final Boolean insert = sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountId, parameter);
+                LOGGER.debug("key=save-parameters, result={}", insert);
+            }else{
+                LOGGER.debug("error=no-nights account_id={}", accountId);
+            }
+        }
     }
 }
