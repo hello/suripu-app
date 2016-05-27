@@ -108,7 +108,7 @@ public class AppStatsResourceTests {
                 .getInsightsLastViewed(ACCOUNT_ID);
         // would prefer to mock the insight card, but it doesn't support
         // mocking public member variables (for the timestamp)
-        final InsightCard fakeInsight = new InsightCard(
+        final InsightCard fakeInsight = InsightCard.createBasicInsightCard(
                 1L,
                 "fake",
                 "fake body",
@@ -154,7 +154,7 @@ public class AppStatsResourceTests {
         doReturn(Optional.of(insightsLastViewed))
                 .when(appStatsDAO)
                 .getInsightsLastViewed(ACCOUNT_ID);
-        final InsightCard fakeInsight = new InsightCard(
+        final InsightCard fakeInsight = InsightCard.createBasicInsightCard(
                 1L,
                 "fake",
                 "fake body",
