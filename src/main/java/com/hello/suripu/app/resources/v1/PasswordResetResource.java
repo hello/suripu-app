@@ -147,7 +147,7 @@ public class PasswordResetResource {
     private Boolean sendEmail(final Account account, final PasswordReset passwordReset) {
 
         final String link = String.format("%s/%s/%s", emailConfiguration.linkHost(), passwordReset.uuid.toString(), passwordReset.state);
-        final String htmlMessage = String.format(English.EMAIL_PASSWORD_RESET_HTML_TEMPLATE, account.name, link);
+        final String htmlMessage = String.format(English.EMAIL_PASSWORD_RESET_HTML_TEMPLATE, account.name(), link);
 
         // Grrr mutable objects
         final MandrillMessage message = new MandrillMessage();
@@ -160,7 +160,7 @@ public class PasswordResetResource {
 
         final MandrillMessage.Recipient recipient = new MandrillMessage.Recipient();
         recipient.setEmail(account.email);
-        recipient.setName(account.name);
+        recipient.setName(account.name());
 
         final List<MandrillMessage.Recipient> recipients = Lists.newArrayList(recipient);
         message.setTo(recipients);
