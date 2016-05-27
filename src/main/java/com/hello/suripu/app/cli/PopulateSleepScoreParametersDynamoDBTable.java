@@ -15,6 +15,7 @@ import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.models.AccountDate;
 import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.models.SleepScoreParameters;
+import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.db.ManagedDataSource;
@@ -105,6 +106,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
 
         //List of accountIds and Dates with 'great nights' ordered by account id, and date
         //loops through paired account ids and dates. when account id changes, calculates mean ideal duration for previous account id and inserts parameter
+
         for (final AccountDate accountDate : allAccountsDates) {
             //initializes accountId
             if (accountDate.accountId == 0) {
@@ -112,8 +114,8 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
             }
             //Inserts ideal duration and resets count
             else if (accountDate.accountId != accountIdTemp) {
-                if (nightCount > 0) {
-                    idealDuration = idealDuration / nightCount;
+                if (nightCount > 0 && durationSum > 0) {
+                    idealDuration = (int) durationSum / nightCount;
                     SleepScoreParameters parameter = new SleepScoreParameters(accountIdTemp, dateTime, idealDuration);
                     sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountIdTemp, parameter);
                 }
@@ -124,7 +126,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
                 accountIdTemp = accountDate.accountId;
             }
 
-            dateTemp = accountDate.created.toDate().toString(); //need to change datetime to string
+            dateTemp =  DateTimeUtil.dateToYmdString(accountDate.created); //need to change datetime to string
             Optional<AggregateSleepStats> singleSleepStats = sleepStatsDAODynamoDB.getSingleStat(accountIdTemp, dateTemp);
 
             //Sums nights and Duration per accountId
