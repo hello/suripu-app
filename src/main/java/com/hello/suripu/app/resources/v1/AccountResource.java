@@ -1,8 +1,7 @@
 package com.hello.suripu.app.resources.v1;
 
-import com.google.common.base.Optional;
-
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.util.MatcherPatternsDB;
@@ -10,12 +9,13 @@ import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.PasswordUpdate;
 import com.hello.suripu.core.models.Registration;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.profile.ImmutableProfilePhoto;
+import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
-
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -44,27 +45,38 @@ public class AccountResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountResource.class);
     private final AccountDAO accountDAO;
     private final AccountLocationDAO accountLocationDAO;
+    private final ProfilePhotoStore profilePhotoStore;
 
-    public AccountResource(final AccountDAO accountDAO, final AccountLocationDAO accountLocationDAO) {
+    public AccountResource(final AccountDAO accountDAO, final AccountLocationDAO accountLocationDAO, final ProfilePhotoStore profilePhotoStore) {
         this.accountDAO = accountDAO;
         this.accountLocationDAO = accountLocationDAO;
+        this.profilePhotoStore = profilePhotoStore;
     }
 
     @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    public Account getAccount(@Auth final AccessToken accessToken) {
+    public Account getAccount(@Auth final AccessToken accessToken, @QueryParam("photo") @DefaultValue("false") final Boolean includePhoto) {
 
         LOGGER.debug("level=debug action=get-account account_id={}", accessToken.accountId);
-        final Optional<Account> account = accountDAO.getById(accessToken.accountId);
-        if(!account.isPresent()) {
+        final Optional<Account> accountOptional = accountDAO.getById(accessToken.accountId);
+        if(!accountOptional.isPresent()) {
             LOGGER.warn("level=warning error_message=account-not-present account_id={}", accessToken.accountId);
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
 
-        LOGGER.info("level=info action=show-last-modified last_modified={}", account.get().lastModified);
-        return account.get();
+        LOGGER.info("level=info action=show-last-modified last_modified={}", accountOptional.get().lastModified);
+        final Account account = accountOptional.get();
+        if(includePhoto) {
+            final Optional<ImmutableProfilePhoto> optionalProfilePhoto = profilePhotoStore.get(accessToken.accountId);
+            if(optionalProfilePhoto.isPresent()) {
+                return Account.withProfilePhoto(account, optionalProfilePhoto.get().photo());
+            }
+        }
+
+        return account;
+
     }
 
     @POST

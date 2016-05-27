@@ -40,6 +40,8 @@ import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
+import com.hello.suripu.core.profile.ProfilePhotoStore;
+import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
@@ -82,7 +84,8 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSmartAlarmLogTable(configuration, awsCredentialsProvider);
         createOTAHistoryTable(configuration, awsCredentialsProvider);
         createResponseCommandsTable(configuration, awsCredentialsProvider);
-        createFWUpgradePathTable(configuration, awsCredentialsProvider);
+        // This should not be in app
+        // createFWUpgradePathTable(configuration, awsCredentialsProvider);
         createFeatureExtractionModelsTable(configuration, awsCredentialsProvider);
         createOnlineHmmModelsTable(configuration,awsCredentialsProvider);
         createCalibrationTable(configuration, awsCredentialsProvider);
@@ -95,8 +98,8 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSenseStateTable(configuration, awsCredentialsProvider);
         createFileManifestTable(configuration, awsCredentialsProvider);
         createMarketingInsightsSeenTable(configuration, awsCredentialsProvider);
+        createProfilePhotoTable(configuration, awsCredentialsProvider);
     }
-
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
@@ -752,6 +755,25 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             final CreateTableResult result = dynamoDB.createTable(1L, 1L);
             final TableDescription description = result.getTableDescription();
             System.out.println(description.getTableStatus());
+        }
+    }
+
+    private void createProfilePhotoTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.PROFILE_PHOTO);
+        final String endpoint = endpoints.get(DynamoDBTableName.PROFILE_PHOTO);
+        client.setEndpoint(endpoint);
+
+        final ProfilePhotoStore profilePhotoStoreDynamoDB = ProfilePhotoStoreDynamoDB.create(client, tableName);
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            ProfilePhotoStoreDynamoDB.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
         }
     }
 
