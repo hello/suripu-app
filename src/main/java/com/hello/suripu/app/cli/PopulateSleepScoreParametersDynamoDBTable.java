@@ -12,6 +12,7 @@ import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.*;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
+import com.hello.suripu.core.models.AccountDate;
 import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.models.SleepScoreParameters;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
@@ -25,13 +26,9 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.omg.IOP.TAG_RMI_CUSTOM_MAX_STREAM_FORMAT;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.DateFormat;
 import java.util.TimeZone;
 
 
@@ -104,7 +101,38 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
         int nightCount = 0;
         long durationSum = 0;
         int idealDuration = 0;
+        final ImmutableList<AccountDate> allAccountsDates = questionResponseReadDAO.getAccountDatebyResponse(69);
 
+        //List of accountIds and Dates with 'great nights' ordered by account id, and date
+        //loops through paired account ids and dates. when account id changes, calculates mean ideal duration for previous account id and inserts parameter
+        for (final AccountDate accountDate : allAccountsDates) {
+            //initializes accountId
+            if (accountDate.accountId == 0) {
+                accountIdTemp = accountDate.accountId;
+            }
+            //Inserts ideal duration and resets count
+            else if (accountDate.accountId != accountIdTemp) {
+                if (nightCount > 0) {
+                    idealDuration = idealDuration / nightCount;
+                    SleepScoreParameters parameter = new SleepScoreParameters(accountIdTemp, dateTime, idealDuration);
+                    sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountIdTemp, parameter);
+                }
+
+                nightCount = 0;
+                durationSum = 0;
+                idealDuration = 0;
+                accountIdTemp = accountDate.accountId;
+            }
+
+            dateTemp = accountDate.created.toDate().toString(); //need to change datetime to string
+            Optional<AggregateSleepStats> singleSleepStats = sleepStatsDAODynamoDB.getSingleStat(accountIdTemp, dateTemp);
+
+            //Sums nights and Duration per accountId
+            if (singleSleepStats.isPresent() && nightCount < MAX_NIGHT){
+                nightCount += 1;
+                durationSum += singleSleepStats.get().sleepStats.sleepDurationInMinutes;
+            }
+        }
 
     }
 }
