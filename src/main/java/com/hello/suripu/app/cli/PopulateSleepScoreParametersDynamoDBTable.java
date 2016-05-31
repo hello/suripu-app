@@ -41,6 +41,7 @@ import java.util.TimeZone;
 public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PopulateSleepScoreParametersDynamoDBTable.class);
     public static final int MAX_NIGHT= 30;
+    public static final int USER_RESPONSE = 69; //response = 'great'
 
 
     public PopulateSleepScoreParametersDynamoDBTable() {
@@ -101,7 +102,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
         final SleepScoreParametersDynamoDB sleepScoreParametersDynamoDB = new SleepScoreParametersDynamoDB(sleepScoreParametersClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
 
         // compute custom parameters
-        final ImmutableList<AccountDate> allAccountsDates = questionResponseReadDAO.getAccountDatebyResponse(69);
+        final ImmutableList<AccountDate> allAccountsDates = questionResponseReadDAO.getAccountDatebyResponse(USER_RESPONSE);
         final HashMap<Long, List<DateTime>> accountDates = Maps.newHashMap();
         for (final AccountDate accountDate : allAccountsDates) {
             if (accountDates.containsKey(accountDate.accountId)){
