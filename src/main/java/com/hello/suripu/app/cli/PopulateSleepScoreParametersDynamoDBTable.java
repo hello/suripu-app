@@ -103,7 +103,6 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
         // compute custom parameters
         final ImmutableList<AccountDate> allAccountsDates = questionResponseReadDAO.getAccountDatebyResponse(69);
         final HashMap<Long, List<DateTime>> accountDates = Maps.newHashMap();
-        final DateTime dateTime = DateTime.now(DateTimeZone.UTC);
         for (final AccountDate accountDate : allAccountsDates) {
             if (accountDates.containsKey(accountDate.accountId)){
                 accountDates.get(accountDate.accountId).add(accountDate.created);
@@ -132,6 +131,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
 
             if (nights > 0 ){
                 final int idealDuration = (int) totDuration/nights;
+                final DateTime dateTime = DateTime.now(DateTimeZone.UTC);
                 final SleepScoreParameters parameter = new SleepScoreParameters(accountId, dateTime, idealDuration);
                 final Boolean insert = sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountId, parameter);
                 LOGGER.debug("key=save-parameters, result={}", insert);
