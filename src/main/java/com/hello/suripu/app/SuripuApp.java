@@ -22,6 +22,7 @@ import com.hello.suripu.app.cli.CreateDynamoDBTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
 import com.hello.suripu.app.cli.MigratePillHeartbeatCommand;
 import com.hello.suripu.app.cli.MovePillDataToDynamoDBCommand;
+import com.hello.suripu.app.cli.PopulateSleepScoreParametersDynamoDBTable;
 import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.MessejiHttpClientConfiguration;
@@ -86,6 +87,8 @@ import com.hello.suripu.core.db.QuestionResponseDAO;
 import com.hello.suripu.core.db.RingTimeHistoryDAODynamoDB;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.SensorsViewsDynamoDB;
+import com.hello.suripu.core.db.SleepScoreParametersDAO;
+import com.hello.suripu.core.db.SleepScoreParametersDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.TimelineLogDAO;
@@ -178,6 +181,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MigratePillHeartbeatCommand());
         bootstrap.addCommand(new MigrateDeviceDataCommand());
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
+        bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
     }
 
     @Override
@@ -422,6 +426,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
 
+        final AmazonDynamoDB sleepScoreParametersClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
+        final SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDynamoDB(sleepHmmDynamoDbClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
+
         final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
 
@@ -477,6 +484,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 calibrationDAO,
                 defaultModelEnsembleDAO,
                 userTimelineTestGroupDAO,
+                sleepScoreParametersDAO,
                 taimurainHttpClient,
                 timelineAlgorithmConfiguration);
 

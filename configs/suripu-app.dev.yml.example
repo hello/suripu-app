@@ -178,6 +178,7 @@ dynamodb:
     sense_state: sense_state
     sleep_hmm: sleephmm
     sleep_score: sleep_score
+    sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
     sync_response_commands: response_commands
@@ -214,6 +215,8 @@ dynamodb:
     sleep_hmm: http://localhost:7777
     sleep_score: http://localhost:7777
     sense_state: http://localhost:7777
+    sleep_score: http://localhost:7777
+    sleep_score_parameters: http://localhost:7777
     sleep_stats: http://localhost:7777
     smart_alarm_log: http://localhost:7777
     sync_response_commands: http://localhost:7777

@@ -68,14 +68,9 @@ public class AccountResource {
 
         LOGGER.info("level=info action=show-last-modified last_modified={}", accountOptional.get().lastModified);
         final Account account = accountOptional.get();
-        if(includePhoto) {
-            final Optional<ImmutableProfilePhoto> optionalProfilePhoto = profilePhotoStore.get(accessToken.accountId);
-            if(optionalProfilePhoto.isPresent()) {
-                return Account.withProfilePhoto(account, optionalProfilePhoto.get().photo());
-            }
-        }
 
-        return account;
+
+        return maybeAddProfilePhoto(account, includePhoto);
 
     }
 
@@ -124,7 +119,8 @@ public class AccountResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Account modify(
             @Auth final AccessToken accessToken,
-            @Valid final Account account) {
+            @Valid final Account account,
+            @DefaultValue("false") @QueryParam("photo") final Boolean includePhoto) {
 
         LOGGER.warn("level=warning action=modify-account account_id={} last_modified={}", accessToken.accountId, account.lastModified);
 
@@ -152,7 +148,7 @@ public class AccountResource {
             }
         }
 
-        return optionalAccount.get();
+        return maybeAddProfilePhoto(optionalAccount.get(), includePhoto);
     }
 
     @ScopesAllowed({OAuthScope.USER_EXTENDED})
@@ -186,7 +182,8 @@ public class AccountResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Account updateEmail(
             @Auth final AccessToken accessToken,
-            @Valid final Account account) {
+            @Valid final Account account,
+            @DefaultValue("false") @QueryParam("photo") final Boolean includePhoto) {
         LOGGER.info("level=info action=update-account-email email={}", account.email);
         final Account accountWithId = Account.normalizeWithId(account, accessToken.accountId);
         LOGGER.info("level=info action=new-email-after-normalizing email={}", accountWithId.email);
@@ -201,6 +198,23 @@ public class AccountResource {
             throw new WebApplicationException(Response.Status.CONFLICT);
         }
 
-        return accountOptional.get();
+        return maybeAddProfilePhoto(accountOptional.get(), includePhoto);
+    }
+
+
+    /**
+     * Add profile photo if found to the account
+     */
+    private Account maybeAddProfilePhoto(final Account account, final Boolean includePhoto) {
+        if(includePhoto && account.id.isPresent()) {
+            LOGGER.trace("action=get-profile-photo account_id={}", account.id.get());
+            final Optional<ImmutableProfilePhoto> optionalProfilePhoto = profilePhotoStore.get(account.id.get());
+            if(optionalProfilePhoto.isPresent()) {
+                return Account.withProfilePhoto(account, optionalProfilePhoto.get().photo());
+            }
+            LOGGER.debug("action=get-profile-photo account_id={} message=missing-profile-photo", account.id.get());
+        }
+
+        return account;
     }
 }
