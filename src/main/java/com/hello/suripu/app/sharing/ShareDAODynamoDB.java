@@ -22,7 +22,8 @@ public class ShareDAODynamoDB implements ShareDAO {
 
     private enum AttributeNames {
         UUID("uuid"),
-        SHARE_TYPE("share_type");
+        SHARE_TYPE("share_type"),
+        ACCOUNT_ID("account_id");
 
         private String name;
         AttributeNames(String name) {
@@ -49,6 +50,7 @@ public class ShareDAODynamoDB implements ShareDAO {
         final Item item = new Item()
                 .withPrimaryKey(new PrimaryKey(AttributeNames.UUID.name, cleanUUID))
                 .withString(AttributeNames.SHARE_TYPE.name, share.type())
+                .withNumber(AttributeNames.ACCOUNT_ID.name, share.accountId())
                 .withString("payload", share.payload());
         table.putItem(item);
         LOGGER.info("action=share uuid={}", cleanUUID);
