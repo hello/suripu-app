@@ -62,7 +62,7 @@ public class ShareDAODynamoDB implements ShareDAO {
         table.deleteItem(new PrimaryKey(AttributeNames.UUID.name, shareId));
     }
 
-    public static void createTableAndWait(final AmazonDynamoDB amazonDynamoDB, final String tableName) {
+    public static Table createTableAndWait(final AmazonDynamoDB amazonDynamoDB, final String tableName) {
         final DynamoDB dynamoDB = new DynamoDB(amazonDynamoDB);
         final Table table = dynamoDB.createTable(
                 tableName,
@@ -81,6 +81,6 @@ public class ShareDAODynamoDB implements ShareDAO {
         } catch (InterruptedException e) {
             LOGGER.error("error=create-table-failed message={}", e.getMessage());
         }
-
+        return table;
     }
 }
