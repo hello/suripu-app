@@ -204,9 +204,6 @@ public class AccountResource {
 
     /**
      * Add profile photo if found to the account
-     * @param account
-     * @param includePhoto
-     * @return
      */
     private Account maybeAddProfilePhoto(final Account account, final Boolean includePhoto) {
         if(includePhoto && account.id.isPresent()) {
