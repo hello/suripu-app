@@ -14,6 +14,7 @@
         <metrics.version>3.1.2</metrics.version>
         <suripu.version>0.8.5251</suripu.version>
         <opencsv.version>3.3</opencsv.version>
+        <joda.version>2.9.4</joda.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -77,7 +78,7 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.8.2</version>
+            <version>${joda.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
