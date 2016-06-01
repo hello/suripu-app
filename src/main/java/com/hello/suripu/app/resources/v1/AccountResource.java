@@ -148,7 +148,7 @@ public class AccountResource {
             }
         }
 
-        return maybeAddProfilePhoto(account, includePhoto);
+        return maybeAddProfilePhoto(optionalAccount.get(), includePhoto);
     }
 
     @ScopesAllowed({OAuthScope.USER_EXTENDED})
@@ -207,10 +207,12 @@ public class AccountResource {
      */
     private Account maybeAddProfilePhoto(final Account account, final Boolean includePhoto) {
         if(includePhoto && account.id.isPresent()) {
+            LOGGER.trace("action=get-profile-photo account_id={}", account.id.get());
             final Optional<ImmutableProfilePhoto> optionalProfilePhoto = profilePhotoStore.get(account.id.get());
             if(optionalProfilePhoto.isPresent()) {
                 return Account.withProfilePhoto(account, optionalProfilePhoto.get().photo());
             }
+            LOGGER.debug("action=get-profile-photo account_id={} message=missing-profile-photo", account.id.get());
         }
 
         return account;
