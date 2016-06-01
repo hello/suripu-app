@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 
@@ -112,7 +113,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
             }
         }
 
-        for (final HashMap.Entry<Long, List<DateTime>> item : accountDates.entrySet()){
+        for (final Map.Entry<Long, List<DateTime>> item : accountDates.entrySet()){
             final long accountId = item.getKey();
             LOGGER.debug("key=compute-parameters account_id={} num_nights={}", accountId, item.getValue().size());
             int nights = 0;
