@@ -492,7 +492,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepScoreParametersDAO,
                 taimurainHttpClient,
                 timelineAlgorithmConfiguration);
-a
 
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));

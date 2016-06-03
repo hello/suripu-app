@@ -17,11 +17,14 @@ import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
+import com.hello.suripu.coredw8.resources.BaseResource;
+import com.librato.rollout.RolloutClient;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -37,7 +40,10 @@ import java.util.Collections;
 import java.util.List;
 
 @Path("/v1/questions")
-public class QuestionsResource {
+public class QuestionsResource extends BaseResource {
+
+    @Inject
+    RolloutClient feature;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestionsResource.class);
 
@@ -82,6 +88,9 @@ public class QuestionsResource {
 
         // get question
         List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
+            return questionProcessorQuestions;
+        }
         return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, questionProcessorQuestions);
     }
 
