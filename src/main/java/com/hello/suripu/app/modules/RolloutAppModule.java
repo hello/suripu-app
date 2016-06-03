@@ -2,12 +2,14 @@ package com.hello.suripu.app.modules;
 
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.InsightsResource;
+import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.core.db.FeatureStore;
+import com.hello.suripu.core.db.QuestionResponseReadDAO;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -30,7 +32,8 @@ import javax.inject.Singleton;
         TrendsResource.class,
         QuestionProcessor.class,
         SleepSoundsResource.class,
-        SleepSoundsProcessor.class
+        SleepSoundsProcessor.class,
+        QuestionsResource.class,
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;
