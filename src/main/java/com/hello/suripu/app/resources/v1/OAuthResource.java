@@ -4,6 +4,8 @@ package com.hello.suripu.app.resources.v1;
 import com.google.common.base.Optional;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
@@ -13,18 +15,32 @@ import com.hello.suripu.core.oauth.ClientAuthenticationException;
 import com.hello.suripu.core.oauth.ClientCredentials;
 import com.hello.suripu.core.oauth.ClientDetails;
 import com.hello.suripu.core.oauth.GrantType;
+import com.hello.suripu.core.oauth.MissingRequiredScopeException;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.stores.ApplicationStore;
 import com.hello.suripu.core.oauth.stores.OAuthTokenStore;
 import com.hello.suripu.core.util.PasswordUtil;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
+import com.hello.suripu.coredw8.oauth.AuthCookie;
 import com.hello.suripu.coredw8.oauth.GrantTypeParam;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.nio.charset.Charset;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -34,28 +50,73 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Context;
+
+import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+
+import io.dropwizard.views.View;
 
 @Path("/v1/oauth2")
 public class OAuthResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthResource.class);
     private final OAuthTokenStore<AccessToken,ClientDetails, ClientCredentials> tokenStore;
-    private final ApplicationStore applicationStore;
+    private final ApplicationStore<Application, ApplicationRegistration> applicationStore;
     private final AccountDAO accountDAO;
     private final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper;
+    private final static String AUTH_COOKIE_NAME = "hello-auth";
+    private final static String AUTH_LOGIN_ENDPOINT = "/v1/oauth2/login";
+    private final static String AUTH_LOGIN_PROMPT_ENDPOINT = "/v1/oauth2/login_prompt";
+
+    private static final Charset UTF8 = Charset.forName("UTF-8");
+    private static final String ALGORITHM = "AES";
+    private static final String CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";
+    private static final int BIT_LENGTH = 128;
+
+    private transient SecretKeySpec keySpec;
+    private boolean secureFlag;
+    private ObjectMapper mapper = new ObjectMapper();
 
     public OAuthResource(
-            final OAuthTokenStore<AccessToken,ClientDetails, ClientCredentials> tokenStore,
+            final OAuthTokenStore<AccessToken, ClientDetails, ClientCredentials> tokenStore,
             final ApplicationStore<Application, ApplicationRegistration> applicationStore,
             final AccountDAO accountDAO,
-            final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper) {
+            final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper) throws Exception{
 
         this.tokenStore = tokenStore;
         this.applicationStore = applicationStore;
         this.accountDAO = accountDAO;
         this.notificationSubscriptionDAOWrapper = notificationSubscriptionDAOWrapper;
+
+        mapper.registerModule(new JodaModule());
+
+        //TODO: Move the cookie encryption sutff out of here
+        KeyGenerator keygen = KeyGenerator.getInstance(ALGORITHM);
+        keygen.init(BIT_LENGTH); // 192 and 256 bits may not be available
+
+        // Generate the secret key specs
+        SecretKey seckey = keygen.generateKey();
+        byte[] secretKey = seckey.getEncoded();
+        keySpec = new SecretKeySpec(secretKey, ALGORITHM);
+
+        final String secret = "XTgPOjYTGDJShjdZ";
+        byte[] tmp = secret.getBytes(UTF8);
+
+        if ((tmp.length * 8) < BIT_LENGTH)
+            throw new IllegalArgumentException("Wrong key size (" + (tmp.length * 8) + ") lower than the " + BIT_LENGTH + " bits required");
+
+        byte[] newSecretKey = new byte[BIT_LENGTH / 8];
+        System.arraycopy(tmp, 0, newSecretKey, 0, newSecretKey.length);
+        keySpec = new SecretKeySpec(newSecretKey, ALGORITHM);
     }
 
     @POST
@@ -70,20 +131,16 @@ public class OAuthResource {
                 @FormParam("client_id") String clientId,
                 @FormParam("client_secret") String clientSecret,
                 @FormParam("username") String username,
-                @FormParam("password") String password) {
+                @FormParam("password") String password,
+                @FormParam("scope") String scope,
+                @FormParam("refresh_token") String refresh_token
+                ) {
+
+
+        //TODO: Conditional handling of token grant based on client_id
 
         if(grantType == null) {
             LOGGER.error("GrantType is null");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-
-        if(!grantType.getType().equals(GrantType.PASSWORD)) {
-            // We only support password grant at the moment
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-
-        if(username == null || password == null || username.isEmpty() || password.isEmpty()) {
-            LOGGER.error("username or password is null or empty.");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
@@ -102,35 +159,97 @@ public class OAuthResource {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
-        if(!application.grantType.equals(grantType.getType())) {
-            LOGGER.error("Grant types don't match : {} and {}", applicationOptional.get().grantType, grantType.getType());
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-        final String normalizedUsername = username.toLowerCase();
-        LOGGER.debug("normalized username {}", normalizedUsername);
-        final Optional<Account> accountOptional = accountDAO.exists(normalizedUsername, password);
-        if(!accountOptional.isPresent()) {
-            LOGGER.error("Account wasn't found: {}, {}", normalizedUsername, PasswordUtil.obfuscate(password));
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
+        ClientDetails details;
 
-        final Account account = accountOptional.get();
+        if (grantType.getType().equals(GrantType.AUTHORIZATION_CODE)) {
 
-        // Important : when using password flow, we should not send / nor expect the client_secret
-        final ClientDetails details = new ClientDetails(
+            if(!application.grantType.equals(grantType.getType())) {
+                LOGGER.error("Grant types don't match : {} and {}", applicationOptional.get().grantType, grantType.getType());
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            //Verify the client_secret
+            if (clientSecret == null || !application.clientSecret.equals(clientSecret)) {
+                LOGGER.error("error=invalid-client-secret app_id={}", application.id);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            final Optional<ClientDetails> optionalClientDetails = tokenStore.getClientDetailsByAuthorizationCode(code);
+            if (!optionalClientDetails.isPresent()) {
+                LOGGER.error("error=invalid-auth-code auth_code={}", code);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            details = optionalClientDetails.get();
+
+        } else if (grantType.getType().equals(GrantType.PASSWORD)) {
+
+            if(!application.grantType.equals(grantType.getType())) {
+                LOGGER.error("Grant types don't match : {} and {}", application.grantType, grantType.getType());
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            if(username == null || password == null || username.isEmpty() || password.isEmpty()) {
+                LOGGER.error("username or password is null or empty.");
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            final String normalizedUsername = username.toLowerCase();
+            LOGGER.debug("normalized username {}", normalizedUsername);
+
+            final Optional<Account> accountOptional = accountDAO.exists(normalizedUsername, password);
+            if(!accountOptional.isPresent()) {
+                LOGGER.error("Account wasn't found: {}, {}", normalizedUsername, PasswordUtil.obfuscate(password));
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            final Account account = accountOptional.get();
+
+            details = new ClientDetails(
                 grantType.getType(),
                 clientId,
                 redirectUri,
-                applicationOptional.get().scopes,
+                application.scopes,
                 "", // state
                 code,
                 account.id.get(),
                 clientSecret
-        );
+            );
+            details.setApp(application);
 
-        details.setApp(applicationOptional.get());
+        } else if (grantType.getType().equals(GrantType.REFRESH_TOKEN)) {
+            if (refresh_token == null) {
+                LOGGER.error("error=missing-refresh-token app_id={}", application.id);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            //Verify the client_secret if it exists
+            if (clientSecret != null && !application.clientSecret.equals(clientSecret)) {
+                LOGGER.error("error=invalid-client-secret app_id={}", application.id);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+
+            //Check refresh_token is valid & not expired for this client
+            try {
+                final Optional<ClientDetails> optionalDetails = tokenStore.getClientDetailsByRefreshToken(refresh_token, DateTime.now(DateTimeZone.UTC));
+                if (!optionalDetails.isPresent()){
+                    LOGGER.error("error=invalid-refresh-token token={}", refresh_token);
+                    throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+                }
+                //Refresh access token
+                details = optionalDetails.get();
+
+                tokenStore.disableByRefreshToken(refresh_token);
+
+            } catch (MissingRequiredScopeException mrse) {
+                LOGGER.error("error=missing-required-scope token={}", refresh_token);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+        } else {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
         AccessToken accessToken = null;
-
         try {
             accessToken = tokenStore.storeAccessToken(details);
         } catch (ClientAuthenticationException clientAuthenticationException) {
@@ -141,47 +260,6 @@ public class OAuthResource {
         LOGGER.debug("AccessToken {}", accessToken);
         LOGGER.debug("email {}", username);
         return accessToken;
-    }
-
-    @GET
-    @Path("/authorize")
-    @Timed
-    public Response code(
-            @QueryParam("client_id") String clientId,
-            @QueryParam("redirect_uri") String redirectUri,
-            @QueryParam("scope") String scope,
-            @QueryParam("state") String state) {
-
-
-        return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("service unavailable").build();
-
-//        // TODO : application store
-//        // TODO : validate redirect_uri
-//        // TODO : validate scope
-//        // TODO : validate state
-//
-//        final OAuthScope[] scopes = new OAuthScope[1];
-//        scopes[0] = OAuthScope.USER_BASIC;
-//        final ClientDetails clientDetails = new ClientDetails(
-//                GrantTypeParam.GrantType.AUTH_CODE,
-//                clientId,
-//                redirectUri,
-//                scopes,
-//                state,
-//                "",
-//                1L,
-//                ""
-//        );
-//
-//        ClientCredentials credentials;
-//        try {
-//            credentials = tokenStore.storeAuthorizationCode(clientDetails);
-//        } catch (ClientAuthenticationException e) {
-//            LOGGER.error(e.getMessage());
-//            return Response.serverError().build();
-//        }
-//        final String uri = clientDetails.redirectUri + "?code=" + credentials.tokenOrCode;
-//        return Response.temporaryRedirect(URI.create(uri)).build();
     }
 
     @ScopesAllowed({OAuthScope.AUTH})
@@ -196,5 +274,300 @@ public class OAuthResource {
             notificationSubscriptionDAOWrapper.unsubscribe(accessToken.serializeAccessToken());
             LOGGER.debug("Unsubscribed from push notifications");
         }
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path("/authorize")
+    public Response getLogin(@Context HttpServletRequest request) {
+        LOGGER.debug("Request Server: {}", request.getServerName());
+
+        if (request.getParameter("client_id") == null) {
+            LOGGER.error("error=invalid-client-id");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String reqClientId = request.getParameter("client_id");
+
+        if (request.getParameter("response_type") == null || !request.getParameter("response_type").equals("code")) {
+            LOGGER.error("error=invalid-response-type");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        if (request.getParameter("scope") == null) {
+            LOGGER.error("error=invalid-scope-value");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String scope = request.getParameter("scope");
+
+        for (Cookie c : request.getCookies()) {
+            if (AUTH_COOKIE_NAME.equals(c.getName())) {
+                String cookieValue = "";
+                AuthCookie authCookie;
+                try {
+                    cookieValue = decode(c.getValue());
+                    authCookie = mapper.readValue(cookieValue, AuthCookie.class);
+                } catch (Exception ex) {
+                    LOGGER.warn("warning=invalid-cookie value={}", c.getValue());
+                    continue;
+                }
+
+                //Check that cookie is valid
+                final Optional<Account> optionalAccount = accountDAO.getById(authCookie.accountId);
+                if (!optionalAccount.isPresent()) {
+                    LOGGER.warn("warning=invalid-auth-cookie value={}", cookieValue);
+                    continue;
+                }
+                final Account account = optionalAccount.get();
+
+                final Optional<Application> optionalApp = applicationStore.getApplicationByClientId(reqClientId);
+                if (!optionalApp.isPresent()) {
+                    LOGGER.warn("warning=invalid-client-id client_id={}", reqClientId);
+                    continue;
+                }
+                final Application application = optionalApp.get();
+
+                //Verify cookie application ID matched
+                if (!application.id.equals(authCookie.appId)) {
+                    LOGGER.error("error=app-id-mismatch request_client_id={} cookie_client_id={}", application.id, authCookie.appId);
+                    continue;
+                }
+                final Optional<ClientCredentials> optionalCredentials = createAndStoreAuthorizationCode(account, application, scope);
+
+                if (!optionalCredentials.isPresent()) {
+                    throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+                }
+                final ClientCredentials credentials = optionalCredentials.get();
+
+                // Redirect with code & state to redirectURI
+                final URI uri = UriBuilder.fromUri(application.redirectURI)
+                    .queryParam("state", request.getParameter("state"))
+                    .queryParam("code", credentials.tokenOrCode)
+                    .build();
+                return Response.temporaryRedirect(uri).build();
+            }
+        }
+
+        //Redirect login request to a login prompt
+        final URI loginURI = UriBuilder.fromPath(AUTH_LOGIN_PROMPT_ENDPOINT)
+            .scheme(request.getScheme())
+            .host(request.getServerName())
+            .port(request.getServerPort())
+            .replaceQuery(request.getQueryString())
+            .build();
+        return Response.temporaryRedirect(loginURI).build();
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path("/login_prompt")
+    public LoginView getLoginPrompt(@Context HttpServletRequest request) {
+        LOGGER.debug("Request Server: {}", request.getServerName());
+        return new LoginView(new Login(
+            request.getServerName(),
+            request.getParameter("client_id"),
+            request.getParameter("state"),
+            request.getParameter("scope")
+            ));
+    }
+
+    public class LoginView extends View {
+        private final Login login;
+        public LoginView(Login login) {
+            super("login.ftl");
+            this.login = login;
+        }
+
+        public Login getLogin() {
+            return login;
+        }
+    }
+    public class Login {
+        public String name;
+        public String client_id;
+        public String state;
+        public String scope;
+
+        public Login(final String name, final String client_id, final String state, final String scope){
+            this.name = name;
+            this.client_id = client_id;
+            this.state = state;
+            this.scope = scope;
+        }
+
+        public String getName() {
+            return name;
+        }
+        public String getClientId() { return client_id; }
+        public String getState() { return state; }
+        public String getScope() { return scope; }
+    }
+
+    @POST
+    @Produces(MediaType.TEXT_HTML)
+    @Path("/login")
+    public Response login(@Context HttpServletRequest request,
+                          @FormParam("username") String username,
+                          @FormParam("password") String password,
+                          @FormParam("client_id") String client_id,
+                          @FormParam("state") String state,
+                          @FormParam("scope") String scope) {
+
+        final Optional<Application> applicationOptional = applicationStore.getApplicationByClientId(client_id);
+        if(!applicationOptional.isPresent()) {
+            LOGGER.warn("warning=no_app_with_id client_id={}", client_id);
+        }
+
+        //Validate username & pass
+        if(username == null || password == null || username.isEmpty() || password.isEmpty()) {
+            LOGGER.error("username or password is null or empty.");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String normalizedUsername = username.toLowerCase();
+        LOGGER.debug("normalized username {}", normalizedUsername);
+        final Optional<Account> accountOptional = accountDAO.exists(normalizedUsername, password);
+        if(!accountOptional.isPresent()) {
+            LOGGER.error("Account wasn't found: {}, {}", normalizedUsername, PasswordUtil.obfuscate(password));
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final Account acct = accountOptional.get();
+        final Application app = applicationOptional.get();
+
+        final Optional<ClientCredentials> optionalCredentials = createAndStoreAuthorizationCode(acct, app, scope);
+        if (!optionalCredentials.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final ClientCredentials credentials = optionalCredentials.get();
+
+        //Redirect to Amazon with State & Auth Code
+        try {
+            final AuthCookie authCookie = new AuthCookie(acct.id.get(), app.id, true, DateTime.now(DateTimeZone.UTC), 60);
+            String cookieValue = mapper.writeValueAsString(authCookie);
+            final String encodedAuthCode = encode(cookieValue);
+            NewCookie nc = new NewCookie(AUTH_COOKIE_NAME, encodedAuthCode, "/", request.getServerName(), 0, "no comment", 60, false);
+            LOGGER.debug("Request Server: {}", request.getServerName());
+            final URI uri = UriBuilder.fromUri(app.redirectURI)
+                .queryParam("state", state)
+                .queryParam("code", credentials.tokenOrCode)
+                .build();
+            return Response.seeOther(uri).cookie(nc).build();
+        } catch (Exception ex) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+    }
+
+    //THIS ENDPOINT IS PRETENDING TO BE AMAZON'S SERVER
+    //TODO: REMOVE THIS
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path("/skill_link")
+    public Response linkSkill(@Context HttpServletRequest request,
+                              @QueryParam("state") String state,
+                              @QueryParam("code") String code) {
+        LOGGER.debug("Request Server: {}", request.getServerName());
+        if (state == null || !state.equals("somekindofstate")) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        // Amazon validates code and state. Then, a request is made to our Access token URI to request tokens
+        // Amazon passes to token URL: code, clientId, client secret, and grant_type=authorization_code
+
+//        curl -X POST “https://api.home.nest.com/oauth2/access_token” -d “code=CODE” -d “client_id=CLIENTID” -d “client_secret=CLIENTSECRET”  -d “grant_type=authorization_code”
+        Client client = ClientBuilder.newClient();
+        WebTarget resourceTarget = client.target("http://token.hello.is:9999/v1/oauth2/token");
+
+        Invocation.Builder builder = resourceTarget.request();
+        Form form = new Form();
+        form.param("grant_type", "authorization_code"); //grant_type must be 'authorization_code' per RFC6749
+        form.param("code", code);
+        form.param("client_id", "alexa_client_id");
+        form.param("client_secret", "alexa_client_secret");
+
+        Response response = builder.accept(MediaType.APPLICATION_JSON)
+            .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED));
+        final String accessToken = response.readEntity(String.class);
+        response.close();
+        return Response.ok(accessToken).build();
+    }
+
+    //Temp endpoint to allow a refresh token request
+    //TODO: REMOVE THIS
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path("/refresh")
+    public Response getRefreshedToken(@Context HttpServletRequest request,
+                                     @QueryParam("refresh_token") String refresh_token) {
+        LOGGER.debug("Token being refreshed! token={}", refresh_token);
+
+        Client client = ClientBuilder.newClient();
+        WebTarget resourceTarget = client.target("http://token.hello.is:9999/v1/oauth2/token");
+        Invocation.Builder builder = resourceTarget.request();
+        Form form = new Form();
+        //grant_type = refresh_token; client_id; client_secret; refresh_token
+        form.param("grant_type", "refresh_token");
+        form.param("client_id", "alexa_client_id");
+        form.param("client_secret", "alexa_client_secret");
+        form.param("refresh_token", refresh_token);
+
+        Response response = builder.accept(MediaType.APPLICATION_JSON)
+            .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED));
+        final String accessToken = response.readEntity(String.class);
+        response.close();
+        return Response.ok(accessToken).build();
+    }
+
+    private Optional<ClientCredentials> createAndStoreAuthorizationCode(final Account acct, final Application app, final String scope) {
+        OAuthScope[] oAuthScopes = {};
+        //Check requested scopes against application scopes
+        try {
+            oAuthScopes = OAuthScope.fromStringArray(scope.split(" "));
+            for (final OAuthScope authScope : oAuthScopes) {
+                if (!app.hasScope(authScope)) {
+                    LOGGER.error("error=scope-not-allowed application_id={} scope={}", app.id, authScope);
+                    throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+                }
+            }
+        } catch (IllegalArgumentException iae) {
+            LOGGER.error("error=bad-scope-value application_id={} message=\"{}\"", app.id, iae.getMessage());
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        //Generate auth code
+        final ClientDetails clientDetails = new ClientDetails(
+            GrantType.AUTHORIZATION_CODE,
+            app.clientId,
+            app.redirectURI,
+            oAuthScopes,
+            "",
+            "",
+            acct.id.get(),
+            ""
+        );
+        clientDetails.setApp(app);
+
+        try {
+            final ClientCredentials credentials = tokenStore.storeAuthorizationCode(clientDetails);
+            return Optional.of(credentials);
+        } catch (ClientAuthenticationException cae) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+    }
+
+    public String encode(String content) throws Exception {
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+        byte[] output = cipher.doFinal(content.getBytes(UTF8));
+        return Base64.encodeBase64String(output);
+    }
+
+    public String decode(String content) throws Exception {
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+        cipher.init(Cipher.DECRYPT_MODE, keySpec);
+        byte[] output = cipher.doFinal(Base64.decodeBase64(content));
+        return new String(output, UTF8);
     }
 }

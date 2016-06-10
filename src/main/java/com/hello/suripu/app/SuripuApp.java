@@ -64,6 +64,7 @@ import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.AppStatsDAO;
 import com.hello.suripu.core.db.AppStatsDAODynamoDB;
 import com.hello.suripu.core.db.ApplicationsDAO;
+import com.hello.suripu.coredw8.db.AuthorizationCodeDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DefaultModelEnsembleDAO;
@@ -156,6 +157,8 @@ import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.views.ViewBundle;
+
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.skife.jdbi.v2.DBI;
@@ -184,6 +187,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
         bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
         bootstrap.addCommand(new PopulateInsightsUUIDCommand());
+        bootstrap.addBundle(new ViewBundle());
     }
 
     @Override
@@ -207,6 +211,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
         final ApplicationsDAO applicationsDAO = commonDB.onDemand(ApplicationsDAO.class);
         final AccessTokenDAO accessTokenDAO = commonDB.onDemand(AccessTokenDAO.class);
+        final AuthorizationCodeDAO authCodeDAO = commonDB.onDemand(AuthorizationCodeDAO.class);
+
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final PillProvisionDAO pillProvisionDAO = commonDB.onDemand(PillProvisionDAO.class);
         final UserTimelineTestGroupDAO userTimelineTestGroupDAO = commonDB.onDemand(UserTimelineTestGroupDAOImpl.class);
@@ -221,7 +227,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
-        final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore);
+        final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
 
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.withConnectionTimeout(200); // in ms
@@ -335,10 +341,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         sf.setRegisterDefaultExceptionMappers(false);
 
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
-
-        final PersistentAccessTokenStore tokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore);
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
-            .setAuthenticator(new OAuthAuthenticator(tokenStore))
+            .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
             .setAuthorizer(new OAuthAuthorizer())
             .setRealm("SUPER SECRET STUFF")
             .setPrefix("Bearer")
