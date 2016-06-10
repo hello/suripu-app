@@ -2,6 +2,7 @@ package com.hello.suripu.app.modules;
 
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.InsightsResource;
+import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
 import com.hello.suripu.app.v2.DeviceResource;
@@ -30,7 +31,8 @@ import javax.inject.Singleton;
         TrendsResource.class,
         QuestionProcessor.class,
         SleepSoundsResource.class,
-        SleepSoundsProcessor.class
+        SleepSoundsProcessor.class,
+        QuestionsResource.class,
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;
