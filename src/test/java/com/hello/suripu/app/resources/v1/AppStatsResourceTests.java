@@ -217,16 +217,17 @@ public class AppStatsResourceTests {
                 .getById(ACCOUNT_ID);
         @SuppressWarnings("unchecked")
         final List<Question> fakeQuestions = Lists.newArrayList(new Question(0, ACCOUNT_ID,
-                                                                             "Question question",
-                                                                             "en_US",
-                                                                             Question.Type.CHOICE,
-                                                                             Question.FREQUENCY.ONE_TIME,
-                                                                             Question.ASK_TIME.ANYTIME,
-                                                                             0, 0,
-                                                                             nowUTC,
-                                                                             Collections.<Choice>emptyList(),
-                                                                             AccountInfo.Type.SLEEP_TEMPERATURE,
-                                                                             nowUTC, QuestionCategory.NONE, Collections.EMPTY_LIST));
+                "Question question",
+                "en_US",
+                Question.Type.CHOICE,
+                Question.FREQUENCY.ONE_TIME,
+                Question.ASK_TIME.ANYTIME,
+                0, 0,
+                nowUTC,
+                Collections.<Choice>emptyList(),
+                AccountInfo.Type.SLEEP_TEMPERATURE,
+                nowUTC, QuestionCategory.NONE,
+                Collections.EMPTY_LIST));
         doReturn(fakeQuestions)
                 .when(questionProcessor)
                 .getQuestions(eq(ACCOUNT_ID), eq(fakeAccount.getAgeInDays()), any(DateTime.class),
