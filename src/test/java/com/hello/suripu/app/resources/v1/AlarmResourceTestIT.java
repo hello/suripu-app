@@ -65,6 +65,7 @@ public class AlarmResourceTestIT {
             .withAccountId(1L)
             .withCreatedAt(DateTime.now())
             .withExpiresIn(DateTime.now().plusHours(1).getMillis())
+            .withRefreshExpiresIn(DateTime.now().plusHours(1).getMillis())
             .withRefreshToken(UUID.randomUUID())
             .withToken(UUID.randomUUID())
             .withScopes(new OAuthScope[]{ OAuthScope.ALARM_READ, OAuthScope.ALARM_WRITE })

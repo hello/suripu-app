@@ -59,6 +59,7 @@ public class AppStatsResourceTests {
                 .withAccountId(ACCOUNT_ID)
                 .withCreatedAt(DateTime.now())
                 .withExpiresIn(9000L)
+                .withRefreshExpiresIn(9000L)
                 .withRefreshToken(UUID.randomUUID())
                 .withToken(UUID.randomUUID())
                 .withScopes(new OAuthScope[] {OAuthScope.INSIGHTS_READ})

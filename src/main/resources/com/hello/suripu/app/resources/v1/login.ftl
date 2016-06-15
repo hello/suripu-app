@@ -1,14 +1,14 @@
 <#-- @ftlvariable name="" type="com.hello.suripu.app.resources.v1.LoginView" -->
 <html>
 <body>
-<form method="post" action="/v1/oauth2/login">
-    <input type="input" name="username" value="josef@sayhello.com"><br/>
-    <input type="input" name="password" value="josefdev"><br/>
-    <input type="input" name="client_id" value="${login.clientId?html}"><br/>
-    <input type="input" name="state" value="${login.state?html}"><br/>
-    <input type="input" name="scope" value="${login.scope?html}"><br/>
-    <input type="submit">
+<h1>Please log in to Hello to continue...</h1>
+<form method="GET" action="${login.submitURI?html}" name="hello_login">
+    Username:<br/>
+    <input type="input" name="username"><br/>
+    Password:<br/>
+    <input type="input" name="password"><br/>
+    <input type="submit" value="Login">
+    <input type="hidden" name="client_request" value="${login.clientRequest?html}"><br/>
 </form>
-<h1>Hello! Welcome to ${login.name?html}!</h1>
 </body>
 </html>
