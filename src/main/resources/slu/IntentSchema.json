@@ -1,0 +1,12 @@
+{
+  "intents": [
+    {
+      "intent": "GetTemperature",
+      "slots": []
+    },
+    {
+      "intent": "GetName",
+      "slots": []
+    }
+  ]
+}

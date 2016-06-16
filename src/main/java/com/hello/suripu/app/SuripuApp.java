@@ -47,6 +47,7 @@ import com.hello.suripu.app.resources.v1.PhotoResource;
 import com.hello.suripu.app.resources.v1.ProvisionResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
+import com.hello.suripu.app.resources.v1.SkillResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
@@ -168,6 +169,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -550,5 +552,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
+        Properties props = System.getProperties();
+        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", "amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963");
+        environment.jersey().register(new SkillResource(accountDAO, accessTokenDAO));
     }
 }
