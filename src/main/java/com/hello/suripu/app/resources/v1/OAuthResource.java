@@ -325,6 +325,7 @@ public class OAuthResource {
         }
 
         if(!optionalClientRequest.isPresent()) {
+            LOGGER.error("error=client-request-missing");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
         final ClientAuthRequest clientRequest = optionalClientRequest.get();
@@ -460,6 +461,10 @@ public class OAuthResource {
     }
 
     private Optional<AuthCookie> getAuthCookieFromRequest(final HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return Optional.absent();
+        }
+
         for (Cookie c : request.getCookies()) {
             if (AUTH_COOKIE_NAME.equals(c.getName())) {
                 try {
@@ -670,6 +675,21 @@ public class OAuthResource {
         }
     }
 
+    @ScopesAllowed({OAuthScope.ALARM_READ})
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/check")
+    public Account checkToken(@Auth final AccessToken token) {
+//        LOGGER.debug("Query Param {}", queryToken);
+        final Optional<Account> optionalAccount = accountDAO.getById(token.accountId);
+        if (!optionalAccount.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final Account account = optionalAccount.get();
+
+        return account;
+    }
+
     //THIS ENDPOINT IS PRETENDING TO BE AMAZON'S SERVER
     //TODO: REMOVE THIS
     @GET
@@ -680,14 +700,12 @@ public class OAuthResource {
                               @QueryParam("state") String state,
                               @QueryParam("code") String code) {
         LOGGER.debug("Request Server: {}", request.getServerName());
-        if (state == null || !state.equals("somekindofstate")) {
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
 
         // Amazon validates code and state. Then, a request is made to our Access token URI to request tokens
         // Amazon passes to token URL: code, clientId, client secret, and grant_type=authorization_code
         Client client = ClientBuilder.newClient();
-        WebTarget resourceTarget = client.target("http://token.hello.is:9999/v1/oauth2/token");
+
+        WebTarget resourceTarget = client.target(UriBuilder.fromUri("http://localhost:9966/v1/oauth2/token").build());
 
         Invocation.Builder builder = resourceTarget.request();
         Form form = new Form();
@@ -714,7 +732,7 @@ public class OAuthResource {
         LOGGER.debug("Token being refreshed! token={}", refresh_token);
 
         Client client = ClientBuilder.newClient();
-        WebTarget resourceTarget = client.target("http://localhost:9999/v1/oauth2/token");
+        WebTarget resourceTarget = client.target(UriBuilder.fromUri("http://localhost:9966/v1/oauth2/token").build());
         Invocation.Builder builder = resourceTarget.request();
         Form form = new Form();
         //grant_type = refresh_token; client_id; client_secret; refresh_token
