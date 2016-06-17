@@ -75,7 +75,7 @@ public class SenseSpeechlet implements Speechlet {
 
     if (accessToken.hasExpired(DateTime.now(DateTimeZone.UTC))){
       LOGGER.error("error=access-token-expired", uuid.toString());
-//      return IntentHandler.buildLinkAccountResponse();
+      return IntentHandler.buildLinkAccountResponse();
     }
 
     final Intent intent = request.getIntent();
@@ -99,14 +99,12 @@ public class SenseSpeechlet implements Speechlet {
 //  @Override
   public void onSessionEnded(SessionEndedRequest request, Session session) throws SpeechletException {
     LOGGER.debug("onSessionEnded");
-    // TODO Auto-generated method stub
 
   }
 
 //  @Override
   public void onSessionStarted(SessionStartedRequest request, Session session) throws SpeechletException {
     LOGGER.debug("onSessionStarted");
-    // TODO Auto-generated method stub
 
   }
 
