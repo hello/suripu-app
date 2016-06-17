@@ -12,15 +12,19 @@ import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.QuestionProcessor;
+import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 
+import com.hello.suripu.coredw8.resources.BaseResource;
+import com.librato.rollout.RolloutClient;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -36,20 +40,26 @@ import java.util.Collections;
 import java.util.List;
 
 @Path("/v1/questions")
-public class QuestionsResource {
+public class QuestionsResource extends BaseResource {
+
+    @Inject
+    RolloutClient feature;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestionsResource.class);
 
     private final AccountDAO accountDAO;
     private final TimeZoneHistoryDAODynamoDB tzHistoryDAO;
     private final QuestionProcessor questionProcessor;
+    private final QuestionSurveyProcessor questionSurveyProcessor;
 
     public QuestionsResource(final AccountDAO accountDAO,
                              final TimeZoneHistoryDAODynamoDB tzHistoryDAO,
-                             final QuestionProcessor questionProcessor) {
+                             final QuestionProcessor questionProcessor,
+                             final QuestionSurveyProcessor questionSurveyProcessor) {
         this.accountDAO = accountDAO;
         this.tzHistoryDAO = tzHistoryDAO;
         this.questionProcessor = questionProcessor;
+        this.questionSurveyProcessor = questionSurveyProcessor;
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})
@@ -69,15 +79,21 @@ public class QuestionsResource {
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
 
-        final DateTime today = DateTime.now(DateTimeZone.UTC).plusMillis(timeZoneOffset).withTimeAtStartOfDay();
-        LOGGER.debug("today = {}", today);
-        if(date != null && !date.equals(today.toString("yyyy-MM-dd"))) {
-            LOGGER.debug("key=question-query-date-mismatch today={} date-param={}", today, date);
+        final DateTime todayLocal = DateTime.now(DateTimeZone.UTC).plusMillis(timeZoneOffset).withTimeAtStartOfDay();
+        final String todayLocalString = todayLocal.toString("yyyy-MM-dd");
+        LOGGER.debug("today_local={}", todayLocalString);
+        
+        if(date != null && !date.equals(todayLocalString)) {
+            LOGGER.debug("key=question-query-date-mismatch today_local={} date_param={} account_id={}", todayLocalString, date, accessToken.accountId);
             return Collections.emptyList();
         }
 
         // get question
-        return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
+            return questionProcessorQuestions;
+        }
+        return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, questionProcessorQuestions, timeZoneOffset);
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})
@@ -99,7 +115,7 @@ public class QuestionsResource {
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
 
         final DateTime today = DateTime.now(DateTimeZone.UTC).plusMillis(timeZoneOffset).withTimeAtStartOfDay();
-        LOGGER.debug("action=found_more_questions account_id={} today={}", accessToken.accountId, today);
+        LOGGER.debug("action=found-more-questions account_id={} today={}", accessToken.accountId, today);
 
         // get question
         return this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, QuestionProcessor.DEFAULT_NUM_MORE_QUESTIONS, false);
@@ -113,7 +129,7 @@ public class QuestionsResource {
     public void saveAnswers(@Auth final AccessToken accessToken,
                            @QueryParam("account_question_id") final Long accountQuestionId,
                            @Valid final List<Choice> choice) {
-        LOGGER.debug("action=save_response account_id={} account_question_id={}", accessToken.accountId, accountQuestionId);
+        LOGGER.debug("action=save-response account_id={} account_question_id={}", accessToken.accountId, accountQuestionId);
 
         final Optional<Integer> questionIdOptional = choice.get(0).questionId;
         Integer questionId = 0;
@@ -132,7 +148,7 @@ public class QuestionsResource {
     public void skipQuestion(@Auth final AccessToken accessToken,
                              @QueryParam("id") final Integer questionId,
                              @QueryParam("account_question_id") final Long accountQuestionId) {
-        LOGGER.debug("action=skip_question question_id={} account_id={}", questionId, accessToken.accountId);
+        LOGGER.debug("action=skip-question question_id={} account_id={}", questionId, accessToken.accountId);
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
         this.questionProcessor.skipQuestion(accessToken.accountId, questionId, accountQuestionId, timeZoneOffset);
@@ -145,8 +161,7 @@ public class QuestionsResource {
     @Deprecated
     @Consumes(MediaType.APPLICATION_JSON)
     public void saveAnswer(@Auth final AccessToken accessToken, @Valid final Choice choice) {
-        LOGGER.debug("Saving answer for account id = {}", accessToken.accountId);
-        LOGGER.debug("Choice was = {}", choice.id);
+        LOGGER.debug("action=saving-answer account_id={} choice={}", accessToken.accountId, choice.id);
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
@@ -157,7 +172,7 @@ public class QuestionsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public void skipQuestion(@Auth final AccessToken accessToken,
                              @PathParam("question_id") final Long questionId) {
-        LOGGER.debug("Skipping question {} for account id = {}", questionId, accessToken.accountId);
+        LOGGER.debug("action=skipping-question question={} account_id={}", questionId, accessToken.accountId);
     }
 
     private int getTimeZoneOffsetMillis(final Long accountId) {
