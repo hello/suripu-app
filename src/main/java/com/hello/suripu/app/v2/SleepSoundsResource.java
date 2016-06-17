@@ -9,26 +9,24 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.hello.suripu.api.input.State;
-import com.hello.suripu.app.messeji.MessejiClient;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
-import com.hello.suripu.core.models.sleep_sounds.DurationMap;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.SenseStateAtTime;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
+import com.hello.suripu.core.models.sleep_sounds.DurationMap;
 import com.hello.suripu.core.models.sleep_sounds.SleepSoundStatus;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.models.sleep_sounds.SoundMap;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;

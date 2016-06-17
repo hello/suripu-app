@@ -7,7 +7,6 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.api.input.FileSync;
 import com.hello.suripu.api.input.State;
-import com.hello.suripu.app.messeji.MessejiClient;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -26,8 +25,8 @@ import com.hello.suripu.core.models.sleep_sounds.SleepSoundStatus;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.oauth.AccessToken;
-
 import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 import org.junit.Before;
