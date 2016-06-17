@@ -26,11 +26,8 @@ import com.hello.suripu.app.cli.PopulateInsightsUUIDCommand;
 import com.hello.suripu.app.cli.PopulateSleepScoreParametersDynamoDBTable;
 import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
-import com.hello.suripu.app.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
-import com.hello.suripu.app.messeji.MessejiClient;
-import com.hello.suripu.app.messeji.MessejiHttpClient;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.app.resources.v1.AccountPreferencesResource;
 import com.hello.suripu.app.resources.v1.AccountResource;
@@ -130,6 +127,9 @@ import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.core.util.RequestRateLimiter;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredw8.clients.MessejiClient;
+import com.hello.suripu.coredw8.clients.MessejiHttpClient;
+import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
@@ -167,6 +167,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SuripuApp.class);
