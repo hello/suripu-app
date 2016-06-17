@@ -553,7 +553,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
         Properties props = System.getProperties();
-        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", "amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963");
-        environment.jersey().register(new SkillResource(accountDAO, accessTokenDAO));
+        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", "amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963,amzn1.echo-sdk-ams.app.48296311-bcd4-4221-9608-390dee8ca111");
+        environment.jersey().register(new SkillResource(accountDAO, accessTokenDAO, deviceDAO, deviceDataDAODynamoDB));
     }
 }

@@ -215,6 +215,8 @@ public class OAuthResource {
             details.setApp(application);
 
         } else if (grantType.getType().equals(GrantType.REFRESH_TOKEN)) {
+            LOGGER.debug("action=token-refresh client_id={}", clientId);
+            
             final Optional<Application> applicationOptional = applicationStore.getApplicationByClientId(clientId);
             if(!applicationOptional.isPresent()) {
                 LOGGER.error("application wasn't found for clientId : {}", clientId);

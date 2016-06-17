@@ -13,10 +13,14 @@ import com.amazon.speech.speechlet.Speechlet;
 import com.amazon.speech.speechlet.SpeechletException;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.core.oauth.AccessTokenUtils;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +39,14 @@ public class SenseSpeechlet implements Speechlet {
   private final AccountDAO accountDAO;
   private final AccessTokenDAO accessTokenDAO;
 
-  public SenseSpeechlet(final AccountDAO accountDAO, final AccessTokenDAO accessTokenDAO) {
+  public SenseSpeechlet(
+      final AccountDAO accountDAO,
+      final AccessTokenDAO accessTokenDAO,
+      final DeviceReadDAO deviceReadDAO,
+      final DeviceDataDAODynamoDB deviceDataDAO) {
     this.accountDAO = accountDAO;
     this.accessTokenDAO = accessTokenDAO;
-    intentHandlers.add(new TemperatureIntentHandler());
+    intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
   }
 
@@ -64,6 +72,11 @@ public class SenseSpeechlet implements Speechlet {
       return IntentHandler.buildLinkAccountResponse();
     }
     final AccessToken accessToken = optionalAccessToken.get();
+
+    if (accessToken.hasExpired(DateTime.now(DateTimeZone.UTC))){
+      LOGGER.error("error=access-token-expired", uuid.toString());
+//      return IntentHandler.buildLinkAccountResponse();
+    }
 
     final Intent intent = request.getIntent();
     final String intentName = intent.getName();

@@ -91,7 +91,7 @@ public class QuestionsResource extends BaseResource {
         if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
             return questionProcessorQuestions;
         }
-        return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, questionProcessorQuestions);
+        return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), today, questionProcessorQuestions, 0);
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})

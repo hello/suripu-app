@@ -3,6 +3,8 @@ package com.hello.suripu.app.resources.v1;
 import com.amazon.speech.speechlet.servlet.SpeechletServlet;
 import com.hello.suripu.app.service.SenseSpeechlet;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
 
 
@@ -34,8 +36,9 @@ public class SkillResource extends SpeechletServlet {
     super.doPost(servletRequest, servletResponse);
   }
 
-  public SkillResource(final AccountDAO accountDAO, final AccessTokenDAO accessTokenDAO) {
-    setSpeechlet(new SenseSpeechlet(accountDAO, accessTokenDAO));
+  public SkillResource(final AccountDAO accountDAO, final AccessTokenDAO accessTokenDAO, final DeviceReadDAO deviceReadDAO,
+                       final DeviceDataDAODynamoDB deviceDataDAO) {
+    setSpeechlet(new SenseSpeechlet(accountDAO, accessTokenDAO, deviceReadDAO, deviceDataDAO));
   }
 
 }
