@@ -6,6 +6,8 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -47,7 +49,10 @@ import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.sharing.ShareDAO;
+import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
+import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
@@ -510,6 +515,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new QuestionsResource(accountDAO, timeZoneHistoryDAODynamoDB, questionProcessor, questionSurveyProcessor));
         environment.jersey().register(new FeedbackResource(feedbackDAO, timelineDAODynamoDB));
         environment.jersey().register(new AppCheckinResource(2015000000));
+
+        // social stuff
+
+        final DynamoDB dynamoDB = new DynamoDB(insightsDynamoDBClient);
+        final Table table = dynamoDB.getTable("sharing");
+        final ShareDAO shareDAO = ShareDAODynamoDB.create(table);
+        environment.jersey().register(new SharingResource(shareDAO, insightsDAODynamoDB, trendsInsightsDAO, environment.getObjectMapper()));
 
         // data science resource stuff
         environment.jersey().register(new AccountPreferencesResource(accountPreferencesDAO));
