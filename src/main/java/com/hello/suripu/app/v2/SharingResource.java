@@ -57,7 +57,7 @@ public class SharingResource {
                                       @Valid final ShareRequest shareRequest) {
 
         final List<InsightCard> insights = insightsDAODynamoDB.getInsightsByDate(
-                1001L,
+                accessToken.accountId,
                 DateTime.now(DateTimeZone.UTC),
                 false,
                 100);
@@ -79,7 +79,7 @@ public class SharingResource {
         final List<InsightCard> cardsWithImmages = InsightsDAODynamoDB.backfillImagesBasedOnCategory(cardsWithOutImages , categoryNames);
         final InsightCard card = cardsWithImmages.get(0);
 
-        final InsightShare insightShare = InsightShare.create(card, 1001L, mapper);
+        final InsightShare insightShare = InsightShare.create(card, accessToken.accountId, mapper);
         final String id = shareDAO.put(insightShare);
         return ShareResponse.create(id);
     }
