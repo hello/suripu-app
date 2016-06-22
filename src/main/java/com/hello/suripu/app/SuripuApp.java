@@ -521,7 +521,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final DynamoDB dynamoDB = new DynamoDB(insightsDynamoDBClient);
         final Table table = dynamoDB.getTable("sharing");
         final ShareDAO shareDAO = ShareDAODynamoDB.create(table);
-        environment.jersey().register(new SharingResource(shareDAO, insightsDAODynamoDB, trendsInsightsDAO, environment.getObjectMapper()));
+        environment.jersey().register(new SharingResource(shareDAO, insightsDAODynamoDB, trendsInsightsDAO, environment.getObjectMapper(), accountDAO));
 
         // data science resource stuff
         environment.jersey().register(new AccountPreferencesResource(accountPreferencesDAO));
