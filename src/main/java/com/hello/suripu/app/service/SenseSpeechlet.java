@@ -15,6 +15,12 @@ import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
+import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
+import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.clients.MessejiClient;
+import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.core.oauth.AccessTokenUtils;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
@@ -43,15 +49,26 @@ public class SenseSpeechlet implements Speechlet {
       final AccountDAO accountDAO,
       final AccessTokenDAO accessTokenDAO,
       final DeviceReadDAO deviceReadDAO,
-      final DeviceDataDAODynamoDB deviceDataDAO) {
+      final DeviceDataDAODynamoDB deviceDataDAO,
+      final TimelineDAODynamoDB timelineDAODynamoDB,
+      final MessejiClient messejiClient,
+      final SleepSoundsProcessor sleepSoundsProcessor,
+      final DurationDAO durationDAO,
+      final TimelineProcessor timelineProcessor,
+      final AccountPreferencesDAO preferencesDAO) {
     this.accountDAO = accountDAO;
     this.accessTokenDAO = accessTokenDAO;
-    intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO));
+    intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
+    intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor));
+    intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
+    intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
   }
 
 //  @Override
   public SpeechletResponse onIntent(IntentRequest request, Session session) throws SpeechletException {
+
+    LOGGER.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
 
     //Do token check
     if (session.getUser().getAccessToken() == null) {
@@ -83,7 +100,7 @@ public class SenseSpeechlet implements Speechlet {
 
     for (IntentHandler ih : intentHandlers) {
       if (ih.isResponsible(intentName)) {
-        return ih.handleIntent(intent, accessToken);
+        return ih.handleIntent(intent, session, accessToken);
       }
     }
 
@@ -92,19 +109,19 @@ public class SenseSpeechlet implements Speechlet {
 
 //  @Override
   public SpeechletResponse onLaunch(LaunchRequest request, Session session) throws SpeechletException {
-    LOGGER.debug("onLaunch");
+    LOGGER.info("onLaunch requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
     return IntentHandler.buildSpeechletResponse("Hello, how can I help you?", false);
   }
 
 //  @Override
   public void onSessionEnded(SessionEndedRequest request, Session session) throws SpeechletException {
-    LOGGER.debug("onSessionEnded");
+    LOGGER.info("onSessionEnded requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
 
   }
 
 //  @Override
   public void onSessionStarted(SessionStartedRequest request, Session session) throws SpeechletException {
-    LOGGER.debug("onSessionStarted");
+    LOGGER.info("onSessionStarted requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
 
   }
 

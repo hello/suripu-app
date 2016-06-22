@@ -5,7 +5,13 @@ import com.hello.suripu.app.service.SenseSpeechlet;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
+import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
+import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
+import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 
 
 import java.io.IOException;
@@ -36,9 +42,27 @@ public class SkillResource extends SpeechletServlet {
     super.doPost(servletRequest, servletResponse);
   }
 
-  public SkillResource(final AccountDAO accountDAO, final AccessTokenDAO accessTokenDAO, final DeviceReadDAO deviceReadDAO,
-                       final DeviceDataDAODynamoDB deviceDataDAO) {
-    setSpeechlet(new SenseSpeechlet(accountDAO, accessTokenDAO, deviceReadDAO, deviceDataDAO));
+  public SkillResource(final AccountDAO accountDAO,
+                       final AccessTokenDAO accessTokenDAO,
+                       final DeviceReadDAO deviceReadDAO,
+                       final DeviceDataDAODynamoDB deviceDataDAO,
+                       final TimelineDAODynamoDB timelineDAODynamoDB,
+                       final MessejiClient messejiClient,
+                       final SleepSoundsProcessor sleepSoundsProcessor,
+                       final DurationDAO durationDAO,
+                       final TimelineProcessor timelineProcessor,
+                       final AccountPreferencesDAO preferencesDAO) {
+    setSpeechlet(new SenseSpeechlet(accountDAO,
+        accessTokenDAO,
+        deviceReadDAO,
+        deviceDataDAO,
+        timelineDAODynamoDB,
+        messejiClient,
+        sleepSoundsProcessor,
+        durationDAO,
+        timelineProcessor,
+        preferencesDAO
+    ));
   }
 
 }

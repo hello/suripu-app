@@ -29,12 +29,12 @@ public abstract class IntentHandler {
     return getIntentName().equals(intentName);
   }
 
-  public SpeechletResponse handleIntent(final Intent intent, final AccessToken accessToken) {
+  public SpeechletResponse handleIntent(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    return handleIntentInternal(intent, accessToken);
+    return handleIntentInternal(intent, session, accessToken);
   }
 
-  public abstract SpeechletResponse handleIntentInternal(final Intent intent, final AccessToken accessToken);
+  public abstract SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken);
 
   public abstract String getIntentName();
 

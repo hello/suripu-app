@@ -8,3 +8,19 @@ GetTemperature how hot it is
 GetName to tell me my name
 GetName what my name is
 GetName for my name
+GetScore what my sleep score was on {Date}
+GetScore what my sleep score was {Date}
+GetScore what my sleep score was {Duration} ago
+GetScore what my sleep score is
+GetScore what my sleep score was
+SleepSound to play my sleep sound
+SleepSound to play a sleep sound
+SleepSound to play {Name}
+SleepSound to play the {Name} sound
+SleepSound to play the {Name} sleep sound
+LastSleepSound to play the last sleep sound
+LastSleepSound to play the last sound
+LastSleepSound to play the last sleep sound again
+LastSleepSound to play that sleep sound again
+LastSleepSound to play that sound again
+LastSleepSound to play it again

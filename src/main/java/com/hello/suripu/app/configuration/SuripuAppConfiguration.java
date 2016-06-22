@@ -1,5 +1,7 @@
 package com.hello.suripu.app.configuration;
 
+import com.google.common.collect.ImmutableList;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredw8.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredw8.configuration.KinesisConfiguration;
@@ -9,6 +11,9 @@ import com.hello.suripu.coredw8.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
+
+import java.util.List;
+
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 
@@ -201,5 +206,12 @@ public class SuripuAppConfiguration extends Configuration {
     private PhotoUploadConfiguration photoUploadConfiguration;
     public PhotoUploadConfiguration photoUploadConfiguration() {
         return photoUploadConfiguration;
+    }
+
+    @Valid
+    @JsonProperty("alexa_app_ids")
+    private List<String> alexaAppIds;
+    public List<String> getAlexaAppIds() {
+        return alexaAppIds;
     }
 }

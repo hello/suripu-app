@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -162,6 +164,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
+import org.apache.commons.lang3.StringUtils;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.skife.jdbi.v2.DBI;
@@ -169,6 +172,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -553,8 +557,23 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
-        Properties props = System.getProperties();
-        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", "amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963,amzn1.echo-sdk-ams.app.48296311-bcd4-4221-9608-390dee8ca111");
-        environment.jersey().register(new SkillResource(accountDAO, accessTokenDAO, deviceDAO, deviceDataDAODynamoDB));
+
+        if (configuration.getDebug()) {
+            Properties props = System.getProperties();
+            final List<String> alexaAppIds = configuration.getAlexaAppIds();
+            props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", StringUtils.join(alexaAppIds, ","));
+            environment.jersey().register(new SkillResource(
+                accountDAO,
+                accessTokenDAO,
+                deviceDAO,
+                deviceDataDAODynamoDB,
+                timelineDAODynamoDB,
+                messejiClient,
+                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                durationDAO,
+                timelineProcessor,
+                accountPreferencesDAO
+            ));
+        }
     }
 }

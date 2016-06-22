@@ -7,6 +7,32 @@
     {
       "intent": "GetName",
       "slots": []
+    },
+    {
+      "intent": "SleepSound",
+      "slots": [
+        {
+          "name": "Name",
+          "type": "SOUND_NAMES"
+        }
+      ]
+    },
+    {
+      "intent": "LastSleepSound",
+      "slots": []
+    },
+    {
+      "intent": "GetScore",
+      "slots": [
+        {
+          "name": "Date",
+          "type": "AMAZON.DATE"
+        },
+        {
+          "name": "Duration",
+          "type": "AMAZON.DURATION"
+        }
+      ]
     }
   ]
 }
