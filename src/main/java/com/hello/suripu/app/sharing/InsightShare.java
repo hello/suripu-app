@@ -14,15 +14,15 @@ public class InsightShare extends Share {
     private final String name;
     private final Optional<InfoInsightCards> info;
 
-    private InsightShare(final InsightCard insight, final Long accountId, final String name, final Optional<InfoInsightCards> infoInsightCards, final ObjectMapper mapper) {
+    private InsightShare(final InsightCard insight, final Long accountId, final String name, final InfoInsightCards infoInsightCards, final ObjectMapper mapper) {
         this.insight = insight;
         this.accountId = accountId;
         this.name = name;
-        this.info = infoInsightCards;
+        this.info = Optional.of(infoInsightCards);
         this.mapper = mapper;
     }
 
-    public static InsightShare create(final InsightCard insight, final Long accountId, final String name, final Optional<InfoInsightCards> info, final ObjectMapper mapper) {
+    public static InsightShare create(final InsightCard insight, final Long accountId, final String name, final InfoInsightCards info, final ObjectMapper mapper) {
         return new InsightShare(insight, accountId, name, info, mapper);
     }
 
@@ -52,6 +52,10 @@ public class InsightShare extends Share {
 
     @Override
     String info() {
+        if (!info.isPresent()) {
+            return "";
+        }
+
         try {
             return mapper.writeValueAsString(info);
         } catch (JsonProcessingException e) {

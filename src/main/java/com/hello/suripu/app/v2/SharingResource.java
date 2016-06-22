@@ -109,12 +109,11 @@ public class SharingResource {
             throw new WebApplicationException(404);
         }
 
-
         final InsightShare insightShare = InsightShare.create(
                 card,
                 accountId,
                 name,
-                Optional.of(infoCards.get(0)),
+                infoCards.get(0),
                 mapper);
         final String id = shareDAO.put(insightShare);
         LOGGER.info("action=share-insight account_id={} uuid={}", accountId, shareRequest.id);
