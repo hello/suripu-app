@@ -5,6 +5,15 @@
       "slots": []
     },
     {
+      "intent": "GetCondition",
+      "slots": [
+        {
+          "name": "Condition",
+          "type": "CONDITIONS"
+        }
+      ]
+    },
+    {
       "intent": "GetName",
       "slots": []
     },

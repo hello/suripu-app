@@ -3,6 +3,7 @@ package com.hello.suripu.app.resources.v1;
 import com.amazon.speech.speechlet.servlet.SpeechletServlet;
 import com.hello.suripu.app.service.SenseSpeechlet;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
@@ -51,7 +52,8 @@ public class SkillResource extends SpeechletServlet {
                        final SleepSoundsProcessor sleepSoundsProcessor,
                        final DurationDAO durationDAO,
                        final TimelineProcessor timelineProcessor,
-                       final AccountPreferencesDAO preferencesDAO) {
+                       final AccountPreferencesDAO preferencesDAO,
+                       final CalibrationDAO calibrationDAO) {
     setSpeechlet(new SenseSpeechlet(accountDAO,
         accessTokenDAO,
         deviceReadDAO,
@@ -61,7 +63,8 @@ public class SkillResource extends SpeechletServlet {
         sleepSoundsProcessor,
         durationDAO,
         timelineProcessor,
-        preferencesDAO
+        preferencesDAO,
+        calibrationDAO
     ));
   }
 
