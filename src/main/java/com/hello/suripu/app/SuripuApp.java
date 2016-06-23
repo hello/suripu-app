@@ -1,5 +1,8 @@
 package com.hello.suripu.app;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -16,8 +19,6 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -46,6 +47,7 @@ import com.hello.suripu.app.resources.v1.PhotoResource;
 import com.hello.suripu.app.resources.v1.ProvisionResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
+import com.hello.suripu.app.resources.v1.SkillResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
@@ -139,6 +141,7 @@ import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
+import com.hello.suripu.coredw8.db.AuthorizationCodeDAO;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
@@ -153,6 +156,19 @@ import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
+
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.Properties;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -163,15 +179,7 @@ import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
+import io.dropwizard.views.ViewBundle;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -192,6 +200,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
         bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
         bootstrap.addCommand(new PopulateInsightsUUIDCommand());
+        bootstrap.addBundle(new ViewBundle());
     }
 
     @Override
@@ -215,6 +224,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
         final ApplicationsDAO applicationsDAO = commonDB.onDemand(ApplicationsDAO.class);
         final AccessTokenDAO accessTokenDAO = commonDB.onDemand(AccessTokenDAO.class);
+        final AuthorizationCodeDAO authCodeDAO = commonDB.onDemand(AuthorizationCodeDAO.class);
+
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final PillProvisionDAO pillProvisionDAO = commonDB.onDemand(PillProvisionDAO.class);
         final UserTimelineTestGroupDAO userTimelineTestGroupDAO = commonDB.onDemand(UserTimelineTestGroupDAOImpl.class);
@@ -230,7 +241,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
-        final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore);
+        final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
 
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.withConnectionTimeout(200); // in ms
@@ -344,10 +355,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         sf.setRegisterDefaultExceptionMappers(false);
 
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
-
-        final PersistentAccessTokenStore tokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore);
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
-            .setAuthenticator(new OAuthAuthenticator(tokenStore))
+            .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
             .setAuthorizer(new OAuthAuthorizer())
             .setRealm("SUPER SECRET STUFF")
             .setPrefix("Bearer")
@@ -559,5 +568,21 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
+
+        Properties props = System.getProperties();
+        final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
+        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", StringUtils.join(alexaAppIds.values(), ","));
+        environment.jersey().register(new SkillResource(
+            accountDAO,
+            accessTokenDAO,
+            deviceDAO,
+            deviceDataDAODynamoDB,
+            timelineDAODynamoDB,
+            messejiClient,
+            SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+            durationDAO,
+            timelineProcessor,
+            accountPreferencesDAO
+        ));
     }
 }
