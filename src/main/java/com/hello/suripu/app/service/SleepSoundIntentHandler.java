@@ -60,9 +60,9 @@ public class SleepSoundIntentHandler extends IntentHandler {
     }
     final DeviceAccountPair accountPair = optionalPair.get();
 
-    final Optional<Duration> durationOptional = durationDAO.getById(11L);
+    final Optional<Duration> durationOptional = durationDAO.getById(2L);
     if (!durationOptional.isPresent()) {
-      LOGGER.warn("dao=durationDAO method=getById id={} error=not-found", 11L);
+      LOGGER.warn("dao=durationDAO method=getById id={} error=not-found", 2L);
       return errorResponse("invalid duration");
     }
 
@@ -90,7 +90,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
 
     final Optional<Long> messageId = messejiClient.playAudio(
         accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
-        durationOptional.get(), soundOptional.get(), 0, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
+        durationOptional.get(), soundOptional.get(), FADE_IN, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
 
     if (messageId.isPresent()) {
       LOGGER.debug("messeji-status=success message-id={} sense-id={}", messageId.get(), accountPair.externalDeviceId);
