@@ -293,6 +293,11 @@ public class OAuthResource {
     @Path("/authorize")
     public Response getLoginPrompt(@Context HttpServletRequest request) {
 
+        if (!request.getServerName().endsWith("login.hello.is") && !request.getServerName().equals("dev-api-unstable.hello.is")) {
+            LOGGER.error("error=unauthorized-server-name server_name={}", request.getServerName());
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
         Optional<ClientAuthRequest> optionalClientRequest = Optional.absent();
 
         if (request.getParameter("client_id") != null &&
