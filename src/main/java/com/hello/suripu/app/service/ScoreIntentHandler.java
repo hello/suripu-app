@@ -51,14 +51,14 @@ public class ScoreIntentHandler extends IntentHandler {
 
     String slotDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
 
-    if (intent.getSlots().containsKey("Date") && intent.getSlot("Date").getValue() != null) {
+    if (intent.getSlots().containsKey("Date") && intent.getSlot("Date") != null && intent.getSlot("Date").getValue() != null) {
       slotDate = intent.getSlot("Date").getValue();
       LOGGER.debug("action=alexa-intent-score-date account_id={} slot_date={}", accessToken.accountId.toString(), slotDate);
     }
 
     DateTime targetDate = DateTimeUtil.ymdStringToDateTime(slotDate).minusDays(1).withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0);
 
-    if (intent.getSlots().containsKey("Duration") && intent.getSlot("Duration").getValue() != null) {
+    if (intent.getSlots().containsKey("Duration") && intent.getSlot("Duration") != null && intent.getSlot("Duration").getValue() != null) {
       final String durationText = intent.getSlot("Duration").getValue();
       LOGGER.debug("action=alexa-intent-score-duration account_id={} duration_text={}", accessToken.accountId.toString(), durationText);
       final Days daysAgo = Days.parseDays(durationText);

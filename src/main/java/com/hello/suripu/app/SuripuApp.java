@@ -582,7 +582,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
             durationDAO,
             timelineProcessor,
-            accountPreferencesDAO
+            accountPreferencesDAO,
+            calibrationDAO
         ));
     }
 }
