@@ -1,6 +1,7 @@
 package com.hello.suripu.app.configuration;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredw8.configuration.GraphiteConfiguration;
@@ -12,15 +13,15 @@ import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
 
-import java.util.List;
-
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
+import java.util.Map;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 public class SuripuAppConfiguration extends Configuration {
 
@@ -210,8 +211,8 @@ public class SuripuAppConfiguration extends Configuration {
 
     @Valid
     @JsonProperty("alexa_app_ids")
-    private List<String> alexaAppIds;
-    public List<String> getAlexaAppIds() {
-        return alexaAppIds;
+    private Map<String, String> alexaAppIds = Maps.newHashMap();
+    public ImmutableMap<String, String> getAlexaAppIds() {
+        return ImmutableMap.copyOf(alexaAppIds);
     }
 }

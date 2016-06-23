@@ -96,7 +96,7 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
     final Integer volumeScalingFactor = convertToSenseVolumePercent(100);
 
     final Optional<Long> messageId = messejiClient.playAudio(
-        accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), 1L,
+        accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
         durationOptional.get(), soundOptional.get(), 0, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
 
     if (messageId.isPresent()) {

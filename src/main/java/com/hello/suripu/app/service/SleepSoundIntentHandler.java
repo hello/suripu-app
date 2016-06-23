@@ -6,8 +6,6 @@ import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
@@ -20,11 +18,6 @@ import com.hello.suripu.coredw8.oauth.AccessToken;
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 
 
 /**
@@ -96,7 +89,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
     final Integer volumeScalingFactor = convertToSenseVolumePercent(100);
 
     final Optional<Long> messageId = messejiClient.playAudio(
-        accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), 1L,
+        accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
         durationOptional.get(), soundOptional.get(), 0, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
 
     if (messageId.isPresent()) {
