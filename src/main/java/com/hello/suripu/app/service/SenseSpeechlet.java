@@ -13,6 +13,7 @@ import com.amazon.speech.speechlet.Speechlet;
 import com.amazon.speech.speechlet.SpeechletException;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
@@ -55,7 +56,8 @@ public class SenseSpeechlet implements Speechlet {
       final SleepSoundsProcessor sleepSoundsProcessor,
       final DurationDAO durationDAO,
       final TimelineProcessor timelineProcessor,
-      final AccountPreferencesDAO preferencesDAO) {
+      final AccountPreferencesDAO preferencesDAO,
+      final CalibrationDAO calibrationDAO) {
     this.accountDAO = accountDAO;
     this.accessTokenDAO = accessTokenDAO;
     intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO));
@@ -63,6 +65,7 @@ public class SenseSpeechlet implements Speechlet {
     intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor));
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
+    intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO));
   }
 
 //  @Override
