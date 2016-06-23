@@ -5,8 +5,6 @@ import com.google.common.base.Optional;
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
@@ -19,10 +17,6 @@ import com.hello.suripu.coredw8.oauth.AccessToken;
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 
 
 /**
@@ -128,42 +122,5 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
 
   protected static Integer convertToSenseVolumePercent(final Integer volumePercent) {
     return convertToSenseVolumePercent(SENSE_MAX_DECIBELS, volumePercent);
-  }
-
-  public static class PlayRequest {
-
-    @JsonProperty("sound")
-    @NotNull
-    public final Long soundId;
-
-    @JsonProperty("duration")
-    @NotNull
-    public final Long durationId;
-
-    @JsonProperty("order")
-    @NotNull
-    public final Long order;
-
-    @JsonProperty("volume_percent")
-    @NotNull
-    @Min(0)
-    @Max(100)
-    public final Integer volumePercent;
-
-    private PlayRequest(final Long soundId, final Long durationId, final Long order, final Integer volumePercent) {
-      this.soundId = soundId;
-      this.durationId = durationId;
-      this.order = order;
-      this.volumePercent = volumePercent;
-    }
-
-    @JsonCreator
-    public static PlayRequest create(@JsonProperty("sound") final Long soundId,
-                                     @JsonProperty("duration") final Long durationId,
-                                     @JsonProperty("order") final Long order,
-                                     @JsonProperty("volume_percent") final Integer volumePercent)
-    {
-      return new PlayRequest(soundId, durationId, order, volumePercent);
-    }
   }
 }
