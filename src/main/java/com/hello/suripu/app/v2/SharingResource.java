@@ -1,10 +1,10 @@
 package com.hello.suripu.app.v2;
 
+import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.hello.suripu.app.sharing.InsightShare;
-import com.hello.suripu.app.sharing.Share;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareRequest;
 import com.hello.suripu.app.sharing.ShareResponse;
@@ -26,10 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -59,6 +57,7 @@ public class SharingResource {
     }
 
 
+    @Timed
     @ScopesAllowed({OAuthScope.USER_EXTENDED})
     @POST
     @Path("/insight")
@@ -118,15 +117,5 @@ public class SharingResource {
         final String id = shareDAO.put(insightShare);
         LOGGER.info("action=share-insight account_id={} uuid={}", accountId, shareRequest.id);
         return ShareResponse.create(id);
-    }
-
-
-
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{uuid}")
-    public Share getShare(final @PathParam("uuid") String uuid) {
-        return null;
     }
 }
