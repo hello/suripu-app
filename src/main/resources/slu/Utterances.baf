@@ -6,6 +6,7 @@ GetTemperature how hot it is
 GetCondition what the {Condition} is
 GetCondition to tell me the {Condition}
 GetCondition to give me the {Condition}
+GetCondition for the {Condition}
 GetName to tell me my name
 GetName what my name is
 GetName for my name
@@ -20,6 +21,7 @@ GetScore how I slept
 GetScore how I slept last night
 GetScore how good I am at sleeping
 GetScore to give me my sleep score
+GetScore to give me my sleep score from {Duration} ago
 GetScore to tell me my sleep score
 SleepSound to play my sleep sound
 SleepSound to play a sleep sound
