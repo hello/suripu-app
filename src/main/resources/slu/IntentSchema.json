@@ -31,6 +31,15 @@
       "slots": []
     },
     {
+      "intent": "Alarm",
+      "slots": [
+        {
+          "name": "Time",
+          "type": "AMAZON.TIME"
+        }
+      ]
+    },
+    {
       "intent": "GetScore",
       "slots": [
         {

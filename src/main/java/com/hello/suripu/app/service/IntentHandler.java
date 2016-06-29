@@ -5,9 +5,10 @@ import com.google.common.collect.Lists;
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.Image;
 import com.amazon.speech.ui.LinkAccountCard;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
-import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.StandardCard;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import java.util.Date;
@@ -52,9 +53,14 @@ public abstract class IntentHandler {
 
   static public SpeechletResponse buildSpeechletResponse(final String output, final boolean shouldEndSession) {
     // Create the Simple card content.
-    SimpleCard card = new SimpleCard();
+    StandardCard card = new StandardCard();
+
     card.setTitle(SenseSpeechlet.SKILL_NAME);
-    card.setContent(String.format("%s", output));
+    card.setText(String.format("%s", output));
+    Image cardImage = new Image();
+    cardImage.setSmallImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_low_resolution_alexa.png");
+    cardImage.setLargeImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_high_resolution_alexa.png");
+    card.setImage(cardImage);
 
     // Create the plain text output.
     PlainTextOutputSpeech speech = new PlainTextOutputSpeech();

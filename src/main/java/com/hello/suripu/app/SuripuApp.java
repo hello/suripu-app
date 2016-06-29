@@ -586,7 +586,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             durationDAO,
             timelineProcessor,
             accountPreferencesDAO,
-            calibrationDAO
+            calibrationDAO,
+            mergedUserInfoDynamoDB,
+            alarmDAODynamoDB
         ));
     }
 }
