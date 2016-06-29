@@ -116,6 +116,6 @@ public class SharingResource {
                 mapper);
         final String id = shareDAO.put(insightShare);
         LOGGER.info("action=share-insight account_id={} uuid={}", accountId, shareRequest.id);
-        return ShareResponse.create(id);
+        return ShareResponse.createInsight(id);
     }
 }
