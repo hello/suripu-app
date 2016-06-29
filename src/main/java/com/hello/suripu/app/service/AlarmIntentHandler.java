@@ -8,6 +8,9 @@ import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.PlainTextOutputSpeech;
+import com.amazon.speech.ui.Reprompt;
+import com.amazon.speech.ui.SimpleCard;
 import com.amazonaws.AmazonServiceException;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
@@ -26,6 +29,8 @@ import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,40 +73,38 @@ public class AlarmIntentHandler extends IntentHandler {
 
     LOGGER.debug("action=alexa-intent-alarm account_id={}", accessToken.accountId.toString());
 
+    Boolean isTomorrow = false;
     final Slot timeSlot = intent.getSlot("Time");
     String slotTime;
     if (timeSlot == null || timeSlot.getValue() == null) {
       //default
-      slotTime = "17:00";
+      final String output = "What time would you like me to wake you up?";
+      SimpleCard card = new SimpleCard();
+      card.setTitle("Hello Sense");
+      card.setContent(String.format("%s", output));
+
+      PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+      speech.setText(output);
+
+      PlainTextOutputSpeech repromptSpeech = new PlainTextOutputSpeech();
+      repromptSpeech.setText("What time?");
+
+      final Reprompt reprompt = new Reprompt();
+      reprompt.setOutputSpeech(repromptSpeech);
+
+      return SpeechletResponse.newAskResponse(speech, reprompt, card);
     } else {
       slotTime = timeSlot.getValue();
     }
 
     final String[] timePieces = slotTime.split(":");
-    final List<Alarm> alarms = Lists.newArrayList();
-    final Set<Integer> daysOfWeek = Sets.newHashSet();
-    daysOfWeek.add(2);
-    final Alarm newAlarm = new Alarm.Builder()
-        .withAlarmSound(new AlarmSound(5L, "Dusk"))
-        .withYear(2016)
-        .withDay(28)
-        .withMonth(6)
-        .withDayOfWeek(daysOfWeek)
-        .withHour(Integer.getInteger(timePieces[0]))
-        .withMinute(Integer.getInteger(timePieces[1]))
-        .withIsEnabled(true)
-        .withIsSmart(false)
-        .withIsRepeated(false)
-        .withId(UUID.randomUUID().toString())
-        .build();
 
-    alarms.add(newAlarm);
+
 
     final Long clientTime = DateTime.now().getMillis();
 
-    final DateTime now = DateTime.now();
-    if(!AlarmUtils.isWithinReasonableBounds(now, clientTime, 50000)) {
-      LOGGER.error("account_id {} set alarm failed, client time too off.( was {}, now is {}", accessToken.accountId, clientTime, now);
+    if(!AlarmUtils.isWithinReasonableBounds(DateTime.now(), clientTime, 50000)) {
+      LOGGER.error("account_id {} set alarm failed, client time too off.( was {}, now is {}", accessToken.accountId, clientTime, DateTime.now());
       throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
           new JsonError(Response.Status.BAD_REQUEST.getStatusCode(), English.ERROR_CLOCK_OUT_OF_SYNC)).build()
       );
@@ -115,6 +118,8 @@ public class AlarmIntentHandler extends IntentHandler {
 
     // Only update alarms in the account that linked with the most recent sense.
     final DeviceAccountPair deviceAccountPair = deviceAccountMap.get(0);
+    final List<Alarm> alarms = Lists.newArrayList();
+
     try {
       final Optional<UserInfo> alarmInfoOptional = mergedUserInfoDynamoDB.getInfo(deviceAccountPair.externalDeviceId, accessToken.accountId);
       if(!alarmInfoOptional.isPresent()){
@@ -128,6 +133,40 @@ public class AlarmIntentHandler extends IntentHandler {
       }
 
       final DateTimeZone timeZone = alarmInfoOptional.get().timeZone.get();
+
+      DateTime now = DateTime.now().toDateTime(timeZone);
+
+      DateTime alarmTime = DateTime.now().toDateTime(timeZone)
+          .withHourOfDay(Integer.valueOf(timePieces[0]))
+          .withMinuteOfHour(Integer.valueOf(timePieces[1]));
+
+      LOGGER.debug("Now: {}, Alarm: {}", now.toString(), alarmTime.toString());
+
+      if(alarmTime.isBeforeNow()) {
+        isTomorrow = true;
+        alarmTime = alarmTime.plusDays(1);
+      }
+
+      final Set<Integer> daysOfWeek = Sets.newHashSet();
+      daysOfWeek.add(alarmTime.getDayOfWeek());
+
+      final Alarm newAlarm = new Alarm.Builder()
+          .withAlarmSound(new AlarmSound(5L, "Dusk"))
+          .withYear(alarmTime.getYear())
+          .withDay(alarmTime.getDayOfMonth())
+          .withMonth(alarmTime.getMonthOfYear())
+          .withDayOfWeek(daysOfWeek)
+          .withHour(alarmTime.getHourOfDay())
+          .withMinute(alarmTime.getMinuteOfHour())
+          .withIsEnabled(true)
+          .withIsSmart(false)
+          .withIsRepeated(false)
+          .withId(UUID.randomUUID().toString())
+          .build();
+
+      alarms.add(newAlarm);
+
+
       final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(alarms, DateTime.now(), timeZone);
 
       if(status.equals(Alarm.Utils.AlarmStatus.OK)) {
@@ -147,6 +186,11 @@ public class AlarmIntentHandler extends IntentHandler {
         return errorResponse("I can only set one smart alarm per day. You already have one set for this day.");
       }
 
+      final String whichDay = (isTomorrow) ? "tomorrow" : "today";
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("hh:mm a");
+
+      return buildSpeechletResponse(String.format("Your alarm is set for %s at %s", whichDay, fmt.print(alarmTime)), true);
+
 
     }catch (AmazonServiceException awsException){
       LOGGER.error("Aws failed when user {} tries to get alarms.", accessToken.accountId);
@@ -155,10 +199,6 @@ public class AlarmIntentHandler extends IntentHandler {
       LOGGER.error("Account {} tries to set {} alarm, too many alarm", accessToken.accountId, alarms.size());
       return errorResponse("I can't set more than thirty alarms.");
     }
-
-
-    return buildSpeechletResponse("Your alarm is now set for...", false);
-
   }
 
   @Override
