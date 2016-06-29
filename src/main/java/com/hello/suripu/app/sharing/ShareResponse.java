@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ShareResponse {
 
-    private final static String HOST = "http://share.hello.is/";
+    private final static String HOST = "https://share.hello.is/";
     private final String url;
 
     private ShareResponse(final String url) {
@@ -13,6 +13,10 @@ public class ShareResponse {
 
     public static ShareResponse create(String url) {
         return new ShareResponse(url);
+    }
+
+    public static ShareResponse createInsight(String url) {
+        return new ShareResponse(String.format("insight/%s",url));
     }
 
     @JsonProperty("url")
