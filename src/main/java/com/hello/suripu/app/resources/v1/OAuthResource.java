@@ -262,7 +262,7 @@ public class OAuthResource {
 
         AccessToken accessToken = null;
         try {
-            accessToken = tokenStore.storeAccessToken(details, grantType.getType());
+            accessToken = tokenStore.storeAccessToken(details);
         } catch (ClientAuthenticationException clientAuthenticationException) {
             LOGGER.error(clientAuthenticationException.getMessage());
             throw new WebApplicationException(Response.serverError().build());
