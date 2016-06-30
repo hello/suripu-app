@@ -34,6 +34,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -78,7 +79,7 @@ public class AlarmIntentHandler extends IntentHandler {
     String slotTime;
     if (timeSlot == null || timeSlot.getValue() == null) {
       //default
-      final String output = "What time would you like me to wake you up?";
+      final String output = "Okay. What time would you like your alarm set for?";
       SimpleCard card = new SimpleCard();
       card.setTitle("Hello Sense");
       card.setContent(String.format("%s", output));
@@ -87,7 +88,7 @@ public class AlarmIntentHandler extends IntentHandler {
       speech.setText(output);
 
       PlainTextOutputSpeech repromptSpeech = new PlainTextOutputSpeech();
-      repromptSpeech.setText("What time?");
+      repromptSpeech.setText("Sorry, I didn't get that. What time would you like your alarm set for?");
 
       final Reprompt reprompt = new Reprompt();
       reprompt.setOutputSpeech(repromptSpeech);
@@ -121,13 +122,16 @@ public class AlarmIntentHandler extends IntentHandler {
     final List<Alarm> alarms = Lists.newArrayList();
 
     try {
+
+      alarms.addAll(getAlarms(deviceReadDAO, accessToken));
+
       final Optional<UserInfo> alarmInfoOptional = mergedUserInfoDynamoDB.getInfo(deviceAccountPair.externalDeviceId, accessToken.accountId);
-      if(!alarmInfoOptional.isPresent()){
+      if (!alarmInfoOptional.isPresent()) {
         LOGGER.warn("No merge info for user {}, device {}", accessToken.accountId, deviceAccountPair.externalDeviceId);
         throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
       }
 
-      if(!alarmInfoOptional.get().timeZone.isPresent()){
+      if (!alarmInfoOptional.get().timeZone.isPresent()) {
         LOGGER.warn("No user timezone set for account {}, device {}, alarm set skipped.", deviceAccountPair.accountId, deviceAccountPair.externalDeviceId);
         throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
       }
@@ -142,7 +146,7 @@ public class AlarmIntentHandler extends IntentHandler {
 
       LOGGER.debug("Now: {}, Alarm: {}", now.toString(), alarmTime.toString());
 
-      if(alarmTime.isBeforeNow()) {
+      if (alarmTime.isBeforeNow()) {
         isTomorrow = true;
         alarmTime = alarmTime.plusDays(1);
       }
@@ -169,19 +173,19 @@ public class AlarmIntentHandler extends IntentHandler {
 
       final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(alarms, DateTime.now(), timeZone);
 
-      if(status.equals(Alarm.Utils.AlarmStatus.OK)) {
-        if(!mergedUserInfoDynamoDB.setAlarms(deviceAccountPair.externalDeviceId, accessToken.accountId,
+      if (status.equals(Alarm.Utils.AlarmStatus.OK)) {
+        if (!mergedUserInfoDynamoDB.setAlarms(deviceAccountPair.externalDeviceId, accessToken.accountId,
             alarmInfoOptional.get().lastUpdatedAt,
             alarmInfoOptional.get().alarmList,
             alarms,
-            alarmInfoOptional.get().timeZone.get())){
+            alarmInfoOptional.get().timeZone.get())) {
           LOGGER.warn("Cannot update alarm, race condition for account: {}", accessToken.accountId);
           return errorResponse("I was unable to set your alarm. Please try again or use the Sense app.");
         }
         alarmDAODynamoDB.setAlarms(accessToken.accountId, alarms);
       }
 
-      if(status.equals(Alarm.Utils.AlarmStatus.SMART_ALARM_ALREADY_SET)){
+      if (status.equals(Alarm.Utils.AlarmStatus.SMART_ALARM_ALREADY_SET)) {
         LOGGER.error("Invalid alarm for account {}, device {}, alarm set skipped. Smart alarm already set.", deviceAccountPair.accountId, deviceAccountPair.externalDeviceId);
         return errorResponse("I can only set one smart alarm per day. You already have one set for this day.");
       }
@@ -189,20 +193,62 @@ public class AlarmIntentHandler extends IntentHandler {
       final String whichDay = (isTomorrow) ? "tomorrow" : "today";
       DateTimeFormatter fmt = DateTimeFormat.forPattern("hh:mm a");
 
-      return buildSpeechletResponse(String.format("Your alarm is set for %s at %s", whichDay, fmt.print(alarmTime)), true);
+      return buildSpeechletResponse(String.format("Your alarm has been set for %s at %s", whichDay, fmt.print(alarmTime)), true);
 
-
-    }catch (AmazonServiceException awsException){
+    } catch (AmazonServiceException awsException){
       LOGGER.error("Aws failed when user {} tries to get alarms.", accessToken.accountId);
       return errorResponse("I had a problem setting your alarm. Please try again.");
-    }catch (TooManyAlarmsException tooManyAlarmException){
+    } catch (TooManyAlarmsException tooManyAlarmException){
       LOGGER.error("Account {} tries to set {} alarm, too many alarm", accessToken.accountId, alarms.size());
       return errorResponse("I can't set more than thirty alarms.");
+    } catch (Exception ex) {
+      return errorResponse(ex.getMessage());
     }
   }
 
   @Override
   public String getIntentName() {
     return INTENT_NAME;
+  }
+
+  private List<Alarm> getAlarms(final DeviceReadDAO deviceDAO, final AccessToken token) throws Exception {
+    LOGGER.debug("Before getting device account map from account_id");
+    final List<DeviceAccountPair> deviceAccountMap = deviceDAO.getSensesForAccountId(token.accountId);
+    if(deviceAccountMap.size() == 0){
+      LOGGER.error("User {} tries to retrieve alarm without paired with a Sense.", token.accountId);
+      throw new Exception("There's no Sense currently paired to your account.");
+    }
+
+    try {
+      LOGGER.debug("Before getting device account map from account_id");
+      final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(deviceAccountMap.get(0).externalDeviceId, token.accountId);
+      LOGGER.debug("Fetched alarm info optional");
+
+      if(!alarmInfoOptional.isPresent()){
+        LOGGER.warn("Merge alarm info table doesn't have record for device {}, account {}.", deviceAccountMap.get(0).externalDeviceId, token.accountId);
+        //                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        return Collections.emptyList();
+      }
+
+
+      final UserInfo userInfo = alarmInfoOptional.get();
+      if(!userInfo.timeZone.isPresent()){
+        LOGGER.error("User {} tries to get alarm without having a time zone.", token.accountId);
+        throw new Exception("Please update your timezone and try again.");
+      }
+
+      final DateTimeZone userTimeZone = userInfo.timeZone.get();
+      final List<Alarm> smartAlarms = Alarm.Utils.disableExpiredNoneRepeatedAlarms(userInfo.alarmList, DateTime.now().getMillis(), userTimeZone);
+      final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(smartAlarms, DateTime.now(), userTimeZone);
+      if(!status.equals(Alarm.Utils.AlarmStatus.OK)){
+        LOGGER.error("Invalid alarm for user {} device {}", token.accountId, userInfo.deviceId);
+        throw new Exception("I had some trouble getting your alarms. Please try again.");
+      }
+
+      return smartAlarms;
+    }catch (AmazonServiceException awsException){
+      LOGGER.error("Aws failed when user {} tries to get alarms.", token.accountId);
+      throw new Exception("I had some trouble getting your alarms. Please try again.");
+    }
   }
 }

@@ -10,6 +10,8 @@ GetCondition what is the {Condition} in here
 GetCondition what is the current {Condition}
 GetCondition to tell me the {Condition}
 GetCondition to give me the {Condition}
+GetCondition what my bedroom conditions are
+GetCondition what are my bedroom conditions
 GetCondition for the {Condition}
 GetName to tell me my name
 GetName what my name is
@@ -31,7 +33,6 @@ SleepSound to play my sleep sound
 SleepSound to play a sleep sound
 SleepSound to play {Name}
 SleepSound to play the {Name} sound
-SleepSound to play the {Name} sleep sound for {Duration}
 LastSleepSound to play the last sleep sound
 LastSleepSound to play the last sound
 LastSleepSound to play the last sleep sound again

@@ -130,9 +130,9 @@ public class SenseSpeechlet implements Speechlet {
 //  @Override
   public SpeechletResponse onLaunch(LaunchRequest request, Session session) throws SpeechletException {
     LOGGER.info("onLaunch requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
-    return IntentHandler.buildSpeechletResponseWithReprompt("Welcome to the Hello Sense skill." +
-        "You can ask me for various room conditions, play a sleep sound, or set an alarm." +
-        "Try saying, 'play a sleep sound'.",
+    return IntentHandler.buildSpeechletResponseWithReprompt("Welcome to the Hello Sense skill. " +
+        "You can ask me for various room conditions, play a sleep sound, or set an alarm. " +
+        "Try saying, 'play a sleep sound' or 'What is the temperature?'",
         "What would you like Sense to do? Try saying, 'Play a sleep sound.'");
   }
 
