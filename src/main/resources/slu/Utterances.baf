@@ -4,6 +4,10 @@ GetTemperature what is the temperature
 GetTemperature how hot is it
 GetTemperature how hot it is
 GetCondition what the {Condition} is
+GetCondition what is the {Condition}
+GetCondition what is the {Condition} right now
+GetCondition what is the {Condition} in here
+GetCondition what is the current {Condition}
 GetCondition to tell me the {Condition}
 GetCondition to give me the {Condition}
 GetCondition for the {Condition}

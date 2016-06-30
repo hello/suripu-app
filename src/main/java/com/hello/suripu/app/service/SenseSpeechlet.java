@@ -106,10 +106,22 @@ public class SenseSpeechlet implements Speechlet {
     final Intent intent = request.getIntent();
     final String intentName = intent.getName();
 
+    if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
+      //TODO: Make this send some kind of 'stop' command to sense
+      return IntentHandler.randomOkResponse();
+    }
+
     for (IntentHandler ih : intentHandlers) {
       if (ih.isResponsible(intentName)) {
         return ih.handleIntent(intent, session, accessToken);
       }
+    }
+
+    if(intentName.equals("AMAZON.HelpIntent")) {
+      return IntentHandler.buildSpeechletResponseWithReprompt("The Sense skill allows you to control" +
+          "your Hello Sense using your Amazon Alexa device. Try setting an alarm by saying, 'wake me up'" +
+          " or try saying 'What is the temperature?'",
+          "What would you like Sense to do? Try saying, 'What is the humidity?'");
     }
 
     throw new SpeechletException("The Intent " + intentName + " is not recognized.");
@@ -118,7 +130,10 @@ public class SenseSpeechlet implements Speechlet {
 //  @Override
   public SpeechletResponse onLaunch(LaunchRequest request, Session session) throws SpeechletException {
     LOGGER.info("onLaunch requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
-    return IntentHandler.buildSpeechletResponse("Hello, how can I help you?", false);
+    return IntentHandler.buildSpeechletResponseWithReprompt("Welcome to the Hello Sense skill." +
+        "You can ask me for various room conditions, play a sleep sound, or set an alarm." +
+        "Try saying, 'play a sleep sound'.",
+        "What would you like Sense to do? Try saying, 'Play a sleep sound.'");
   }
 
 //  @Override

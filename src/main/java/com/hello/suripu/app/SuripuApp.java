@@ -570,10 +570,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
         final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
+        System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
+        System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
+        System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
+
         if(configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
         }
-        System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
 
         environment.jersey().register(new SkillResource(
             accountDAO,
