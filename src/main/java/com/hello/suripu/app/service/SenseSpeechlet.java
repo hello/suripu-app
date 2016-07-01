@@ -13,9 +13,11 @@ import com.amazon.speech.speechlet.Speechlet;
 import com.amazon.speech.speechlet.SpeechletException;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
+import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -57,7 +59,9 @@ public class SenseSpeechlet implements Speechlet {
       final DurationDAO durationDAO,
       final TimelineProcessor timelineProcessor,
       final AccountPreferencesDAO preferencesDAO,
-      final CalibrationDAO calibrationDAO) {
+      final CalibrationDAO calibrationDAO,
+      final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
+      final AlarmDAODynamoDB alarmDAODynamoDB) {
     this.accountDAO = accountDAO;
     this.accessTokenDAO = accessTokenDAO;
     intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO));
@@ -66,6 +70,7 @@ public class SenseSpeechlet implements Speechlet {
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO));
+    intentHandlers.add(new AlarmIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, mergedUserInfoDynamoDB, alarmDAODynamoDB));
   }
 
 //  @Override
@@ -101,10 +106,22 @@ public class SenseSpeechlet implements Speechlet {
     final Intent intent = request.getIntent();
     final String intentName = intent.getName();
 
+    if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
+      //TODO: Make this send some kind of 'stop' command to sense
+      return IntentHandler.randomOkResponse();
+    }
+
     for (IntentHandler ih : intentHandlers) {
       if (ih.isResponsible(intentName)) {
         return ih.handleIntent(intent, session, accessToken);
       }
+    }
+
+    if(intentName.equals("AMAZON.HelpIntent")) {
+      return IntentHandler.buildSpeechletResponseWithReprompt("The Sense skill allows you to control" +
+          "your Hello Sense using your Amazon Alexa device. Try setting an alarm by saying, 'wake me up'" +
+          " or try saying 'What is the temperature?'",
+          "What would you like Sense to do? Try saying, 'What is the humidity?'");
     }
 
     throw new SpeechletException("The Intent " + intentName + " is not recognized.");
@@ -113,7 +130,10 @@ public class SenseSpeechlet implements Speechlet {
 //  @Override
   public SpeechletResponse onLaunch(LaunchRequest request, Session session) throws SpeechletException {
     LOGGER.info("onLaunch requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
-    return IntentHandler.buildSpeechletResponse("Hello, how can I help you?", false);
+    return IntentHandler.buildSpeechletResponseWithReprompt("Welcome to the Hello Sense skill. " +
+        "You can ask me for various room conditions, play a sleep sound, or set an alarm. " +
+        "Try saying, 'play a sleep sound' or 'What is the temperature?'",
+        "What would you like Sense to do? Try saying, 'Play a sleep sound.'");
   }
 
 //  @Override
