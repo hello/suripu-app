@@ -5,9 +5,11 @@ import com.google.common.collect.Lists;
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.Image;
 import com.amazon.speech.ui.LinkAccountCard;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
-import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.Reprompt;
+import com.amazon.speech.ui.StandardCard;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import java.util.Date;
@@ -19,7 +21,7 @@ import java.util.Random;
  */
 public abstract class IntentHandler {
 
-  final private List<String> okValues = Lists.newArrayList("Ok", "Allright", "Done!", "Will do", "as you wish");
+  public static final List<String> okValues = Lists.newArrayList("Ok", "Allright", "Done!", "Will do", "as you wish");
 
   public IntentHandler() {
 
@@ -43,7 +45,7 @@ public abstract class IntentHandler {
   }
 
 
-  protected SpeechletResponse randomOkResponse() {
+  static public SpeechletResponse randomOkResponse() {
     final Random r = new Random(new Date().getTime());
     final String okValue = okValues.get(r.nextInt(okValues.size()));
 
@@ -52,9 +54,14 @@ public abstract class IntentHandler {
 
   static public SpeechletResponse buildSpeechletResponse(final String output, final boolean shouldEndSession) {
     // Create the Simple card content.
-    SimpleCard card = new SimpleCard();
+    StandardCard card = new StandardCard();
+
     card.setTitle(SenseSpeechlet.SKILL_NAME);
-    card.setContent(String.format("%s", output));
+    card.setText(String.format("%s", output));
+    Image cardImage = new Image();
+    cardImage.setSmallImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_low_resolution_alexa.png");
+    cardImage.setLargeImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_high_resolution_alexa.png");
+    card.setImage(cardImage);
 
     // Create the plain text output.
     PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
@@ -79,5 +86,33 @@ public abstract class IntentHandler {
 
     // Create the speechlet response.
     return SpeechletResponse.newTellResponse(speech, card);
+  }
+
+  static public SpeechletResponse buildSpeechletResponseWithReprompt(final String output, final String repromptText) {
+
+    StandardCard card = new StandardCard();
+    card.setTitle(SenseSpeechlet.SKILL_NAME);
+    card.setText(String.format("%s", output));
+    Image cardImage = new Image();
+    cardImage.setSmallImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_low_resolution_alexa.png");
+    cardImage.setLargeImageUrl("https://s3.amazonaws.com/hello-dev/hello_logo_high_resolution_alexa.png");
+    card.setImage(cardImage);
+
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(output);
+
+    PlainTextOutputSpeech repromptSpeech = new PlainTextOutputSpeech();
+    repromptSpeech.setText(repromptText);
+
+    final Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(repromptSpeech);
+
+    SpeechletResponse response = new SpeechletResponse();
+    response.setReprompt(reprompt);
+    response.setOutputSpeech(speech);
+    response.setShouldEndSession(false);
+    response.setCard(card);
+
+    return response;
   }
 }

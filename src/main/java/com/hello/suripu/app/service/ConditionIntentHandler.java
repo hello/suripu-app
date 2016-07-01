@@ -15,6 +15,7 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.PreferenceName;
+import com.hello.suripu.core.util.RoomConditionUtil;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import org.joda.time.DateTime;
@@ -54,7 +55,7 @@ public class ConditionIntentHandler extends IntentHandler {
     String condition;
     if (slot == null || slot.getValue() == null) {
       //default
-      condition = "Temperature";
+      condition = "";
     } else {
       condition = slot.getValue();
     }
@@ -117,7 +118,30 @@ public class ConditionIntentHandler extends IntentHandler {
         conditionValue = roomState.sound.value;
         break;
       default:
-        return buildSpeechletResponse("Sorry, I didn't get that. Please try again.", true);
+        final CurrentRoomState.State.Condition generalCondition = RoomConditionUtil.getGeneralRoomConditionV2(roomState, hasDust);
+        if (generalCondition.equals(CurrentRoomState.State.Condition.IDEAL)) {
+          return buildSpeechletResponse("Your bedroom is all set for a good night's sleep.", true);
+
+        } else {
+
+          final StringBuilder builder  = new StringBuilder();
+          if (roomState.light.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
+            builder.append(roomState.light.message);
+          }
+          if (roomState.sound.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
+            builder.append(roomState.sound.message);
+          }
+          if (roomState.humidity.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
+            builder.append(roomState.humidity.message);
+          }
+          if (roomState.temperature.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
+            builder.append(roomState.temperature.message);
+          }
+          if (roomState.particulates.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
+            builder.append(roomState.particulates.message);
+          }
+          return buildSpeechletResponse(builder.toString(), true);
+        }
     }
     return buildSpeechletResponse(String.format("It's currently %.0f %s. %s", conditionValue, conditionUnits, additionalComment), true);
   }

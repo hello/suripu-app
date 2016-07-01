@@ -4,8 +4,15 @@ GetTemperature what is the temperature
 GetTemperature how hot is it
 GetTemperature how hot it is
 GetCondition what the {Condition} is
+GetCondition what is the {Condition}
+GetCondition what is the {Condition} right now
+GetCondition what is the {Condition} in here
+GetCondition what is the current {Condition}
 GetCondition to tell me the {Condition}
 GetCondition to give me the {Condition}
+GetCondition what my bedroom conditions are
+GetCondition what are my bedroom conditions
+GetCondition for the {Condition}
 GetName to tell me my name
 GetName what my name is
 GetName for my name
@@ -20,15 +27,20 @@ GetScore how I slept
 GetScore how I slept last night
 GetScore how good I am at sleeping
 GetScore to give me my sleep score
+GetScore to give me my sleep score from {Duration} ago
 GetScore to tell me my sleep score
 SleepSound to play my sleep sound
 SleepSound to play a sleep sound
 SleepSound to play {Name}
 SleepSound to play the {Name} sound
-SleepSound to play the {Name} sleep sound
 LastSleepSound to play the last sleep sound
 LastSleepSound to play the last sound
 LastSleepSound to play the last sleep sound again
 LastSleepSound to play that sleep sound again
 LastSleepSound to play that sound again
 LastSleepSound to play it again
+Alarm to set an alarm
+Alarm to set a test alarm
+Alarm to wake me up at {Time}
+Alarm to wake me up
+Alarm {Time}

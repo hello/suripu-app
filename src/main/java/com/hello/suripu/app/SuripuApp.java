@@ -3,6 +3,7 @@ package com.hello.suripu.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -165,7 +166,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -569,9 +569,15 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
-        Properties props = System.getProperties();
         final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
-        props.setProperty("com.amazon.speech.speechlet.servlet.supportedApplicationIds", StringUtils.join(alexaAppIds.values(), ","));
+        System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
+        System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
+        System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
+
+        if(configuration.getDebug()) {
+            System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
+        }
+
         environment.jersey().register(new SkillResource(
             accountDAO,
             accessTokenDAO,
@@ -583,7 +589,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             durationDAO,
             timelineProcessor,
             accountPreferencesDAO,
-            calibrationDAO
+            calibrationDAO,
+            mergedUserInfoDynamoDB,
+            alarmDAODynamoDB
         ));
     }
 }
