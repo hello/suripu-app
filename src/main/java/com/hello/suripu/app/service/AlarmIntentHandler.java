@@ -19,6 +19,7 @@ import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.exceptions.TooManyAlarmsException;
 import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
+import com.hello.suripu.core.models.AlarmSource;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.UserInfo;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -166,6 +167,7 @@ public class AlarmIntentHandler extends IntentHandler {
           .withIsSmart(false)
           .withIsRepeated(false)
           .withId(UUID.randomUUID().toString())
+          .withSource(AlarmSource.VOICE_SERVICE)
           .build();
 
       alarms.add(newAlarm);
