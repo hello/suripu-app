@@ -94,7 +94,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
 
     if (messageId.isPresent()) {
       LOGGER.debug("messeji-status=success message-id={} sense-id={}", messageId.get(), accountPair.externalDeviceId);
-      return buildSpeechletResponse("Your sense sleep sound should now be playing.", false);
+      return buildSpeechletResponse("Your sense sleep sound should now be playing.", true);
     } else {
       LOGGER.error("messeji-status=failure sense-id={}", accountPair.externalDeviceId);
       return buildSpeechletResponse("There was a problem attempting to play your sleep sound.", true);

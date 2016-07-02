@@ -126,19 +126,19 @@ public class ConditionIntentHandler extends IntentHandler {
 
           final StringBuilder builder  = new StringBuilder();
           if (roomState.light.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.light.message);
+            builder.append(roomState.light.message.replace("*", ""));
           }
           if (roomState.sound.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.sound.message);
+            builder.append(roomState.sound.message.replace("*", ""));
           }
           if (roomState.humidity.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.humidity.message);
+            builder.append(roomState.humidity.message.replace("*", ""));
           }
           if (roomState.temperature.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.temperature.message);
+            builder.append(roomState.temperature.message.replace("*", ""));
           }
           if (roomState.particulates.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.particulates.message);
+            builder.append(roomState.particulates.message.replace("*", ""));
           }
           return buildSpeechletResponse(builder.toString(), true);
         }
