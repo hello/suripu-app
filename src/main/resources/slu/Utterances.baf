@@ -33,12 +33,6 @@ SleepSound to play my sleep sound
 SleepSound to play a sleep sound
 SleepSound to play {Name}
 SleepSound to play the {Name} sound
-LastSleepSound to play the last sleep sound
-LastSleepSound to play the last sound
-LastSleepSound to play the last sleep sound again
-LastSleepSound to play that sleep sound again
-LastSleepSound to play that sound again
-LastSleepSound to play it again
 Alarm to set an alarm
 Alarm to set a test alarm
 Alarm to wake me up at {Time}
