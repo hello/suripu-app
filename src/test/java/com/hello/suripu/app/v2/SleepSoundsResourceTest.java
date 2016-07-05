@@ -101,6 +101,7 @@ public class SleepSoundsResourceTest {
                 .withAccountId(accountId)
                 .withCreatedAt(DateTime.now())
                 .withExpiresIn(DateTime.now().plusHours(1).getMillis())
+                .withRefreshExpiresIn(DateTime.now().plusHours(1).getMillis())
                 .withRefreshToken(UUID.randomUUID())
                 .withToken(UUID.randomUUID())
                 .withScopes(new OAuthScope[]{ OAuthScope.USER_BASIC })

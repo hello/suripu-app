@@ -1,0 +1,65 @@
+{
+  "intents": [
+    {
+      "intent": "GetTemperature",
+      "slots": []
+    },
+    {
+      "intent": "GetCondition",
+      "slots": [
+        {
+          "name": "Condition",
+          "type": "CONDITIONS"
+        }
+      ]
+    },
+    {
+      "intent": "GetName",
+      "slots": []
+    },
+    {
+      "intent": "SleepSound",
+      "slots": [
+        {
+          "name": "Name",
+          "type": "SOUND_NAMES"
+        }
+      ]
+    },
+    {
+      "intent": "LastSleepSound",
+      "slots": []
+    },
+    {
+      "intent": "Alarm",
+      "slots": [
+        {
+          "name": "Time",
+          "type": "AMAZON.TIME"
+        }
+      ]
+    },
+    {
+      "intent": "GetScore",
+      "slots": [
+        {
+          "name": "Date",
+          "type": "AMAZON.DATE"
+        },
+        {
+          "name": "Duration",
+          "type": "AMAZON.DURATION"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}
