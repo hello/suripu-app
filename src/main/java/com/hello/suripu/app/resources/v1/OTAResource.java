@@ -108,7 +108,7 @@ public class OTAResource extends BaseResource {
     }
 
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
     @POST
     @Timed
     @Path("/request_ota")
