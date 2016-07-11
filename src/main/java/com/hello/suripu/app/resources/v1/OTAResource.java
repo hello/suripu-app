@@ -13,12 +13,16 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.OTAHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.ota.Status;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +66,7 @@ public class OTAResource extends BaseResource {
     @Timed
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public OTAHistory.OTAStatus getLatestOTAStatus(@Auth final AccessToken accessToken) {
+    public Status getLatestOTAStatus(@Auth final AccessToken accessToken) {
         final Optional<DeviceAccountPair> optionalPair = deviceDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
         if(!optionalPair.isPresent()) {
             LOGGER.warn("No sense paired for account = {}", accessToken.accountId);
@@ -80,7 +84,6 @@ public class OTAResource extends BaseResource {
         final DeviceData data = deviceDataOptional.get();
         final Integer fwVersion = data.firmwareVersion;
 
-
         final Optional<OTAHistory> optionalOTAHistory = otaHistoryDAO.getLatest(pair.externalDeviceId);
         if(!optionalOTAHistory.isPresent()) {
             LOGGER.warn("No OTA History found for device_id={}", pair.externalDeviceId);
@@ -88,8 +91,17 @@ public class OTAResource extends BaseResource {
         }
         final OTAHistory history = optionalOTAHistory.get();
 
-        if((!history.currentFWVersion.equals(fwVersion.toString())) && feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, fwVersion.toString(), Collections.EMPTY_LIST)) {
-            return OTAHistory.OTAStatus.UPDATE_REQUIRED;
+        if((!history.currentFWVersion.equals(fwVersion.toString()))
+            && feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, fwVersion.toString(), Collections.EMPTY_LIST)) {
+            return Status.REQUIRED;
+        }
+
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+        final DateTime thirtySecondsAfterData = data.dateTimeUTC.withDurationAdded(Duration.standardSeconds(30L), 1);
+
+        if(history.newFWVersion.equals(data.firmwareVersion.toString())
+            && thirtySecondsAfterData.isBefore(now)) {
+            return Status.COMPLETE;
         }
 
         return optionalOTAHistory.get().otaStatus;
