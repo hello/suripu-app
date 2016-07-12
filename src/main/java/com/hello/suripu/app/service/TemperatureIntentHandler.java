@@ -34,7 +34,7 @@ public class TemperatureIntentHandler extends IntentHandler {
   final DeviceDataDAODynamoDB deviceDataDAO;
   final AccountPreferencesDAO preferencesDAO;
   final TestVoiceResponsesDAO voiceResponsesDAO;
-  final Map<Long, Integer> accountIDInvocationCounts;
+  final Map<Long, Integer> accountIDInvocationCounts = Maps.newHashMap();
 
   public TemperatureIntentHandler(
       final DeviceReadDAO deviceReadDAO,
@@ -45,8 +45,8 @@ public class TemperatureIntentHandler extends IntentHandler {
     this.deviceDataDAO = deviceDataDAO;
     this.preferencesDAO = preferencesDAO;
     this.voiceResponsesDAO = voiceResponsesDAO;
-    accountIDInvocationCounts = Maps.newHashMap();
   }
+
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
