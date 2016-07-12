@@ -163,6 +163,7 @@ timeline_algorithm_configuration:
 # v0.2: score uses movement and duration
 sleep_stats_version: v_0_2
 sleep_score_version: v_0_1
+agg_stats_version: v_0_1
 
 max_cache_refresh_days: 20
 
@@ -201,6 +202,7 @@ photo_upload:
 dynamodb:
   region: us-east-1
   tables:
+    agg_stats: prod_agg_stats
     alarm: prod_alarm
     alarm_info: prod_alarm_info
     algorithm_test: prod_algorithm_test
@@ -244,6 +246,7 @@ dynamodb:
     wifi_info: prod_wifi_info
 
   endpoints:
+    agg_stats: http://dynamodb.us-east-1.amazonaws.com
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     algorithm_test: http://dynamodb.us-east-1.amazonaws.com

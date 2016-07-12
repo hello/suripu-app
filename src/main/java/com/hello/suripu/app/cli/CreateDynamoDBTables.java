@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
+import com.hello.suripu.core.db.AggStatsDAODynamoDB;
 import com.hello.suripu.core.db.AggregateSleepScoreDAODynamoDB;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.AlgorithmResultsDAODynamoDB;
@@ -93,6 +94,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createAppStatsTable(configuration, awsCredentialsProvider);
         createPillHeartBeatTable(configuration, awsCredentialsProvider);
         createDeviceDataTable(configuration, awsCredentialsProvider);
+        createAggStatsTable(configuration, awsCredentialsProvider);
         createLastSeenTable(configuration, awsCredentialsProvider);
         createPillDataTable(configuration, awsCredentialsProvider);
         createSenseStateTable(configuration, awsCredentialsProvider);
@@ -655,6 +657,29 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
                 final CreateTableResult result = deviceDataDAODynamoDB.createTable(tableName);
                 System.out.println(result.getTableDescription().getTableStatus());
             }
+        }
+    }
+
+    private void createAggStatsTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tablePrefix = tableNames.get(DynamoDBTableName.AGG_STATS);
+        final String version = configuration.getAggStatsVersion();
+        final String endpoint = endpoints.get(DynamoDBTableName.AGG_STATS);
+        client.setEndpoint(endpoint);
+        final AggStatsDAODynamoDB aggStatsDAODynamoDB = new AggStatsDAODynamoDB(client, tablePrefix, version);
+
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+
+        try {
+            client.describeTable(aggStatsDAODynamoDB.getTableName(now));
+            System.out.println(String.format("%s already exists.", aggStatsDAODynamoDB.getTableName(now)));
+        } catch (AmazonServiceException exception) {
+            final String tableName = aggStatsDAODynamoDB.getTableName(now);
+            final CreateTableResult result = aggStatsDAODynamoDB.createTable(tableName);
+            System.out.println(result.getTableDescription().getTableStatus());
         }
     }
 
