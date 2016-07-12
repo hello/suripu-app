@@ -53,6 +53,7 @@ import com.hello.suripu.app.resources.v1.SkillResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
@@ -581,15 +582,18 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
-        final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
-        System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
-        System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
-        System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
+
 
         if(configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
+        } else {
+            final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
+            System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
+            System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
+            System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
         }
 
+        final TestVoiceResponsesDAO voiceResponsesDAO = commonDB.onDemand(TestVoiceResponsesDAO.class);
         environment.jersey().register(new SkillResource(
             accountDAO,
             accessTokenDAO,
@@ -603,7 +607,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountPreferencesDAO,
             calibrationDAO,
             mergedUserInfoDynamoDB,
-            alarmDAODynamoDB
+            alarmDAODynamoDB,
+            voiceResponsesDAO
         ));
     }
 }
