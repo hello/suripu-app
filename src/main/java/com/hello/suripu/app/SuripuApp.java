@@ -527,6 +527,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final QuestionProcessor questionProcessor = new QuestionProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseDAO)
+                .withTimeZoneHistoryDaoDynamoDB(timeZoneHistoryDAODynamoDB)
                 .withCheckSkipsNum(configuration.getQuestionConfigs().getNumSkips())
                 .withQuestions(questionResponseDAO)
                 .build();
