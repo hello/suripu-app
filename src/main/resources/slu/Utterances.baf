@@ -1,8 +1,12 @@
 GetTemperature for the temperature
 GetTemperature what temperature it is at home
+GetTemperature what temperature it is in my room
 GetTemperature what is the temperature
+GetTemperature what is the temperature in my room
 GetTemperature how hot is it
 GetTemperature how hot it is
+GetTemperature what the temperature is
+GetTemperature what the temperature is in my room
 GetCondition what the {Condition} is
 GetCondition what is the {Condition}
 GetCondition what is the {Condition} right now

@@ -61,10 +61,11 @@ public class SenseSpeechlet implements Speechlet {
       final AccountPreferencesDAO preferencesDAO,
       final CalibrationDAO calibrationDAO,
       final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-      final AlarmDAODynamoDB alarmDAODynamoDB) {
+      final AlarmDAODynamoDB alarmDAODynamoDB,
+      final TestVoiceResponsesDAO voiceResponsesDAO) {
     this.accountDAO = accountDAO;
     this.accessTokenDAO = accessTokenDAO;
-    intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO));
+    intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, voiceResponsesDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
     intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor));
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));

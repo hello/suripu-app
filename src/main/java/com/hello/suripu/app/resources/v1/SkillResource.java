@@ -2,6 +2,7 @@ package com.hello.suripu.app.resources.v1;
 
 import com.amazon.speech.speechlet.servlet.SpeechletServlet;
 import com.hello.suripu.app.service.SenseSpeechlet;
+import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -57,7 +58,8 @@ public class SkillResource extends SpeechletServlet {
                        final AccountPreferencesDAO preferencesDAO,
                        final CalibrationDAO calibrationDAO,
                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-                       final AlarmDAODynamoDB alarmDAODynamoDB) {
+                       final AlarmDAODynamoDB alarmDAODynamoDB,
+                       final TestVoiceResponsesDAO voiceResponsesDAO) {
     setSpeechlet(new SenseSpeechlet(accountDAO,
         accessTokenDAO,
         deviceReadDAO,
@@ -70,7 +72,8 @@ public class SkillResource extends SpeechletServlet {
         preferencesDAO,
         calibrationDAO,
         mergedUserInfoDynamoDB,
-        alarmDAODynamoDB
+        alarmDAODynamoDB,
+        voiceResponsesDAO
     ));
   }
 
