@@ -1,6 +1,7 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
@@ -19,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class NameIntentHandler extends IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NameIntentHandler.class);
-  private static final String INTENT_NAME = "GetName";
+  private static final ImmutableList<String> INTENTS_HANDLED = ImmutableList.of("GetName");
 
   private final AccountDAO accountDAO;
 
@@ -40,7 +41,7 @@ public class NameIntentHandler extends IntentHandler {
   }
 
   @Override
-  public String getIntentName() {
-    return INTENT_NAME;
+  public ImmutableList<String> getIntentsHandled() {
+    return INTENTS_HANDLED;
   }
 }

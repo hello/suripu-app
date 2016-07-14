@@ -1,6 +1,7 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
@@ -31,7 +32,7 @@ import java.util.Map;
 public class ConditionIntentHandler extends IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConditionIntentHandler.class);
-  private static final String INTENT_NAME = "GetCondition";
+  private static final ImmutableList<String> INTENTS_HANDLED = ImmutableList.of("GetCondition");
   private static final Float NO_SOUND_FILL_VALUE_DB = 35.0f;
 
   final DeviceReadDAO deviceReadDAO;
@@ -147,8 +148,8 @@ public class ConditionIntentHandler extends IntentHandler {
   }
 
   @Override
-  public String getIntentName() {
-    return INTENT_NAME;
+  public ImmutableList<String> getIntentsHandled() {
+    return INTENTS_HANDLED;
   }
 
   private static float celsiusToFahrenheit(final float value) {

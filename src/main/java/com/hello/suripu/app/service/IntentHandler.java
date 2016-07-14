@@ -1,5 +1,6 @@
 package com.hello.suripu.app.service;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.amazon.speech.slu.Intent;
@@ -28,7 +29,7 @@ public abstract class IntentHandler {
   }
 
   public boolean isResponsible(final String intentName) {
-    return getIntentName().equals(intentName);
+    return getIntentsHandled().contains(intentName);
   }
 
   public SpeechletResponse handleIntent(final Intent intent, final Session session, final AccessToken accessToken) {
@@ -38,7 +39,7 @@ public abstract class IntentHandler {
 
   public abstract SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken);
 
-  public abstract String getIntentName();
+  public abstract ImmutableList<String> getIntentsHandled();
 
   protected SpeechletResponse errorResponse(final String error) {
     return buildSpeechletResponse(error, true);

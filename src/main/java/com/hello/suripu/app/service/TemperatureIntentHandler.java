@@ -28,7 +28,7 @@ import java.util.Map;
 public class TemperatureIntentHandler extends IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TemperatureIntentHandler.class);
-  private static final String INTENT_NAME = "GetTemperature";
+  private static final ImmutableList<String> INTENTS_HANDLED = ImmutableList.of("GetTemperature");
 
   final DeviceReadDAO deviceReadDAO;
   final DeviceDataDAODynamoDB deviceDataDAO;
@@ -49,7 +49,6 @@ public class TemperatureIntentHandler extends IntentHandler {
 
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
-
     LOGGER.debug("action=alexa-intent-temperature account_id={}", accessToken.accountId.toString());
     if(!accountIDInvocationCounts.containsKey(accessToken.accountId)) {
       accountIDInvocationCounts.put(accessToken.accountId, 0);
@@ -73,7 +72,7 @@ public class TemperatureIntentHandler extends IntentHandler {
     final Map<PreferenceName, Boolean> preferences = preferencesDAO.get(accountPair.accountId);
     final Float tempInCelsius = (float)(data.ambientTemperature - 389) / 100.0f;
 
-    final ImmutableList<String> responses = voiceResponsesDAO.getAllResponsesByIntent(INTENT_NAME);
+    final ImmutableList<String> responses = voiceResponsesDAO.getAllResponsesByIntent(intent.getName());
 
     final String response = responses.get(accountIDInvocationCounts.get(accessToken.accountId) % responses.size());
 
@@ -88,8 +87,8 @@ public class TemperatureIntentHandler extends IntentHandler {
   }
 
   @Override
-  public String getIntentName() {
-    return INTENT_NAME;
+  public ImmutableList<String> getIntentsHandled() {
+    return INTENTS_HANDLED;
   }
 
   private static float celsiusToFahrenheit(final float value) {

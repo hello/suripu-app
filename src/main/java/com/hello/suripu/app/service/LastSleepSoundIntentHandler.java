@@ -1,6 +1,7 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class LastSleepSoundIntentHandler extends IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LastSleepSoundIntentHandler.class);
-  private static final String INTENT_NAME = "LastSleepSound";
+  private static final ImmutableList<String> INTENTS_HANDLED = ImmutableList.of("LastSleepSound");
   private static final Integer FADE_IN = 1;
   private static final Integer FADE_OUT = 1; // Used when explicitly stopped with a Stop message or wave
   private static final Integer TIMEOUT_FADE_OUT = 20; // Used when sense's play duration times out
@@ -103,8 +104,8 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
   }
 
   @Override
-  public String getIntentName() {
-    return INTENT_NAME;
+  public ImmutableList<String> getIntentsHandled() {
+    return INTENTS_HANDLED;
   }
 
   protected static Integer convertToSenseVolumePercent(final Double maxDecibels,

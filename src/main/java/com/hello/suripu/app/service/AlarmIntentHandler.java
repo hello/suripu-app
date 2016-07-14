@@ -1,6 +1,7 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -50,7 +51,7 @@ import javax.ws.rs.core.Response;
 public class AlarmIntentHandler extends IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AlarmIntentHandler.class);
-  private static final String INTENT_NAME = "Alarm";
+  private static final ImmutableList<String> INTENTS_HANDLED = ImmutableList.of("Alarm", "AlarmDisable");
 
   final DeviceReadDAO deviceReadDAO;
   final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
@@ -172,7 +173,6 @@ public class AlarmIntentHandler extends IntentHandler {
 
       alarms.add(newAlarm);
 
-
       final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(alarms, DateTime.now(), timeZone);
 
       if (status.equals(Alarm.Utils.AlarmStatus.OK)) {
@@ -209,12 +209,11 @@ public class AlarmIntentHandler extends IntentHandler {
   }
 
   @Override
-  public String getIntentName() {
-    return INTENT_NAME;
+  public ImmutableList<String> getIntentsHandled() {
+    return INTENTS_HANDLED;
   }
 
   private List<Alarm> getAlarms(final DeviceReadDAO deviceDAO, final AccessToken token) throws Exception {
-    LOGGER.debug("Before getting device account map from account_id");
     final List<DeviceAccountPair> deviceAccountMap = deviceDAO.getSensesForAccountId(token.accountId);
     if(deviceAccountMap.size() == 0){
       LOGGER.error("User {} tries to retrieve alarm without paired with a Sense.", token.accountId);
@@ -222,7 +221,6 @@ public class AlarmIntentHandler extends IntentHandler {
     }
 
     try {
-      LOGGER.debug("Before getting device account map from account_id");
       final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(deviceAccountMap.get(0).externalDeviceId, token.accountId);
       LOGGER.debug("Fetched alarm info optional");
 
