@@ -61,6 +61,7 @@ import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
+import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
@@ -616,6 +617,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         if (configuration.getDebug()){
             environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
+            environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
         }
     }
 }
