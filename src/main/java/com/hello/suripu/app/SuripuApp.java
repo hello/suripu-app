@@ -129,7 +129,6 @@ import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
@@ -159,6 +158,7 @@ import com.hello.suripu.coredw8.oauth.OAuthAuthorizer;
 import com.hello.suripu.coredw8.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 
@@ -502,7 +502,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = configuration.getTimelineAlgorithmConfiguration();
 
-        final TimelineProcessor timelineProcessor = TimelineProcessor.createTimelineProcessor(
+        final InstrumentedTimelineProcessor timelineProcessor = InstrumentedTimelineProcessor.createTimelineProcessor(
                 pillDataDAODynamoDB,
                 deviceDAO,
                 deviceDataDAODynamoDB,
@@ -519,8 +519,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
                 taimurainHttpClient,
-                timelineAlgorithmConfiguration);
-
+                timelineAlgorithmConfiguration,
+                environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
         environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));

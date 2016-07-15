@@ -9,10 +9,10 @@ import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
-import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -34,11 +34,11 @@ public class ScoreIntentHandler extends IntentHandler {
 
   private final AccountDAO accountDAO;
   private final TimelineDAODynamoDB timelineDAODynamoDB;
-  private final TimelineProcessor timelineProcessor;
+  private final InstrumentedTimelineProcessor timelineProcessor;
 
   public ScoreIntentHandler(final AccountDAO accountDAO,
                             final TimelineDAODynamoDB timelineDAODynamoDB,
-                            final TimelineProcessor timelineProcessor) {
+                            final InstrumentedTimelineProcessor timelineProcessor) {
     this.accountDAO = accountDAO;
     this.timelineDAODynamoDB = timelineDAODynamoDB;
     this.timelineProcessor = timelineProcessor;
