@@ -13,6 +13,7 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.OTAHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.ota.OTAStatus;
 import com.hello.suripu.core.ota.Status;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
@@ -66,7 +67,7 @@ public class OTAResource extends BaseResource {
     @Timed
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public Status getLatestOTAStatus(@Auth final AccessToken accessToken) {
+    public OTAStatus getLatestOTAStatus(@Auth final AccessToken accessToken) {
         final Optional<DeviceAccountPair> optionalPair = deviceDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
         if(!optionalPair.isPresent()) {
             LOGGER.warn("No sense paired for account = {}", accessToken.accountId);
@@ -82,7 +83,7 @@ public class OTAResource extends BaseResource {
         }
 
         final DeviceData data = deviceDataOptional.get();
-        final Integer fwVersion = data.firmwareVersion;
+        final String latestReportedFWVersion = data.firmwareVersion.toString();
 
         final Optional<OTAHistory> optionalOTAHistory = otaHistoryDAO.getLatest(pair.externalDeviceId);
         if(!optionalOTAHistory.isPresent()) {
@@ -91,20 +92,30 @@ public class OTAResource extends BaseResource {
         }
         final OTAHistory history = optionalOTAHistory.get();
 
-        if((!history.currentFWVersion.equals(fwVersion.toString()))
-            && feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, fwVersion.toString(), Collections.EMPTY_LIST)) {
-            return Status.REQUIRED;
+        // Default OTA Status
+        Status otaStatus = Status.NOT_REQUIRED;
+
+        //
+        if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, latestReportedFWVersion, Collections.EMPTY_LIST)) {
+            otaStatus = Status.REQUIRED;
         }
 
-        final DateTime now = DateTime.now(DateTimeZone.UTC);
-        final DateTime thirtySecondsAfterData = data.dateTimeUTC.withDurationAdded(Duration.standardSeconds(30L), 1);
-
-        if(history.newFWVersion.equals(data.firmwareVersion.toString())
-            && thirtySecondsAfterData.isBefore(now)) {
-            return Status.COMPLETE;
+        // If the latest OTA History has a source fw equal to the latest reported FW version, then assume an OTA is in progress
+        if(history.currentFWVersion.equals(latestReportedFWVersion) && otaStatus.equals(Status.REQUIRED)) {
+            otaStatus = Status.IN_PROGRESS;
         }
 
-        return optionalOTAHistory.get().otaStatus;
+        // If the latest data is old enough to be trusted and the reported fw version matches the destination
+        // fw of the latest OTA history event, assume the OTA history event was completed
+        if (history.newFWVersion.equals(latestReportedFWVersion) && isDataSecondsOld(data, 30L)) {
+
+            //If the source fw version from the latest OTA History event is a 'required' fw, then we must have completed a forced OTA event
+            if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, history.currentFWVersion, Collections.EMPTY_LIST)) {
+                otaStatus = Status.COMPLETE;
+            }
+        }
+
+        return new OTAStatus(otaStatus);
     }
 
 
@@ -139,5 +150,11 @@ public class OTAResource extends BaseResource {
             .build();
 
         responseCommandsDAODynamoDB.insertResponseCommands(deviceId, fwVersion, issuedCommands);
+    }
+
+    private Boolean isDataSecondsOld(final DeviceData data, final Long seconds) {
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+        final DateTime oldData = data.dateTimeUTC.withDurationAdded(Duration.standardSeconds(seconds), 1);
+        return oldData.isBefore(now);
     }
 }
