@@ -21,9 +21,6 @@ import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,30 +89,25 @@ public class OTAResource extends BaseResource {
         }
         final OTAHistory history = optionalOTAHistory.get();
 
-        // Default OTA Status
-        Status otaStatus = Status.NOT_REQUIRED;
-
-        //
         if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, latestReportedFWVersion, Collections.EMPTY_LIST)) {
-            otaStatus = Status.REQUIRED;
-        }
-
-        // If the latest OTA History has a source fw equal to the latest reported FW version, then assume an OTA is in progress
-        if(history.currentFWVersion.equals(latestReportedFWVersion) && otaStatus.equals(Status.REQUIRED)) {
-            otaStatus = Status.IN_PROGRESS;
+            // If the latest OTA History has a source fw equal to the latest reported FW version, then assume an OTA is in progress
+            if(history.currentFWVersion.equals(latestReportedFWVersion)) {
+                return new OTAStatus(Status.IN_PROGRESS);
+            }
+            return new OTAStatus(Status.REQUIRED);
         }
 
         // If the latest data is old enough to be trusted and the reported fw version matches the destination
         // fw of the latest OTA history event, assume the OTA history event was completed
-        if (history.newFWVersion.equals(latestReportedFWVersion) && isDataSecondsOld(data, 30L)) {
+        if (history.newFWVersion.equals(latestReportedFWVersion) && data.isSecondsOld(30L)) {
 
             //If the source fw version from the latest OTA History event is a 'required' fw, then we must have completed a forced OTA event
             if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, history.currentFWVersion, Collections.EMPTY_LIST)) {
-                otaStatus = Status.COMPLETE;
+                return new OTAStatus(Status.COMPLETE);
             }
         }
 
-        return new OTAStatus(otaStatus);
+        return new OTAStatus(Status.NOT_REQUIRED);
     }
 
 
@@ -150,11 +142,5 @@ public class OTAResource extends BaseResource {
             .build();
 
         responseCommandsDAODynamoDB.insertResponseCommands(deviceId, fwVersion, issuedCommands);
-    }
-
-    private Boolean isDataSecondsOld(final DeviceData data, final Long seconds) {
-        final DateTime now = DateTime.now(DateTimeZone.UTC);
-        final DateTime oldData = data.dateTimeUTC.withDurationAdded(Duration.standardSeconds(seconds), 1);
-        return oldData.isBefore(now);
     }
 }
