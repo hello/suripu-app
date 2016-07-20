@@ -1,6 +1,8 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
@@ -11,7 +13,6 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.PreferenceName;
-import com.hello.suripu.core.preferences.TemperatureUnit;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import org.joda.time.DateTime;
@@ -32,16 +33,29 @@ public class TemperatureIntentHandler extends IntentHandler {
   final DeviceReadDAO deviceReadDAO;
   final DeviceDataDAODynamoDB deviceDataDAO;
   final AccountPreferencesDAO preferencesDAO;
+  final TestVoiceResponsesDAO voiceResponsesDAO;
+  final Map<Long, Integer> accountIDInvocationCounts = Maps.newHashMap();
 
-  public TemperatureIntentHandler(final DeviceReadDAO deviceReadDAO, final DeviceDataDAODynamoDB deviceDataDAO, final AccountPreferencesDAO preferencesDAO) {
+  public TemperatureIntentHandler(
+      final DeviceReadDAO deviceReadDAO,
+      final DeviceDataDAODynamoDB deviceDataDAO,
+      final AccountPreferencesDAO preferencesDAO,
+      final TestVoiceResponsesDAO voiceResponsesDAO) {
     this.deviceReadDAO = deviceReadDAO;
     this.deviceDataDAO = deviceDataDAO;
     this.preferencesDAO = preferencesDAO;
+    this.voiceResponsesDAO = voiceResponsesDAO;
   }
+
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
     LOGGER.debug("action=alexa-intent-temperature account_id={}", accessToken.accountId.toString());
+    if(!accountIDInvocationCounts.containsKey(accessToken.accountId)) {
+      accountIDInvocationCounts.put(accessToken.accountId, 0);
+    } else {
+      accountIDInvocationCounts.put(accessToken.accountId, accountIDInvocationCounts.get(accessToken.accountId) + 1);
+    }
 
     final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
     if(!optionalPair.isPresent()) {
@@ -59,10 +73,14 @@ public class TemperatureIntentHandler extends IntentHandler {
     final Map<PreferenceName, Boolean> preferences = preferencesDAO.get(accountPair.accountId);
     final Float tempInCelsius = (float)(data.ambientTemperature - 389) / 100.0f;
 
+    final ImmutableList<String> responses = voiceResponsesDAO.getAllResponsesByIntent(INTENT_NAME);
+
+    final String response = responses.get(accountIDInvocationCounts.get(accessToken.accountId) % responses.size());
+
     if (preferences.containsKey(PreferenceName.TEMP_CELSIUS) && preferences.get(PreferenceName.TEMP_CELSIUS)) {
-      return buildSpeechletResponse(String.format("The temperature is %.2f degrees celsius.", tempInCelsius), true);
+      return buildSpeechletResponse(String.format(response.replace("{unit}", "celsius"), tempInCelsius), true);
     } else {
-      return buildSpeechletResponse(String.format("The temperature is %.2f degrees fahrenheit.", celsiusToFahrenheit(tempInCelsius)), true);
+      return buildSpeechletResponse(String.format(response.replace("{unit}", "fahrenheit"), celsiusToFahrenheit(tempInCelsius)), true);
     }
 
     //Get room conditions from api

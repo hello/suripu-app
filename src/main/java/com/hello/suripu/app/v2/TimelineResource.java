@@ -20,7 +20,6 @@ import com.hello.suripu.core.models.timeline.v2.EventType;
 import com.hello.suripu.core.models.timeline.v2.Timeline;
 import com.hello.suripu.core.models.timeline.v2.TimelineEvent;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.processors.TimelineProcessor;
 
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.DateTimeUtil;
@@ -30,6 +29,7 @@ import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
@@ -63,7 +63,7 @@ public class TimelineResource extends BaseResource {
     @Inject
     RolloutClient feature;
 
-    private final TimelineProcessor timelineProcessor;
+    private final InstrumentedTimelineProcessor timelineProcessor;
     private final TimelineDAODynamoDB timelineDAODynamoDB;
     private final TimelineLogDAO timelineLogDAO;
     private final FeedbackDAO feedbackDAO;
@@ -72,7 +72,7 @@ public class TimelineResource extends BaseResource {
     private final DataLogger timelineLogDAOV2;
 
     public TimelineResource(final TimelineDAODynamoDB timelineDAODynamoDB,
-                            final TimelineProcessor timelineProcessor,
+                            final InstrumentedTimelineProcessor timelineProcessor,
                             final TimelineLogDAO timelineLogDAO,
                             final FeedbackDAO feedbackDAO,
                             final PillDataDAODynamoDB pillDataDAODynamoDB,

@@ -16,7 +16,7 @@ import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.Timeline;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
@@ -48,7 +48,7 @@ public class TimelineResource extends BaseResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimelineResource.class);
 
-    private final TimelineProcessor timelineProcessor;
+    private final InstrumentedTimelineProcessor timelineProcessor;
     private final AccountDAO accountDAO;
     private final TimelineDAODynamoDB timelineDAODynamoDB;
     private final TimelineLogDAO timelineLogDAOV1;
@@ -58,7 +58,7 @@ public class TimelineResource extends BaseResource {
                             final TimelineDAODynamoDB timelineDAODynamoDB,
                             final TimelineLogDAO timelineLogDAOV1,
                             final DataLogger timelineLogDAOV2,
-                            final TimelineProcessor timelineProcessor) {
+                            final InstrumentedTimelineProcessor timelineProcessor) {
         this.accountDAO = accountDAO;
         this.timelineProcessor = timelineProcessor;
         this.timelineDAODynamoDB = timelineDAODynamoDB;
@@ -99,7 +99,7 @@ public class TimelineResource extends BaseResource {
 
     private TimelineResult getTimelinesFromCacheOrReprocess(final UUID sessionUUID, final Long accountId, final String targetDateString){
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(targetDateString);
-        final TimelineProcessor timelineProcessor = this.timelineProcessor.copyMeWithNewUUID(sessionUUID);
+        final InstrumentedTimelineProcessor timelineProcessor = this.timelineProcessor.copyMeWithNewUUID(sessionUUID);
         //if no update forced (i.e. no HMM)
 
         //first try to get a cached result

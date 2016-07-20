@@ -13,7 +13,7 @@ import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
 
@@ -25,7 +25,7 @@ import dagger.Provides;
 @Module(injects = {
         TimelineResource.class,
         RoomConditionsResource.class,
-        TimelineProcessor.class,
+        InstrumentedTimelineProcessor.class,
         InsightsResource.class,
         DeviceResources.class,
         com.hello.suripu.app.v2.TimelineResource.class,

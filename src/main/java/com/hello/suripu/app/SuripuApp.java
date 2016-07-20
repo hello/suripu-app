@@ -53,6 +53,7 @@ import com.hello.suripu.app.resources.v1.SkillResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
@@ -128,7 +129,6 @@ import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
@@ -158,6 +158,7 @@ import com.hello.suripu.coredw8.oauth.OAuthAuthorizer;
 import com.hello.suripu.coredw8.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 
@@ -501,7 +502,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = configuration.getTimelineAlgorithmConfiguration();
 
-        final TimelineProcessor timelineProcessor = TimelineProcessor.createTimelineProcessor(
+        final InstrumentedTimelineProcessor timelineProcessor = InstrumentedTimelineProcessor.createTimelineProcessor(
                 pillDataDAODynamoDB,
                 deviceDAO,
                 deviceDataDAODynamoDB,
@@ -518,14 +519,15 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
                 taimurainHttpClient,
-                timelineAlgorithmConfiguration);
-
+                timelineAlgorithmConfiguration,
+                environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
         environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
 
         final QuestionProcessor questionProcessor = new QuestionProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseDAO)
+                .withTimeZoneHistoryDaoDynamoDB(timeZoneHistoryDAODynamoDB)
                 .withCheckSkipsNum(configuration.getQuestionConfigs().getNumSkips())
                 .withQuestions(questionResponseDAO)
                 .build();
@@ -581,15 +583,18 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
-        final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
-        System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
-        System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
-        System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
+
 
         if(configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
+        } else {
+            final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
+            System.setProperty(Sdk.SUPPORTED_APPLICATION_IDS_SYSTEM_PROPERTY, StringUtils.join(alexaAppIds.values(), ","));
+            System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "false");
+            System.setProperty(Sdk.TIMESTAMP_TOLERANCE_SYSTEM_PROPERTY, "120");
         }
 
+        final TestVoiceResponsesDAO voiceResponsesDAO = commonDB.onDemand(TestVoiceResponsesDAO.class);
         environment.jersey().register(new SkillResource(
             accountDAO,
             accessTokenDAO,
@@ -603,7 +608,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountPreferencesDAO,
             calibrationDAO,
             mergedUserInfoDynamoDB,
-            alarmDAODynamoDB
+            alarmDAODynamoDB,
+            voiceResponsesDAO
         ));
     }
 }
