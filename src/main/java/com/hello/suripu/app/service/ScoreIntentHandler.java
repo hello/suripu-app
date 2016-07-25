@@ -81,7 +81,11 @@ public class ScoreIntentHandler extends IntentHandler {
 
     final Integer sleepScore = result.timelines.get(0).score;
 
-    return buildSpeechletResponse(String.format("Your sleep score was %d.", sleepScore), true);
+    if (sleepScore > 0) {
+      return buildSpeechletResponse(String.format("Your sleep score was %d.", sleepScore), true);
+    }
+
+    return buildSpeechletResponse("I was unable to get your sleep score. Please try again later.", true);
   }
 
   @Override
