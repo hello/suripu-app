@@ -12,12 +12,15 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.processors.SleepSoundsProcessor.SoundResult;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 
 /**
@@ -72,7 +75,12 @@ public class SleepSoundIntentHandler extends IntentHandler {
     String slotName;
     if (nameSlot == null || nameSlot.getValue() == null) {
       //default
-      slotName = "Horizon";
+      final SoundResult senseSounds = sleepSoundsProcessor.getSounds(accountPair.externalDeviceId);
+      if (senseSounds.state == SoundResult.State.OK) {
+        slotName = senseSounds.sounds.get(ThreadLocalRandom.current().nextInt(senseSounds.sounds.size())).name;
+      } else {
+        slotName = "Horizon";
+      }
     } else {
       slotName = nameSlot.getValue();
     }

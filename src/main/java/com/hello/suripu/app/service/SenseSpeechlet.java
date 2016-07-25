@@ -19,13 +19,16 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.models.sleep_sounds.Duration;
+import com.hello.suripu.core.models.sleep_sounds.Sound;
+import com.hello.suripu.core.oauth.AccessTokenUtils;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
+import com.hello.suripu.coredw8.db.AccessTokenDAO;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.core.oauth.AccessTokenUtils;
-import com.hello.suripu.coredw8.db.AccessTokenDAO;
 import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 
 import org.joda.time.DateTime;
@@ -47,6 +50,9 @@ public class SenseSpeechlet implements Speechlet {
   private Set<IntentHandler> intentHandlers = Sets.newHashSet();
   private final AccountDAO accountDAO;
   private final AccessTokenDAO accessTokenDAO;
+  final MessejiClient messejiClient;
+  final DeviceReadDAO deviceReadDAO;
+  final SleepSoundsProcessor sleepSoundsProcessor;
 
   public SenseSpeechlet(
       final AccountDAO accountDAO,
@@ -64,6 +70,9 @@ public class SenseSpeechlet implements Speechlet {
       final AlarmDAODynamoDB alarmDAODynamoDB,
       final TestVoiceResponsesDAO voiceResponsesDAO) {
     this.accountDAO = accountDAO;
+    this.messejiClient = messejiClient;
+    this.deviceReadDAO = deviceReadDAO;
+    this.sleepSoundsProcessor = sleepSoundsProcessor;
     this.accessTokenDAO = accessTokenDAO;
     intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, voiceResponsesDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
@@ -109,6 +118,23 @@ public class SenseSpeechlet implements Speechlet {
 
     if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
       //TODO: Make this send some kind of 'stop' command to sense
+      final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
+      if(!optionalPair.isPresent()) {
+        LOGGER.error("error=account-failure token={}", uuid.toString());
+      }
+      final DeviceAccountPair accountPair = optionalPair.get();
+
+      final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName("Horizon");
+      if (!soundOptional.isPresent()) {
+        LOGGER.error("error=failed-stop reason=invalid-sound-id");
+      }
+
+      final Optional<Long> messageId = messejiClient.playAudio(
+          accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
+      Duration.create(1L, "Stop Duration", 120), soundOptional.get(), 10, 0, 0, 0);
+
+      final Optional<Long> stopId = messejiClient.stopAudio(accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(), 0);
+
       return IntentHandler.randomOkResponse();
     }
 
