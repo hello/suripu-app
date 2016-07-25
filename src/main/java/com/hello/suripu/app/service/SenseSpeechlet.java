@@ -117,7 +117,8 @@ public class SenseSpeechlet implements Speechlet {
     final String intentName = intent.getName();
 
     if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
-      //TODO: Make this send some kind of 'stop' command to sense
+      LOGGER.debug("action=alexa-intent-stop account_id={}", accessToken.accountId.toString());
+
       final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
       if(!optionalPair.isPresent()) {
         LOGGER.error("error=account-failure token={}", uuid.toString());
