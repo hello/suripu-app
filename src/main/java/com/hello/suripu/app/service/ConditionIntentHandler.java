@@ -117,6 +117,13 @@ public class ConditionIntentHandler extends IntentHandler {
         conditionUnits = "decibels";
         conditionValue = roomState.sound.value;
         break;
+
+      case "air quality":
+        additionalComment = roomState.particulates.message.replace("*", "");
+        conditionUnits = "micrograms per cubic meter";
+        conditionValue = roomState.particulates.value;
+        break;
+
       default:
         final CurrentRoomState.State.Condition generalCondition = RoomConditionUtil.getGeneralRoomConditionV2(roomState, hasDust);
         if (generalCondition.equals(CurrentRoomState.State.Condition.IDEAL)) {

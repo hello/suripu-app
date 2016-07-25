@@ -82,9 +82,6 @@ public class TemperatureIntentHandler extends IntentHandler {
     } else {
       return buildSpeechletResponse(String.format(response.replace("{unit}", "fahrenheit"), celsiusToFahrenheit(tempInCelsius)), true);
     }
-
-    //Get room conditions from api
-
   }
 
   @Override

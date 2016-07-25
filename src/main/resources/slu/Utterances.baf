@@ -35,6 +35,8 @@ GetScore to give me my sleep score from {Duration} ago
 GetScore to tell me my sleep score
 SleepSound to play my sleep sound
 SleepSound to play a sleep sound
+SleepSound to play sleep sound
+SleepSound to play sleep sounds
 SleepSound to play {Name}
 SleepSound to play the {Name} sound
 Alarm to set an alarm
