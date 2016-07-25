@@ -132,9 +132,7 @@ public class SenseSpeechlet implements Speechlet {
 
       final Optional<Long> messageId = messejiClient.playAudio(
           accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
-      Duration.create(1L, "Stop Duration", 120), soundOptional.get(), 10, 0, 0, 0);
-
-      final Optional<Long> stopId = messejiClient.stopAudio(accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(), 0);
+      Duration.create(1L, "Stop Duration", 1), soundOptional.get(), 10, 0, 0, 0);
 
       return IntentHandler.randomOkResponse();
     }
