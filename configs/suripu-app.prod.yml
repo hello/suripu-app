@@ -233,6 +233,7 @@ dynamodb:
     sleep_score_parameters: prod_sleep_score_parameters
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
+    speech_results: prod_speech_results
     sync_response_commands: prod_response_commands
     teams: teams
     timeline: prod_timeline
@@ -262,7 +263,6 @@ dynamodb:
     preferences: http://dynamodb.us-east-1.amazonaws.com
     profile_photo: http://dynamodb.us-east-1.amazonaws.com
     push_notification_event: http://dynamodb.us-east-1.amazonaws.com
-    sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     ring_time_history: http://dynamodb.us-east-1.amazonaws.com
     ring_time: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
@@ -273,6 +273,8 @@ dynamodb:
     sleep_score_parameters:  http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
+    speech_results: http://dynamodb.us-east-1.amazonaws.com
+    sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
     timeline: http://dynamodb.us-east-1.amazonaws.com
     timeline_log: http://dynamodb.us-east-1.amazonaws.com

@@ -1,8 +1,5 @@
 package com.hello.suripu.app;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -20,6 +17,8 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -50,6 +49,7 @@ import com.hello.suripu.app.resources.v1.ProvisionResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.SkillResource;
+import com.hello.suripu.app.resources.v1.SpeechResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
@@ -132,6 +132,7 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
+import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
@@ -161,18 +162,6 @@ import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
-
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -184,6 +173,16 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -450,11 +449,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
 
-        final AmazonDynamoDB sleepScoreParametersClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
-        final SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDynamoDB(sleepHmmDynamoDbClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
+        final AmazonDynamoDB sleepScoreParametersClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_SCORE_PARAMETERS);
+        final SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDynamoDB(sleepScoreParametersClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
 
         final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
+
+        final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
+        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         if(configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
@@ -611,5 +613,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             alarmDAODynamoDB,
             voiceResponsesDAO
         ));
+
+        environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
     }
 }

@@ -41,6 +41,7 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
+import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
@@ -97,6 +98,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createMarketingInsightsSeenTable(configuration, awsCredentialsProvider);
         createSleepScoreParametersTable(configuration, awsCredentialsProvider);
         createProfilePhotoTable(configuration, awsCredentialsProvider);
+        createSleepResultsTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -795,4 +797,22 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         }
     }
 
+    private void createSleepResultsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SPEECH_RESULTS);
+        final String endpoint = endpoints.get(DynamoDBTableName.SPEECH_RESULTS);
+        client.setEndpoint(endpoint);
+
+        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(client, tableName);
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            SpeechResultDynamoDBDAO.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
+        }
+    }
 }
