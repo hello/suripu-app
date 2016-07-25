@@ -20,7 +20,6 @@ import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.oauth.AccessTokenUtils;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
@@ -129,10 +128,6 @@ public class SenseSpeechlet implements Speechlet {
       if (!soundOptional.isPresent()) {
         LOGGER.error("error=failed-stop reason=invalid-sound-id");
       }
-
-      final Optional<Long> messageId = messejiClient.playAudio(
-          accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
-      Duration.create(1L, "Stop Duration", 120), soundOptional.get(), 10, 0, 0, 0);
 
       final Optional<Long> stopId = messejiClient.stopAudio(accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(), 0);
 

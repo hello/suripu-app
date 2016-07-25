@@ -143,7 +143,8 @@ public class AlarmIntentHandler extends IntentHandler {
 
       DateTime alarmTime = DateTime.now().toDateTime(timeZone)
           .withHourOfDay(Integer.valueOf(timePieces[0]))
-          .withMinuteOfHour(Integer.valueOf(timePieces[1]));
+          .withMinuteOfHour(Integer.valueOf(timePieces[1]))
+          .withSecondOfMinute(0);
 
       LOGGER.debug("Now: {}, Alarm: {}", now.toString(), alarmTime.toString());
 
