@@ -50,7 +50,6 @@ public class TemperatureIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-temperature account_id={}", accessToken.accountId.toString());
     if(!accountIDInvocationCounts.containsKey(accessToken.accountId)) {
       accountIDInvocationCounts.put(accessToken.accountId, 0);
     } else {

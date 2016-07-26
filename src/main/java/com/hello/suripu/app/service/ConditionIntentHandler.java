@@ -1,6 +1,7 @@
 package com.hello.suripu.app.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by jnorgan on 6/16/16.
@@ -38,15 +40,18 @@ public class ConditionIntentHandler extends IntentHandler {
   final DeviceDataDAODynamoDB deviceDataDAO;
   final AccountPreferencesDAO preferencesDAO;
   final CalibrationDAO calibrationDAO;
+  final TestVoiceResponsesDAO voiceResponsesDAO;
 
   public ConditionIntentHandler(final DeviceReadDAO deviceReadDAO,
                                 final DeviceDataDAODynamoDB deviceDataDAO,
                                 final AccountPreferencesDAO preferencesDAO,
-                                final CalibrationDAO calibrationDAO) {
+                                final CalibrationDAO calibrationDAO,
+                                final TestVoiceResponsesDAO voiceResponsesDAO) {
     this.deviceReadDAO = deviceReadDAO;
     this.deviceDataDAO = deviceDataDAO;
     this.preferencesDAO = preferencesDAO;
     this.calibrationDAO = calibrationDAO;
+    this.voiceResponsesDAO = voiceResponsesDAO;
   }
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
@@ -113,6 +118,8 @@ public class ConditionIntentHandler extends IntentHandler {
         break;
 
       case "noise level":
+      case "sound level":
+        condition = "sound level";
         additionalComment = roomState.sound.message.replace("*", "");
         conditionUnits = "decibels";
         conditionValue = roomState.sound.value;
@@ -150,7 +157,18 @@ public class ConditionIntentHandler extends IntentHandler {
           return buildSpeechletResponse(builder.toString(), true);
         }
     }
-    return buildSpeechletResponse(String.format("It's currently %.0f %s. %s", conditionValue, conditionUnits, additionalComment), true);
+
+    final String responseKey = intent.getName() + "|" + condition.toLowerCase();
+    final ImmutableList<String> responses = voiceResponsesDAO.getAllResponsesByIntent(responseKey);
+
+    final String response = responses.get(ThreadLocalRandom.current().nextInt(responses.size()));
+
+    //Hacky handling of 'under 1' desired response for the demo ONLY!!! TODO: REMOVE THIS
+    if (conditionValue < 1.0) {
+      return buildSpeechletResponse(String.format("it's currently under one %s", conditionUnits ), true);
+    }
+
+    return buildSpeechletResponse(String.format(response.replace("{unit}", conditionUnits), conditionValue, additionalComment), true);
   }
 
   @Override

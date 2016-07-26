@@ -47,8 +47,6 @@ public class ScoreIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-score account_id={}", accessToken.accountId.toString());
-
     String slotDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
 
     if (intent.getSlots().containsKey("Date") && intent.getSlot("Date") != null && intent.getSlot("Date").getValue() != null) {
