@@ -36,6 +36,7 @@ import com.hello.suripu.core.db.SmartAlarmLoggerDynamoDB;
 import com.hello.suripu.core.db.TeamStore;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
+import com.hello.suripu.core.insights.InsightsLastSeenDynamoDB;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
@@ -97,6 +98,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createMarketingInsightsSeenTable(configuration, awsCredentialsProvider);
         createSleepScoreParametersTable(configuration, awsCredentialsProvider);
         createProfilePhotoTable(configuration, awsCredentialsProvider);
+        createInsightsLastSeenTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -791,6 +793,25 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
             ProfilePhotoStoreDynamoDB.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
+        }
+    }
+
+    private void createInsightsLastSeenTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.INSIGHTS_LAST_SEEN);
+        final String endpoint = endpoints.get(DynamoDBTableName.INSIGHTS_LAST_SEEN);
+        client.setEndpoint(endpoint);
+
+        final InsightsLastSeenDynamoDB insightsLastSeenDynamoDB= InsightsLastSeenDynamoDB.create(client, tableName);
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            InsightsLastSeenDynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
     }
