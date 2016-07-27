@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 /**
  * Created by jnorgan on 6/16/16.
@@ -161,7 +161,7 @@ public class ConditionIntentHandler extends IntentHandler {
     final String responseKey = intent.getName() + "|" + condition.toLowerCase();
     final ImmutableList<String> responses = voiceResponsesDAO.getAllResponsesByIntent(responseKey);
 
-    final String response = responses.get(ThreadLocalRandom.current().nextInt(responses.size()));
+    final String response = responses.get(new Random(System.currentTimeMillis()).nextInt());
 
     //Hacky handling of 'under 1' desired response for the demo ONLY!!! TODO: REMOVE THIS
     if (conditionValue < 1.0) {
