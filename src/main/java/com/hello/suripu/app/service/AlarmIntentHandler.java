@@ -73,8 +73,6 @@ public class AlarmIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-alarm account_id={}", accessToken.accountId.toString());
-
     Boolean isTomorrow = false;
     final Slot timeSlot = intent.getSlot("Time");
     String slotTime;
