@@ -9,6 +9,7 @@ import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -59,7 +60,8 @@ public class SkillResource extends SpeechletServlet {
                        final CalibrationDAO calibrationDAO,
                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                        final AlarmDAODynamoDB alarmDAODynamoDB,
-                       final TestVoiceResponsesDAO voiceResponsesDAO) {
+                       final TestVoiceResponsesDAO voiceResponsesDAO,
+                       final SleepStatsDAO sleepStatsDAO) {
     setSpeechlet(new SenseSpeechlet(accountDAO,
         accessTokenDAO,
         deviceReadDAO,
@@ -73,7 +75,8 @@ public class SkillResource extends SpeechletServlet {
         calibrationDAO,
         mergedUserInfoDynamoDB,
         alarmDAODynamoDB,
-        voiceResponsesDAO
+        voiceResponsesDAO,
+        sleepStatsDAO
     ));
   }
 
