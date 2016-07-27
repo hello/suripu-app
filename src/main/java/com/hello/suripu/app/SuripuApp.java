@@ -609,7 +609,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             calibrationDAO,
             mergedUserInfoDynamoDB,
             alarmDAODynamoDB,
-            voiceResponsesDAO
+            voiceResponsesDAO,
+            sleepStatsDAODynamoDB
         ));
     }
 }
