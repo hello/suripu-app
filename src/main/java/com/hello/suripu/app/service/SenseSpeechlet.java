@@ -78,7 +78,7 @@ public class SenseSpeechlet implements Speechlet {
     intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor));
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
-    intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO));
+    intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO, voiceResponsesDAO));
     intentHandlers.add(new AlarmIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, mergedUserInfoDynamoDB, alarmDAODynamoDB));
   }
 
@@ -115,8 +115,9 @@ public class SenseSpeechlet implements Speechlet {
     final Intent intent = request.getIntent();
     final String intentName = intent.getName();
 
+    LOGGER.debug("action=alexa-intent intent_name={} account_id={}", intentName,  accessToken.accountId.toString());
+
     if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
-      LOGGER.debug("action=alexa-intent-stop account_id={}", accessToken.accountId.toString());
 
       final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
       if(!optionalPair.isPresent()) {

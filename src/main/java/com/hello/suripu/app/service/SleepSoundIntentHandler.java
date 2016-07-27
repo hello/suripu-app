@@ -54,7 +54,6 @@ public class SleepSoundIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-sleep-sound account_id={}", accessToken.accountId.toString());
 
 //    return IntentHandler.buildLinkAccountResponse();
     final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
