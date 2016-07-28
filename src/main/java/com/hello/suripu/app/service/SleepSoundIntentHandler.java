@@ -12,12 +12,15 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.processors.SleepSoundsProcessor.SoundResult;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 
 /**
@@ -51,7 +54,6 @@ public class SleepSoundIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-sleep-sound account_id={}", accessToken.accountId.toString());
 
 //    return IntentHandler.buildLinkAccountResponse();
     final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
@@ -72,7 +74,12 @@ public class SleepSoundIntentHandler extends IntentHandler {
     String slotName;
     if (nameSlot == null || nameSlot.getValue() == null) {
       //default
-      slotName = "Horizon";
+      final SoundResult senseSounds = sleepSoundsProcessor.getSounds(accountPair.externalDeviceId);
+      if (senseSounds.state == SoundResult.State.OK) {
+        slotName = senseSounds.sounds.get(ThreadLocalRandom.current().nextInt(senseSounds.sounds.size())).name;
+      } else {
+        slotName = "Horizon";
+      }
     } else {
       slotName = nameSlot.getValue();
     }
@@ -94,7 +101,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
 
     if (messageId.isPresent()) {
       LOGGER.debug("messeji-status=success message-id={} sense-id={}", messageId.get(), accountPair.externalDeviceId);
-      return buildSpeechletResponse("Your sense sleep sound should now be playing.", true);
+      return IntentHandler.randomOkResponse();
     } else {
       LOGGER.error("messeji-status=failure sense-id={}", accountPair.externalDeviceId);
       return buildSpeechletResponse("There was a problem attempting to play your sleep sound.", true);

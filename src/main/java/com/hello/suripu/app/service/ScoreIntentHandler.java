@@ -6,22 +6,21 @@ import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.models.Account;
-import com.hello.suripu.core.models.TimelineFeedback;
-import com.hello.suripu.core.models.TimelineResult;
-import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 
 /**
@@ -34,22 +33,24 @@ public class ScoreIntentHandler extends IntentHandler {
 
   private final AccountDAO accountDAO;
   private final TimelineDAODynamoDB timelineDAODynamoDB;
-  private final TimelineProcessor timelineProcessor;
+  private final InstrumentedTimelineProcessor timelineProcessor;
+  private final SleepStatsDAO sleepStatsDAO;
 
   public ScoreIntentHandler(final AccountDAO accountDAO,
                             final TimelineDAODynamoDB timelineDAODynamoDB,
-                            final TimelineProcessor timelineProcessor) {
+                            final InstrumentedTimelineProcessor timelineProcessor,
+                            final SleepStatsDAO sleepStatsDAO) {
     this.accountDAO = accountDAO;
     this.timelineDAODynamoDB = timelineDAODynamoDB;
     this.timelineProcessor = timelineProcessor;
+    this.sleepStatsDAO = sleepStatsDAO;
   }
 
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-score account_id={}", accessToken.accountId.toString());
-
-    String slotDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+    final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    String slotDate = new DateTime().toString(formatter);
 
     if (intent.getSlots().containsKey("Date") && intent.getSlot("Date") != null && intent.getSlot("Date").getValue() != null) {
       slotDate = intent.getSlot("Date").getValue();
@@ -74,14 +75,15 @@ public class ScoreIntentHandler extends IntentHandler {
     }
     final Account account = optionalAccount.get();
 
-    final TimelineResult result = timelineProcessor.retrieveTimelinesFast(accessToken.accountId, targetDate, Optional.<TimelineFeedback>absent());
-    if(result.timelines.isEmpty()) {
-      return errorResponse(String.format("I'm unable to find any timelines for that account on %s", slotDate));
+    final Optional<AggregateSleepStats> optionalStats = sleepStatsDAO.getSingleStat(account.id.get(), targetDate.toString(formatter));
+    if (optionalStats.isPresent()) {
+     final Integer sleepScore = optionalStats.get().sleepScore;
+      if (sleepScore > 0) {
+        return buildSpeechletResponse(String.format("Your sleep score was %d.", sleepScore), true);
+      }
     }
 
-    final Integer sleepScore = result.timelines.get(0).score;
-
-    return buildSpeechletResponse(String.format("Your sleep score was %d.", sleepScore), true);
+    return buildSpeechletResponse("I was unable to get your sleep score. Please try again later.", true);
   }
 
   @Override

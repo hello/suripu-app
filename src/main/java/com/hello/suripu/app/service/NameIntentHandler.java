@@ -29,7 +29,7 @@ public class NameIntentHandler extends IntentHandler {
 
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
-    LOGGER.debug("action=alexa-intent-name account_id={}", accessToken.accountId.toString());
+
     //Get Username
     final Optional<Account> optionalAccount = accountDAO.getById(accessToken.accountId);
     if(!optionalAccount.isPresent()) {

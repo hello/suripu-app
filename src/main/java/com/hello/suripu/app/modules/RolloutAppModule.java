@@ -2,6 +2,7 @@ package com.hello.suripu.app.modules;
 
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.InsightsResource;
+import com.hello.suripu.app.resources.v1.OTAResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
@@ -12,18 +13,19 @@ import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.core.processors.TimelineProcessor;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
-import dagger.Module;
-import dagger.Provides;
 
 import javax.inject.Singleton;
+
+import dagger.Module;
+import dagger.Provides;
 
 @Module(injects = {
         TimelineResource.class,
         RoomConditionsResource.class,
-        TimelineProcessor.class,
+        InstrumentedTimelineProcessor.class,
         InsightsResource.class,
         DeviceResources.class,
         com.hello.suripu.app.v2.TimelineResource.class,
@@ -33,6 +35,7 @@ import javax.inject.Singleton;
         SleepSoundsResource.class,
         SleepSoundsProcessor.class,
         QuestionsResource.class,
+        OTAResource.class
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;

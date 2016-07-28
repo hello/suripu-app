@@ -2,19 +2,21 @@ package com.hello.suripu.app.resources.v1;
 
 import com.amazon.speech.speechlet.servlet.SpeechletServlet;
 import com.hello.suripu.app.service.SenseSpeechlet;
+import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.core.processors.TimelineProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.db.AccessTokenDAO;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 
 
 import java.io.IOException;
@@ -53,11 +55,13 @@ public class SkillResource extends SpeechletServlet {
                        final MessejiClient messejiClient,
                        final SleepSoundsProcessor sleepSoundsProcessor,
                        final DurationDAO durationDAO,
-                       final TimelineProcessor timelineProcessor,
+                       final InstrumentedTimelineProcessor timelineProcessor,
                        final AccountPreferencesDAO preferencesDAO,
                        final CalibrationDAO calibrationDAO,
                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-                       final AlarmDAODynamoDB alarmDAODynamoDB) {
+                       final AlarmDAODynamoDB alarmDAODynamoDB,
+                       final TestVoiceResponsesDAO voiceResponsesDAO,
+                       final SleepStatsDAO sleepStatsDAO) {
     setSpeechlet(new SenseSpeechlet(accountDAO,
         accessTokenDAO,
         deviceReadDAO,
@@ -70,7 +74,9 @@ public class SkillResource extends SpeechletServlet {
         preferencesDAO,
         calibrationDAO,
         mergedUserInfoDynamoDB,
-        alarmDAODynamoDB
+        alarmDAODynamoDB,
+        voiceResponsesDAO,
+        sleepStatsDAO
     ));
   }
 
