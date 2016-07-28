@@ -159,6 +159,7 @@ dynamodb:
     features: features
     file_manifest: file_manifest
     insights: insights
+    insights_last_seen: insights_last_seen
     marketing_insights_seen: marketing_insights_seen
     notifications: notifications
     online_hmm_models: online_hmm_models
@@ -199,6 +200,7 @@ dynamodb:
     features: http://localhost:7777
     file_manifest: http://localhost:7777
     insights: http://localhost:7777
+    insights_last_seen: http://localhost:7777
     marketing_insights_seen: http://localhost:7777
     notifications: http://localhost:7777
     online_hmm_models: http://localhost:7777

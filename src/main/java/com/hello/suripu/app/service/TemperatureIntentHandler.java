@@ -50,7 +50,6 @@ public class TemperatureIntentHandler extends IntentHandler {
   @Override
   public SpeechletResponse handleIntentInternal(final Intent intent, final Session session, final AccessToken accessToken) {
 
-    LOGGER.debug("action=alexa-intent-temperature account_id={}", accessToken.accountId.toString());
     if(!accountIDInvocationCounts.containsKey(accessToken.accountId)) {
       accountIDInvocationCounts.put(accessToken.accountId, 0);
     } else {
@@ -82,9 +81,6 @@ public class TemperatureIntentHandler extends IntentHandler {
     } else {
       return buildSpeechletResponse(String.format(response.replace("{unit}", "fahrenheit"), celsiusToFahrenheit(tempInCelsius)), true);
     }
-
-    //Get room conditions from api
-
   }
 
   @Override

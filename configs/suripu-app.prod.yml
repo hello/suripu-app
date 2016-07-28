@@ -211,6 +211,7 @@ dynamodb:
     features: features
     file_manifest: prod_file_manifest
     insights: prod_insights
+    insights_last_seen: prod_insights_last_seen
     marketing_insights_seen: prod_marketing_insights_seen
     notifications: prod_notifications
     online_hmm_models: prod_online_hmm_models
@@ -252,6 +253,7 @@ dynamodb:
     features: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     insights: http://dynamodb.us-east-1.amazonaws.com
+    insights_last_seen: http://dynamodb.us-east-1.amazonaws.com
     marketing_insights_seen: http://dynamodb.us-east-1.amazonaws.com
     notifications: http://dynamodb.us-east-1.amazonaws.com
     online_hmm_models: http://dynamodb.us-east-1.amazonaws.com

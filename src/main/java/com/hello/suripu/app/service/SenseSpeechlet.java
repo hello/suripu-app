@@ -18,9 +18,9 @@ import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.oauth.AccessTokenUtils;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
@@ -68,7 +68,8 @@ public class SenseSpeechlet implements Speechlet {
       final CalibrationDAO calibrationDAO,
       final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
       final AlarmDAODynamoDB alarmDAODynamoDB,
-      final TestVoiceResponsesDAO voiceResponsesDAO) {
+      final TestVoiceResponsesDAO voiceResponsesDAO,
+      final SleepStatsDAO sleepStatsDAO) {
     this.accountDAO = accountDAO;
     this.messejiClient = messejiClient;
     this.deviceReadDAO = deviceReadDAO;
@@ -76,10 +77,10 @@ public class SenseSpeechlet implements Speechlet {
     this.accessTokenDAO = accessTokenDAO;
     intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, voiceResponsesDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
-    intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor));
+    intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor, sleepStatsDAO));
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
-    intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO));
+    intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO, voiceResponsesDAO));
     intentHandlers.add(new AlarmIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, mergedUserInfoDynamoDB, alarmDAODynamoDB));
   }
 
@@ -116,8 +117,9 @@ public class SenseSpeechlet implements Speechlet {
     final Intent intent = request.getIntent();
     final String intentName = intent.getName();
 
+    LOGGER.debug("action=alexa-intent intent_name={} account_id={}", intentName,  accessToken.accountId.toString());
+
     if(intentName.equals("AMAZON.StopIntent") || intentName.equals("AMAZON.CancelIntent")) {
-      LOGGER.debug("action=alexa-intent-stop account_id={}", accessToken.accountId.toString());
 
       final Optional<DeviceAccountPair> optionalPair = deviceReadDAO.getMostRecentSensePairByAccountId(accessToken.accountId);
       if(!optionalPair.isPresent()) {
@@ -129,10 +131,6 @@ public class SenseSpeechlet implements Speechlet {
       if (!soundOptional.isPresent()) {
         LOGGER.error("error=failed-stop reason=invalid-sound-id");
       }
-
-      final Optional<Long> messageId = messejiClient.playAudio(
-          accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
-      Duration.create(1L, "Stop Duration", 120), soundOptional.get(), 10, 0, 0, 0);
 
       final Optional<Long> stopId = messejiClient.stopAudio(accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(), 0);
 
