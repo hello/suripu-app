@@ -250,7 +250,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         clientConfiguration.withConnectionTimeout(200); // in ms
         clientConfiguration.withMaxErrorRetry(1);
 
-        final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
+        final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, new ClientConfiguration(), configuration.dynamoDBConfiguration());
         final AmazonSNSClient snsClient = new AmazonSNSClient(awsCredentialsProvider, clientConfiguration);
         final AmazonKinesisAsyncClient kinesisClient = new AmazonKinesisAsyncClient(awsCredentialsProvider, clientConfiguration);
@@ -261,9 +261,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB timelineDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.TIMELINE);
         final TimelineDAODynamoDB timelineDAODynamoDB = new TimelineDAODynamoDB(timelineDynamoDBClient,
-            tableNames.get(DynamoDBTableName.TIMELINE),
-            configuration.getMaxCacheRefreshDay(),
-            environment.metrics());
+                tableNames.get(DynamoDBTableName.TIMELINE),
+                configuration.getMaxCacheRefreshDay(),
+                environment.metrics());
 
         final AmazonDynamoDB sleepHmmDynamoDbClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_HMM);
         final SleepHmmDAODynamoDB sleepHmmDAODynamoDB = new SleepHmmDAODynamoDB(sleepHmmDynamoDbClient, tableNames.get(DynamoDBTableName.SLEEP_HMM));
@@ -312,11 +312,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final S3BucketConfiguration seedModelConfig = configuration.getTimelineSeedModelConfiguration();
 
         final DefaultModelEnsembleDAO defaultModelEnsembleDAO = DefaultModelEnsembleFromS3.create(
-            amazonS3,
-            timelineModelEnsemblesConfig.getBucket(),
-            timelineModelEnsemblesConfig.getKey(),
-            seedModelConfig.getBucket(),
-            seedModelConfig.getKey()
+                amazonS3,
+                timelineModelEnsemblesConfig.getBucket(),
+                timelineModelEnsemblesConfig.getKey(),
+                seedModelConfig.getBucket(),
+                seedModelConfig.getKey()
         );
 
         final ImmutableMap<QueueName, String> streams = ImmutableMap.copyOf(configuration.getKinesisConfiguration().getStreams());
@@ -324,7 +324,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final DataLogger activityLogger = kinesisLoggerFactory.get(QueueName.ACTIVITY_STREAM);
         final DataLogger timelineLogger = kinesisLoggerFactory.get(QueueName.LOGS);
 
-        if(configuration.getMetricsEnabled()) {
+        if (configuration.getMetricsEnabled()) {
             final String graphiteHostName = configuration.getGraphite().getHost();
             final String apiKey = configuration.getGraphite().getApiKey();
             final Integer interval = configuration.getGraphite().getReportingIntervalInSeconds();
@@ -338,11 +338,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
 
             final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
-                .prefixedWith(prefix)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .filter(metricFilter)
-                .build(graphite);
+                    .prefixedWith(prefix)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .filter(metricFilter)
+                    .build(graphite);
             reporter.start(interval, TimeUnit.SECONDS);
 
             LOGGER.info("Metrics enabled.");
@@ -359,12 +359,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
-            .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
-            .setAuthorizer(new OAuthAuthorizer())
-            .setRealm("SUPER SECRET STUFF")
-            .setPrefix("Bearer")
-            .setLogger(activityLogger)
-            .buildAuthFilter()));
+                .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
+                .setAuthorizer(new OAuthAuthorizer())
+                .setRealm("SUPER SECRET STUFF")
+                .setPrefix("Bearer")
+                .setLogger(activityLogger)
+                .buildAuthFilter()));
         environment.jersey().register(new ScopesAllowedDynamicFeature(applicationStore));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(AccessToken.class));
 
@@ -400,7 +400,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB senseKeyStoreDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStore senseKeyStore = new KeyStoreDynamoDB(
                 senseKeyStoreDynamoDBClient,
-            tableNames.get(DynamoDBTableName.SENSE_KEY_STORE),
+                tableNames.get(DynamoDBTableName.SENSE_KEY_STORE),
                 "1234567891234567".getBytes(), // TODO: REMOVE THIS WHEN WE ARE NOT SUPPOSED TO HAVE A DEFAULT KEY
                 120 // 2 minutes for cache
         );
@@ -458,7 +458,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
         final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
-        if(configuration.getDebug()) {
+        if (configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
         }
@@ -470,9 +470,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final MobilePushNotificationProcessor mobilePushNotificationProcessor = new MobilePushNotificationProcessor(snsClient, notificationSubscriptionsDAO, pushNotificationEventDynamoDB);
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
-            notificationSubscriptionsDAO,
-            snsClient,
-            arns
+                notificationSubscriptionsDAO,
+                snsClient,
+                arns
         );
         environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
 
@@ -482,12 +482,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB respCommandsDynamoDBClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.SYNC_RESPONSE_COMMANDS, ResponseCommandsDAODynamoDB.class);
         final ResponseCommandsDAODynamoDB respCommandsDAODynamoDB = new ResponseCommandsDAODynamoDB(respCommandsDynamoDBClient, tableNames.get(DynamoDBTableName.SYNC_RESPONSE_COMMANDS));
 
-        if(configuration.getDebug()) {
+        if (configuration.getDebug()) {
             environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
         }
 
         environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
-        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(),senseColorDAO, calibrationDAO));
+        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(), senseColorDAO, calibrationDAO));
         environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
 
         final S3BucketConfiguration provisionKeyConfiguration = configuration.getProvisionKeyConfiguration();
@@ -523,7 +523,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 taimurainHttpClient,
                 timelineAlgorithmConfiguration,
                 environment.metrics());
-        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO,timelineLogger, timelineProcessor));
+        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
         environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
 
@@ -554,16 +554,16 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new com.hello.suripu.app.v2.InsightsResource(insightsDAODynamoDB, trendsInsightsDAO));
         environment.jersey().register(PasswordResetResource.create(accountDAO, passwordResetDB, configuration.emailConfiguration()));
         environment.jersey().register(new SupportResource(supportDAO));
-        environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB,timelineLogger));
+        environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB, timelineLogger));
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
-            .withDeviceDAO(deviceDAO)
-            .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
-            .withSensorsViewDynamoDB(sensorsViewsDynamoDB)
-            .withPillDataDAODynamoDB(pillDataDAODynamoDB)
-            .withWifiInfoDAO(wifiInfoDAO)
-            .withSenseColorDAO(senseColorDAO)
-            .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
-            .build();
+                .withDeviceDAO(deviceDAO)
+                .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
+                .withSensorsViewDynamoDB(sensorsViewsDynamoDB)
+                .withPillDataDAODynamoDB(pillDataDAODynamoDB)
+                .withWifiInfoDAO(wifiInfoDAO)
+                .withSenseColorDAO(senseColorDAO)
+                .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
+                .build();
         environment.jersey().register(new DeviceResource(deviceProcessor));
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
@@ -586,8 +586,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
 
-
-        if(configuration.getDebug()) {
+        if (configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
         } else {
             final ImmutableMap<String, String> alexaAppIds = configuration.getAlexaAppIds();
@@ -598,22 +597,24 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final TestVoiceResponsesDAO voiceResponsesDAO = commonDB.onDemand(TestVoiceResponsesDAO.class);
         environment.jersey().register(new SkillResource(
-            accountDAO,
-            accessTokenDAO,
-            deviceDAO,
-            deviceDataDAODynamoDB,
-            timelineDAODynamoDB,
-            messejiClient,
-            SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
-            durationDAO,
-            timelineProcessor,
-            accountPreferencesDAO,
-            calibrationDAO,
-            mergedUserInfoDynamoDB,
-            alarmDAODynamoDB,
-            voiceResponsesDAO
+                accountDAO,
+                accessTokenDAO,
+                deviceDAO,
+                deviceDataDAODynamoDB,
+                timelineDAODynamoDB,
+                messejiClient,
+                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                durationDAO,
+                timelineProcessor,
+                accountPreferencesDAO,
+                calibrationDAO,
+                mergedUserInfoDynamoDB,
+                alarmDAODynamoDB,
+                voiceResponsesDAO
         ));
 
-        environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
+        if (configuration.getDebug()){
+            environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
+        }
     }
 }
