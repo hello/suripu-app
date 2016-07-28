@@ -183,6 +183,7 @@ dynamodb:
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
     sync_response_commands: response_commands
+    speech_results: speech_results
     teams: teams
     timeline: timeline
     timeline_log: timeline_log
@@ -222,6 +223,7 @@ dynamodb:
     sleep_stats: http://localhost:7777
     smart_alarm_log: http://localhost:7777
     sync_response_commands: http://localhost:7777
+    speech_results: http://localhost:7777
     timeline: http://localhost:7777
     timeline_log: http://localhost:7777
     timezone_history: http://localhost:7777
