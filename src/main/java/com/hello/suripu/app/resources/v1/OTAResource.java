@@ -22,6 +22,7 @@ import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class OTAResource extends BaseResource {
         if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, latestReportedFWVersion, Collections.EMPTY_LIST)) {
             // If the latest OTA History has a source fw equal to the latest reported FW version and occurred within the last 10 mins, then assume an OTA is in progress
             if(history.currentFWVersion.equals(latestReportedFWVersion)
-                && history.eventTime.isAfter(DateTime.now().minusMinutes(RECENT_OTA_HISTORY_WINDOW_MINS))) {
+                && history.eventTime.isAfter(DateTime.now(DateTimeZone.UTC).minusMinutes(RECENT_OTA_HISTORY_WINDOW_MINS))) {
                 return new OTAStatus(Status.IN_PROGRESS);
             }
             return new OTAStatus(Status.REQUIRED);
