@@ -21,6 +21,7 @@ import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,8 @@ public class OTAResource extends BaseResource {
     private final OTAHistoryDAODynamoDB otaHistoryDAO;
     private final ResponseCommandsDAODynamoDB responseCommandsDAODynamoDB;
     private final SensorsViewsDynamoDB sensorsViewsDynamoDB;
+    private final static Integer RECENT_OTA_HISTORY_WINDOW_MINS = 10;
+    private final static Long REQUIRED_DATA_AGE_SECS = 30L;
 
     @Inject
     RolloutClient feature;
@@ -89,9 +92,11 @@ public class OTAResource extends BaseResource {
         }
         final OTAHistory history = optionalOTAHistory.get();
 
+
         if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, latestReportedFWVersion, Collections.EMPTY_LIST)) {
-            // If the latest OTA History has a source fw equal to the latest reported FW version, then assume an OTA is in progress
-            if(history.currentFWVersion.equals(latestReportedFWVersion)) {
+            // If the latest OTA History has a source fw equal to the latest reported FW version and occurred within the last 10 mins, then assume an OTA is in progress
+            if(history.currentFWVersion.equals(latestReportedFWVersion)
+                && history.eventTime.isAfter(DateTime.now().minusMinutes(RECENT_OTA_HISTORY_WINDOW_MINS))) {
                 return new OTAStatus(Status.IN_PROGRESS);
             }
             return new OTAStatus(Status.REQUIRED);
@@ -99,7 +104,7 @@ public class OTAResource extends BaseResource {
 
         // If the latest data is old enough to be trusted and the reported fw version matches the destination
         // fw of the latest OTA history event, assume the OTA history event was completed
-        if (history.newFWVersion.equals(latestReportedFWVersion) && data.isSecondsOld(30L)) {
+        if (history.newFWVersion.equals(latestReportedFWVersion) && data.isSecondsOld(REQUIRED_DATA_AGE_SECS)) {
 
             //If the source fw version from the latest OTA History event is a 'required' fw, then we must have completed a forced OTA event
             if (feature.deviceFeatureActive(FeatureFlipper.FW_VERSIONS_REQUIRING_UPDATE, history.currentFWVersion, Collections.EMPTY_LIST)) {
