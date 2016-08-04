@@ -1,14 +1,14 @@
 package com.hello.suripu.app.cli;
 
-import com.google.common.collect.ImmutableMap;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AggregateSleepScoreDAODynamoDB;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -47,14 +47,11 @@ import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
+import net.sourceforge.argparse4j.inf.Namespace;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfiguration> {
 
@@ -105,6 +102,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createProfilePhotoTable(configuration, awsCredentialsProvider);
         createInsightsLastSeenTable(configuration, awsCredentialsProvider);
         createSleepResultsTable(configuration, awsCredentialsProvider);
+        createAnalyticsTrackingTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -837,6 +835,25 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
             SpeechResultDynamoDBDAO.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
+        }
+    }
+
+    private void createAnalyticsTrackingTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING);
+        final String endpoint = endpoints.get(DynamoDBTableName.ANALYTICS_TRACKING);
+        client.setEndpoint(endpoint);
+
+        final AnalyticsTrackingDynamoDB analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(client, tableName);
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            AnalyticsTrackingDynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
     }
