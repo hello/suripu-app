@@ -103,7 +103,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSleepScoreParametersTable(configuration, awsCredentialsProvider);
         createProfilePhotoTable(configuration, awsCredentialsProvider);
         createInsightsLastSeenTable(configuration, awsCredentialsProvider);
-        createSleepResultsTable(configuration, awsCredentialsProvider);
+        createSpeechResultsTable(configuration, awsCredentialsProvider);
         createAnalyticsTrackingTable(configuration, awsCredentialsProvider);
     }
 
@@ -835,7 +835,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.INSIGHTS_LAST_SEEN);
         client.setEndpoint(endpoint);
 
-        final InsightsLastSeenDynamoDB insightsLastSeenDynamoDB= InsightsLastSeenDynamoDB.create(client, tableName);
+        final InsightsLastSeenDynamoDB insightsLastSeenDynamoDB = InsightsLastSeenDynamoDB.create(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
@@ -845,7 +845,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         }
     }
 
-    private void createSleepResultsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+    private void createSpeechResultsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
         final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
