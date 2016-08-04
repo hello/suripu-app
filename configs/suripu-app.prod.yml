@@ -204,6 +204,7 @@ dynamodb:
     alarm: prod_alarm
     alarm_info: prod_alarm_info
     algorithm_test: prod_algorithm_test
+    analytics_tracking: prod_analytics_tracking
     app_stats: prod_app_stats
     calibration: prod_calibration
     device_data: prod_sense_data
@@ -246,6 +247,7 @@ dynamodb:
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     algorithm_test: http://dynamodb.us-east-1.amazonaws.com
+    analytics_tracking: http://dynamodb.us-east-1.amazonaws.com
     app_stats: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
