@@ -31,6 +31,7 @@ import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
+import com.hello.suripu.app.managed.AnalyticsManaged;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.app.resources.v1.AccountPreferencesResource;
 import com.hello.suripu.app.resources.v1.AccountResource;
@@ -63,6 +64,10 @@ import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.analytics.AnalyticsTracker;
+import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
+import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
+import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
 import com.hello.suripu.core.db.AccountDAO;
@@ -163,6 +168,7 @@ import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
+import com.segment.analytics.Analytics;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -556,6 +562,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(PasswordResetResource.create(accountDAO, passwordResetDB, configuration.emailConfiguration()));
         environment.jersey().register(new SupportResource(supportDAO));
         environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB, timelineLogger));
+
+        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
+        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
+        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ANALYTICS_TRACKING));
+        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
+        environment.lifecycle().manage(new AnalyticsManaged(analytics));
+
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
                 .withDeviceDAO(deviceDAO)
                 .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
@@ -564,8 +578,10 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withWifiInfoDAO(wifiInfoDAO)
                 .withSenseColorDAO(senseColorDAO)
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
+                .withAnalyticsTracker(analyticsTracker)
                 .build();
-        environment.jersey().register(new DeviceResource(deviceProcessor));
+        environment.jersey().register(new DeviceResource(deviceProcessor, accountDAO));
+
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
         environment.jersey().register(new StoreFeedbackResource(storeFeedbackDAO));

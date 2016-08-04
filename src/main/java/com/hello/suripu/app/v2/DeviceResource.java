@@ -1,23 +1,26 @@
 package com.hello.suripu.app.v2;
 
-import com.google.common.base.Optional;
-
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
+import com.hello.suripu.app.modules.AppFeatureFlipper;
+import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.WifiInfo;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
-import com.hello.suripu.core.util.JsonError;
-
+import com.librato.rollout.RolloutClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -29,16 +32,22 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 
 @Path("/v2/devices")
 public class DeviceResource extends BaseResource {
 
+    @Inject
+    RolloutClient flipper;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceResource.class);
 
     private final DeviceProcessor deviceProcessor;
+    private final AccountDAO accountDAO;
 
-    public DeviceResource(final DeviceProcessor deviceProcessor) {
+    public DeviceResource(final DeviceProcessor deviceProcessor, final AccountDAO accountDAO) {
         this.deviceProcessor = deviceProcessor;
+        this.accountDAO = accountDAO;
     }
 
     @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
@@ -46,6 +55,25 @@ public class DeviceResource extends BaseResource {
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     public Devices getDevices(@Auth final AccessToken accessToken) {
+
+
+
+        final boolean lowBatteryOverride = flipper.userFeatureActive(AppFeatureFlipper.LOW_BATTERY_ALERT_OVERRIDE, accessToken.accountId, Collections.<String>emptyList());
+        if(lowBatteryOverride) {
+            final Optional<Account> accountOptional = accountDAO.getById(accessToken.accountId);
+            if(!accountOptional.isPresent()) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            }
+
+            final DeviceQueryInfo deviceQueryInfo = DeviceQueryInfo.create(
+                    accessToken.accountId,
+                    this.isSenseLastSeenDynamoDBReadEnabled(accessToken.accountId),
+                    this.isSensorsDBUnavailable(accessToken.accountId),
+                    accountOptional.get()
+            );
+            return deviceProcessor.getAllDevices(deviceQueryInfo);
+        }
+
         final DeviceQueryInfo deviceQueryInfo = DeviceQueryInfo.create(
                 accessToken.accountId,
                 this.isSenseLastSeenDynamoDBReadEnabled(accessToken.accountId),
