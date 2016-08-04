@@ -1,20 +1,20 @@
 package com.hello.suripu.app.v2;
 
-import com.google.common.base.Optional;
-
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
+import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.WifiInfo;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
 import com.hello.suripu.coredw8.oauth.ScopesAllowed;
 import com.hello.suripu.coredw8.resources.BaseResource;
-import com.hello.suripu.core.util.JsonError;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +36,11 @@ public class DeviceResource extends BaseResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceResource.class);
 
     private final DeviceProcessor deviceProcessor;
+    private final AccountDAO accountDAO;
 
-    public DeviceResource(final DeviceProcessor deviceProcessor) {
+    public DeviceResource(final DeviceProcessor deviceProcessor, final AccountDAO accountDAO) {
         this.deviceProcessor = deviceProcessor;
+        this.accountDAO = accountDAO;
     }
 
     @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
@@ -46,10 +48,17 @@ public class DeviceResource extends BaseResource {
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     public Devices getDevices(@Auth final AccessToken accessToken) {
+
+        final Optional<Account> accountOptional = accountDAO.getById(accessToken.accountId);
+        if(!accountOptional.isPresent()) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+
         final DeviceQueryInfo deviceQueryInfo = DeviceQueryInfo.create(
                 accessToken.accountId,
                 this.isSenseLastSeenDynamoDBReadEnabled(accessToken.accountId),
-                this.isSensorsDBUnavailable(accessToken.accountId)
+                this.isSensorsDBUnavailable(accessToken.accountId),
+                accountOptional.get()
         );
         return deviceProcessor.getAllDevices(deviceQueryInfo);
 

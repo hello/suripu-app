@@ -1,9 +1,8 @@
 package com.hello.suripu.app.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredw8.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredw8.configuration.KinesisConfiguration;
 import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
@@ -12,16 +11,14 @@ import com.hello.suripu.coredw8.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
-
-import java.util.Map;
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
+import java.util.Map;
 
 public class SuripuAppConfiguration extends Configuration {
 
@@ -214,5 +211,11 @@ public class SuripuAppConfiguration extends Configuration {
     private Map<String, String> alexaAppIds = Maps.newHashMap();
     public ImmutableMap<String, String> getAlexaAppIds() {
         return ImmutableMap.copyOf(alexaAppIds);
+    }
+
+    @JsonProperty("segment_write_key")
+    private String segmentWriteKey = "hello";
+    public String segmentWriteKey() {
+        return segmentWriteKey;
     }
 }
