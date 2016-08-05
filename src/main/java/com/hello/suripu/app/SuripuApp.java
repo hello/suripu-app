@@ -489,9 +489,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB respCommandsDynamoDBClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.SYNC_RESPONSE_COMMANDS, ResponseCommandsDAODynamoDB.class);
         final ResponseCommandsDAODynamoDB respCommandsDAODynamoDB = new ResponseCommandsDAODynamoDB(respCommandsDynamoDBClient, tableNames.get(DynamoDBTableName.SYNC_RESPONSE_COMMANDS));
 
-        if (configuration.getDebug()) {
-            environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
-        }
+        environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
 
         environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
         environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(), senseColorDAO, calibrationDAO));
@@ -631,9 +629,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepStatsDAODynamoDB
         ));
 
-        if (configuration.getDebug()){
-            environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
-        }
+        environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
     }
 }
