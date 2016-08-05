@@ -24,6 +24,14 @@ public class SuripuAppConfiguration extends Configuration {
 
     @Valid
     @NotNull
+    @JsonProperty("agg_stats_version")
+    private String aggStatsVersion;
+    public String getAggStatsVersion() {
+        return this.aggStatsVersion;
+    }
+
+    @Valid
+    @NotNull
     @JsonProperty("common_db")
     private DataSourceFactory commonDB = new DataSourceFactory();
     public DataSourceFactory getCommonDB() {
