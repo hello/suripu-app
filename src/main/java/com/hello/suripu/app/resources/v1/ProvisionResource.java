@@ -6,6 +6,7 @@ import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.api.logging.LoggingProtos;
 import com.hello.suripu.core.db.KeyStore;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.provision.PillBlobProvision;
 import com.hello.suripu.core.provision.PillProvision;
 import com.hello.suripu.core.provision.PillProvisionDAO;
@@ -39,6 +40,18 @@ public class ProvisionResource {
     private final KeyStoreUtils keyStoreUtils;
     private final PillProvisionDAO pillProvisionDAO;
     private final AmazonS3 s3;
+
+    // August 1st
+    //    910-00100
+    //    PRODUCT ASSY, SENSE 1.5 DVT, WHITE
+    //
+    //    910-00101
+    //    PRODUCT ASSY, SENSE 1.5 DVT, Black
+
+    private final static Integer MIN_SN_LENGTH = "910-00100".length();
+
+    private final static String SENSE_ONE_FIVE_WHITE = "910-00100";
+    private final static String SENSE_ONE_FIVE_BLACK = "910-00101";
 
     @Context
     HttpServletRequest request;
@@ -82,7 +95,8 @@ public class ProvisionResource {
         s3.putObject("hello-provision-blobs", key, byteArrayInputStream, metadata);
         byteArrayInputStream.close();
 
-
+        final HardwareVersion hardwareVersion = ProvisionResource.fromSerialNumber(serialNumber);
+        LOGGER.info("action=provision sn={} hw_version={}", serialNumber, hardwareVersion);
         try{
             final Optional<SenseProvision> sense = keyStoreUtils.decrypt(body);
             if(!sense.isPresent()) {
@@ -91,7 +105,7 @@ public class ProvisionResource {
 
             if(sense.isPresent()) {
                 final SenseProvision senseProvision = sense.get();
-                senseKeyStore.put(senseProvision.deviceIdHex, senseProvision.aesKeyHex, serialNumber, DateTime.now(DateTimeZone.UTC));
+                senseKeyStore.put(senseProvision.deviceIdHex, senseProvision.aesKeyHex, serialNumber, DateTime.now(DateTimeZone.UTC), hardwareVersion);
                 final StringBuilder sb = new StringBuilder();
                 sb.append("OK\n");
                 sb.append(sense.get().deviceIdHex + "\n");
@@ -147,5 +161,17 @@ public class ProvisionResource {
         }
         final String message = String.format("OK SN created on %s\n", pillProvisionOptional.get().created.toString());
         return Response.ok().entity(message).build();
+    }
+
+    public static HardwareVersion fromSerialNumber(final String serialNumber) {
+        if(serialNumber != null && serialNumber.length() > MIN_SN_LENGTH) {
+           final HardwareVersion hardwareVersion = (serialNumber.startsWith(SENSE_ONE_FIVE_BLACK)
+                                                    || serialNumber.startsWith(SENSE_ONE_FIVE_WHITE))
+                    ? HardwareVersion.SENSE_ONE_FIVE
+                    : HardwareVersion.SENSE_ONE;
+            return hardwareVersion;
+        }
+
+        return HardwareVersion.SENSE_ONE;
     }
 }
