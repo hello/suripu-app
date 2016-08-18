@@ -141,6 +141,8 @@ import com.hello.suripu.core.provision.PillProvisionDAO;
 import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
+import com.hello.suripu.core.swap.Swapper;
+import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.core.util.RequestRateLimiter;
@@ -578,7 +580,15 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
                 .withAnalyticsTracker(analyticsTracker)
                 .build();
-        environment.jersey().register(new DeviceResource(deviceProcessor, accountDAO));
+
+        final Swapper swapper = new DynamoDBSwapper(
+                deviceDAO,
+                new DynamoDB(mergedUserInfoDynamoDBClient),
+                "swap",
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
+        );
+
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
 
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
