@@ -581,10 +581,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withAnalyticsTracker(analyticsTracker)
                 .build();
 
+
+        // Important, swap_intent has to be connected to the same endpoint as alarm_info
+        // otherwise nothing can be swapped.
         final Swapper swapper = new DynamoDBSwapper(
                 deviceDAO,
                 new DynamoDB(mergedUserInfoDynamoDBClient),
-                "swap",
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.SWAP_INTENTS),
                 configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
         );
 

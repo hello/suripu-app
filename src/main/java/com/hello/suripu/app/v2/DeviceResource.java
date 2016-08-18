@@ -165,11 +165,14 @@ public class DeviceResource extends BaseResource {
     public Response swap(@Auth final AccessToken accessToken,
                            @Valid final SwapRequest swapRequest){
 
+        // TODO: check that swaprequest.senseId() is provisioned before authorizing the swap.
         final Optional<SwapIntent> intent = swapper.eligible(accessToken.accountId, swapRequest.senseId());
         if(intent.isPresent()) {
             swapper.create(intent.get());
+            return Response.noContent().build();
         }
 
-        return Response.noContent().build();
+        throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(new JsonError(400, "bad swap")).build());
+
     }
 }
