@@ -80,7 +80,7 @@ public class OTAResource extends BaseResource {
         final Optional<DeviceData> deviceDataOptional = sensorsViewsDynamoDB.lastSeen(pair.externalDeviceId, accessToken.accountId, pair.internalDeviceId);
         if(!deviceDataOptional.isPresent()) {
             LOGGER.error("error=no-device-data device_id={}", deviceId);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            return new OTAStatus(Status.UNKNOWN);
         }
 
         final DeviceData data = deviceDataOptional.get();
@@ -89,7 +89,7 @@ public class OTAResource extends BaseResource {
         final Optional<OTAHistory> optionalOTAHistory = otaHistoryDAO.getLatest(pair.externalDeviceId);
         if(!optionalOTAHistory.isPresent()) {
             LOGGER.warn("No OTA History found for device_id={}", pair.externalDeviceId);
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            return new OTAStatus(Status.UNKNOWN);
         }
         final OTAHistory history = optionalOTAHistory.get();
 
