@@ -138,9 +138,11 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
-import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
+import com.hello.suripu.core.swap.Swapper;
+import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.core.util.RequestRateLimiter;
@@ -463,7 +465,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         if (configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
@@ -578,7 +580,18 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
                 .withAnalyticsTracker(analyticsTracker)
                 .build();
-        environment.jersey().register(new DeviceResource(deviceProcessor, accountDAO));
+
+
+        // Important, swap_intent has to be connected to the same endpoint as alarm_info
+        // otherwise nothing can be swapped.
+        final Swapper swapper = new DynamoDBSwapper(
+                deviceDAO,
+                new DynamoDB(mergedUserInfoDynamoDBClient),
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.SWAP_INTENTS),
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
+        );
+
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
 
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
@@ -629,7 +642,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepStatsDAODynamoDB
         ));
 
-        environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
+        environment.jersey().register(new SpeechResource(speechResultDAODynamoDB, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
     }
 }

@@ -44,7 +44,8 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
-import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
@@ -105,6 +106,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createInsightsLastSeenTable(configuration, awsCredentialsProvider);
         createSpeechResultsTable(configuration, awsCredentialsProvider);
         createAnalyticsTrackingTable(configuration, awsCredentialsProvider);
+        createSwapIntentsTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -854,12 +856,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.SPEECH_RESULTS);
         client.setEndpoint(endpoint);
 
-        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(client, tableName);
+        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
-            SpeechResultDynamoDBDAO.createTable(client, tableName);
+            speechResultDAODynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
     }
@@ -873,12 +875,29 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.ANALYTICS_TRACKING);
         client.setEndpoint(endpoint);
 
-        final AnalyticsTrackingDynamoDB analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
             AnalyticsTrackingDynamoDB.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
+        }
+    }
+
+    private void createSwapIntentsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SWAP_INTENTS);
+        final String endpoint = endpoints.get(DynamoDBTableName.SWAP_INTENTS);
+        client.setEndpoint(endpoint);
+
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            DynamoDBSwapper.createTable(tableName, client);
             System.out.println(String.format("%s created", tableName));
         }
     }
