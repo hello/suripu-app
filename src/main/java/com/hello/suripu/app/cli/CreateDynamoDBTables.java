@@ -44,7 +44,7 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
-import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
@@ -854,12 +854,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.SPEECH_RESULTS);
         client.setEndpoint(endpoint);
 
-        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(client, tableName);
+        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
-            SpeechResultDynamoDBDAO.createTable(client, tableName);
+            speechResultDAODynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
     }
