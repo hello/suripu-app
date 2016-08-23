@@ -11,6 +11,9 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.swap.SwapIntent;
+import com.hello.suripu.core.swap.SwapRequest;
+import com.hello.suripu.core.swap.Swapper;
 import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.oauth.AccessToken;
 import com.hello.suripu.coredw8.oauth.Auth;
@@ -43,10 +46,12 @@ public class DeviceResource extends BaseResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceResource.class);
 
     private final DeviceProcessor deviceProcessor;
+    private final Swapper swapper;
     private final AccountDAO accountDAO;
 
-    public DeviceResource(final DeviceProcessor deviceProcessor, final AccountDAO accountDAO) {
+    public DeviceResource(final DeviceProcessor deviceProcessor,final Swapper swapper, final AccountDAO accountDAO) {
         this.deviceProcessor = deviceProcessor;
+        this.swapper = swapper;
         this.accountDAO = accountDAO;
     }
 
@@ -152,4 +157,22 @@ public class DeviceResource extends BaseResource {
         return Response.noContent().build();
     }
 
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/swap")
+    public Response swap(@Auth final AccessToken accessToken,
+                           @Valid final SwapRequest swapRequest){
+
+        // TODO: check that swaprequest.senseId() is provisioned before authorizing the swap.
+        final Optional<SwapIntent> intent = swapper.eligible(accessToken.accountId, swapRequest.senseId());
+        if(intent.isPresent()) {
+            swapper.create(intent.get());
+            return Response.noContent().build();
+        }
+
+        throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(new JsonError(400, "bad swap")).build());
+
+    }
 }

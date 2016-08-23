@@ -238,6 +238,7 @@ dynamodb:
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
     speech_results: prod_speech_results
+    swap_intents: prod_swap_intents
     sync_response_commands: prod_response_commands
     teams: teams
     timeline: prod_timeline
@@ -281,6 +282,7 @@ dynamodb:
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
+    swap_intents: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
     timeline: http://dynamodb.us-east-1.amazonaws.com
