@@ -11,8 +11,9 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.core.swap.SwapIntent;
-import com.hello.suripu.core.swap.SwapRequest;
+import com.hello.suripu.core.swap.IntentResult;
+import com.hello.suripu.core.swap.Request;
+import com.hello.suripu.core.swap.Status;
 import com.hello.suripu.core.swap.Swapper;
 import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredw8.oauth.AccessToken;
@@ -162,17 +163,16 @@ public class DeviceResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/swap")
-    public Response swap(@Auth final AccessToken accessToken,
-                           @Valid final SwapRequest swapRequest){
+    public com.hello.suripu.core.swap.Response swap(@Auth final AccessToken accessToken,
+                           @Valid final Request swapRequest){
 
         // TODO: check that swaprequest.senseId() is provisioned before authorizing the swap.
-        final Optional<SwapIntent> intent = swapper.eligible(accessToken.accountId, swapRequest.senseId());
-        if(intent.isPresent()) {
-            swapper.create(intent.get());
-            return Response.noContent().build();
+        final IntentResult result = swapper.eligible(accessToken.accountId, swapRequest.senseId());
+        if(result.intent().isPresent()) {
+            swapper.create(result.intent().get());
+            return com.hello.suripu.core.swap.Response.create(Status.OK);
         }
 
-        throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(new JsonError(400, "bad swap")).build());
-
+        return com.hello.suripu.core.swap.Response.create(result.status());
     }
 }
