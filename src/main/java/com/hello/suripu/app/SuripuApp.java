@@ -138,6 +138,8 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
+import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
+import com.hello.suripu.core.sense.metadata.sql.SenseMetadataSql;
 import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
@@ -251,6 +253,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final SenseMetadataDAO senseMetadataDAO = commonDB.onDemand(SenseMetadataSql.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
@@ -576,7 +579,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withSensorsViewDynamoDB(sensorsViewsDynamoDB)
                 .withPillDataDAODynamoDB(pillDataDAODynamoDB)
                 .withWifiInfoDAO(wifiInfoDAO)
-                .withSenseColorDAO(senseColorDAO)
+                .withSenseMetadataDAO(senseMetadataDAO)
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
                 .withAnalyticsTracker(analyticsTracker)
                 .build();
