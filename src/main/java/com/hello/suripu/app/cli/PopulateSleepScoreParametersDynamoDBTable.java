@@ -18,7 +18,7 @@ import com.hello.suripu.core.models.AccountDate;
 import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.models.SleepScoreParameters;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.jdbi.ImmutableListContainerFactory;

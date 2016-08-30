@@ -1,13 +1,13 @@
 package com.hello.suripu.app.resources.v1;
 
 import com.hello.suripu.core.db.FeedbackDAO;
-import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.core.models.SleepFeedback;
 import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 
 import org.joda.time.DateTime;
 

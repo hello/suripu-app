@@ -22,11 +22,11 @@ import com.hello.suripu.core.models.sleep_sounds.SoundMap;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.util.JsonError;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
-import com.hello.suripu.coredw8.resources.BaseResource;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

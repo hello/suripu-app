@@ -9,13 +9,14 @@
     <properties>
         <aws.sdk.version>1.9.37</aws.sdk.version>
         <dagger.version>1.2.2</dagger.version>
-        <dropwizard.version>0.8.2</dropwizard.version>
+        <dropwizard.version>1.0.0</dropwizard.version>
+        <jackson.version>2.8.1</jackson.version>
         <java.version>1.7</java.version>
-        <metrics.version>3.1.2</metrics.version>
-        <suripu.version>0.8.5553</suripu.version>
-        <opencsv.version>3.3</opencsv.version>
         <joda.version>2.9.4</joda.version>
+        <metrics.version>3.1.2</metrics.version>
+        <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <suripu.version>0.8.5562</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -78,12 +79,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.6.1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
-            <version>1.7.12</version>
+            <version>1.7.21</version>
         </dependency>
         <dependency>
             <groupId>com.amazon.alexa</groupId>
@@ -118,7 +119,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>2.7.4</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -296,7 +297,7 @@
         </dependency>
         <dependency>
             <groupId>com.hello.suripu</groupId>
-            <artifactId>suripu-coredw8</artifactId>
+            <artifactId>suripu-coredropwizard</artifactId>
             <version>${suripu.version}</version>
         </dependency>
         <dependency>
@@ -341,7 +342,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.3.4</version>
+            <version>4.5.2</version>
         </dependency>
         <dependency>
             <groupId>com.dcsquare</groupId>

@@ -17,7 +17,7 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.PreferenceName;
 import com.hello.suripu.core.util.RoomConditionUtil;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

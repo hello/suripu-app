@@ -7,10 +7,10 @@ import com.hello.suripu.core.trends.v2.TimeScale;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.trends.v2.TrendsResult;
 import com.hello.suripu.core.util.JsonError;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
-import com.hello.suripu.coredw8.resources.BaseResource;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
 import org.slf4j.Logger;

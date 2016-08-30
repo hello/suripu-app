@@ -13,10 +13,10 @@ import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.db.AccessTokenDAO;
-import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
-import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 
 
 import java.io.IOException;

@@ -20,12 +20,12 @@ import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.oauth.stores.ApplicationStore;
 import com.hello.suripu.core.oauth.stores.OAuthTokenStore;
 import com.hello.suripu.core.util.PasswordUtil;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.AuthCookie;
-import com.hello.suripu.coredw8.oauth.ClientAuthRequest;
-import com.hello.suripu.coredw8.oauth.GrantTypeParam;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.AuthCookie;
+import com.hello.suripu.coredropwizard.oauth.ClientAuthRequest;
+import com.hello.suripu.coredropwizard.oauth.GrantTypeParam;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
