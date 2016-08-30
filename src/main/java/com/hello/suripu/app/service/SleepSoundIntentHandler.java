@@ -13,8 +13,8 @@ import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor.SoundResult;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;

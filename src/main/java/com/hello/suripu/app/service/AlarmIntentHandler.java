@@ -26,7 +26,7 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.AlarmUtils;
 import com.hello.suripu.core.util.JsonError;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

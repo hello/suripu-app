@@ -12,7 +12,7 @@ import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.util.PillColorUtil;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.skife.jdbi.v2.DBI;

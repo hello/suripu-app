@@ -20,10 +20,10 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeat;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 
 import com.hello.suripu.core.util.PillColorUtil;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
-import com.hello.suripu.coredw8.resources.BaseResource;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
 import org.skife.jdbi.v2.Transaction;

@@ -15,8 +15,8 @@ import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeat;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
-import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.joda.time.format.DateTimeFormat;

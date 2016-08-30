@@ -13,11 +13,11 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.QuestionSurveyProcessor;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 
-import com.hello.suripu.coredw8.resources.BaseResource;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
