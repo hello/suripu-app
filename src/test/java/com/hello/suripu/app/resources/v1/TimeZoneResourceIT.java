@@ -15,7 +15,7 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

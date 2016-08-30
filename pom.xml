@@ -9,10 +9,10 @@
     <properties>
         <aws.sdk.version>1.9.37</aws.sdk.version>
         <dagger.version>1.2.2</dagger.version>
-        <dropwizard.version>0.8.2</dropwizard.version>
+        <dropwizard.version>1.0.0</dropwizard.version>
         <java.version>1.7</java.version>
         <metrics.version>3.1.2</metrics.version>
-        <suripu.version>0.8.5553</suripu.version>
+        <suripu.version>0.8.5558</suripu.version>
         <opencsv.version>3.3</opencsv.version>
         <joda.version>2.9.4</joda.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -296,7 +296,7 @@
         </dependency>
         <dependency>
             <groupId>com.hello.suripu</groupId>
-            <artifactId>suripu-coredw8</artifactId>
+            <artifactId>suripu-coredropwizard</artifactId>
             <version>${suripu.version}</version>
         </dependency>
         <dependency>
