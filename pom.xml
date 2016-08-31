@@ -16,7 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5562</suripu.version>
+        <suripu.version>0.8.5564</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -76,11 +76,6 @@
     </pluginRepositories>
 
     <dependencies>
-        <dependency>
-            <groupId>com.papertrailapp</groupId>
-            <artifactId>logback-syslog4j</artifactId>
-            <version>1.0.0</version>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
