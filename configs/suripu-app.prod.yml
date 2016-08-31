@@ -100,7 +100,6 @@ server:
       port: 9998
       idleTimeout: 25 seconds
   requestLog:
-    timeZone: UTC
     appenders:
       - type: file
         currentLogFilename: /var/log/suripu-app/suripu-app-access.log

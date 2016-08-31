@@ -62,7 +62,6 @@ server:
     - type: http
       port: 9998
   requestLog:
-    timeZone: UTC
     appenders:
       - type: console
 #      - type: file
