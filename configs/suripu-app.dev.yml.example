@@ -62,7 +62,6 @@ server:
     - type: http
       port: 9998
   requestLog:
-    timeZone: UTC
     appenders:
       - type: console
 #      - type: file
@@ -112,6 +111,7 @@ timeline_algorithm_configuration:
 # v0.2: score uses movement and duration
 sleep_stats_version: v_0_2
 sleep_score_version: v_0_1
+agg_stats_version: v_0_1
 
 max_cache_refresh_days: 20
 
@@ -149,6 +149,7 @@ photo_upload:
 dynamodb:
   region: us-east-1
   tables:
+    agg_stats: agg_stats
     alarm: alarm
     alarm_info: alarm_info
     algorithm_test: algorithm_test
@@ -182,6 +183,7 @@ dynamodb:
     sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
+    swap_intents: swap_intents
     sync_response_commands: response_commands
     speech_results: speech_results
     teams: teams
@@ -190,6 +192,7 @@ dynamodb:
     timezone_history: timezone_history
     wifi_info: wifi_info
   endpoints:
+    agg_stats: http://localhost:7777
     alarm: http://localhost:7777
     alarm_info: http://localhost:7777
     algorithm_test: http://localhost:7777
@@ -216,12 +219,12 @@ dynamodb:
     sense_key_store: http://localhost:7777
     sense_last_seen: http://localhost:7777
     sleep_hmm: http://localhost:7777
-    sleep_score: http://localhost:7777
     sense_state: http://localhost:7777
     sleep_score: http://localhost:7777
     sleep_score_parameters: http://localhost:7777
     sleep_stats: http://localhost:7777
     smart_alarm_log: http://localhost:7777
+    swap_intents: http://localhost:7777
     sync_response_commands: http://localhost:7777
     speech_results: http://localhost:7777
     timeline: http://localhost:7777

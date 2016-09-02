@@ -7,7 +7,7 @@ import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

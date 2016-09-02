@@ -3,9 +3,9 @@ package com.hello.suripu.app.v2;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.PreferenceName;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;

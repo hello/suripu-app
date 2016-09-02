@@ -100,7 +100,6 @@ server:
       port: 9998
       idleTimeout: 25 seconds
   requestLog:
-    timeZone: UTC
     appenders:
       - type: file
         currentLogFilename: /var/log/suripu-app/suripu-app-access.log
@@ -163,6 +162,7 @@ timeline_algorithm_configuration:
 # v0.2: score uses movement and duration
 sleep_stats_version: v_0_2
 sleep_score_version: v_0_1
+agg_stats_version: v_0_1
 
 max_cache_refresh_days: 20
 
@@ -201,9 +201,11 @@ photo_upload:
 dynamodb:
   region: us-east-1
   tables:
+    agg_stats: prod_agg_stats
     alarm: prod_alarm
     alarm_info: prod_alarm_info
     algorithm_test: prod_algorithm_test
+    analytics_tracking: prod_analytics_tracking
     app_stats: prod_app_stats
     calibration: prod_calibration
     device_data: prod_sense_data
@@ -235,6 +237,7 @@ dynamodb:
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
     speech_results: prod_speech_results
+    swap_intents: prod_swap_intents
     sync_response_commands: prod_response_commands
     teams: teams
     timeline: prod_timeline
@@ -243,9 +246,11 @@ dynamodb:
     wifi_info: prod_wifi_info
 
   endpoints:
+    agg_stats: http://dynamodb.us-east-1.amazonaws.com
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     algorithm_test: http://dynamodb.us-east-1.amazonaws.com
+    analytics_tracking: http://dynamodb.us-east-1.amazonaws.com
     app_stats: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
@@ -276,6 +281,7 @@ dynamodb:
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
+    swap_intents: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
     timeline: http://dynamodb.us-east-1.amazonaws.com
@@ -286,3 +292,6 @@ dynamodb:
 alexa_app_ids:
   hello_dev: amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963
   josef_dev: amzn1.echo-sdk-ams.app.48296311-bcd4-4221-9608-390dee8ca111
+
+# only required for production
+segment_write_key: UiFCuqdEpi6STaMCx3bo70Hii0XvWnOK

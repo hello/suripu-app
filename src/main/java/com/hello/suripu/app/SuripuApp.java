@@ -31,6 +31,7 @@ import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
+import com.hello.suripu.app.managed.AnalyticsManaged;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.app.resources.v1.AccountPreferencesResource;
 import com.hello.suripu.app.resources.v1.AccountResource;
@@ -61,7 +62,12 @@ import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
+import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.analytics.AnalyticsTracker;
+import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
+import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
+import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
 import com.hello.suripu.core.db.AccountDAO;
@@ -132,36 +138,41 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
-import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
+import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
+import com.hello.suripu.core.sense.metadata.sql.SenseMetadataSql;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
+import com.hello.suripu.core.swap.Swapper;
+import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.core.util.RequestRateLimiter;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.clients.MessejiHttpClient;
-import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
-import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
-import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
-import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
-import com.hello.suripu.coredw8.db.AccessTokenDAO;
-import com.hello.suripu.coredw8.db.AuthorizationCodeDAO;
-import com.hello.suripu.coredw8.db.SleepHmmDAODynamoDB;
-import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
-import com.hello.suripu.coredw8.db.TimelineLogDAODynamoDB;
-import com.hello.suripu.coredw8.metrics.RegexMetricFilter;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.AuthDynamicFeature;
-import com.hello.suripu.coredw8.oauth.AuthValueFactoryProvider;
-import com.hello.suripu.coredw8.oauth.OAuthAuthenticator;
-import com.hello.suripu.coredw8.oauth.OAuthAuthorizer;
-import com.hello.suripu.coredw8.oauth.OAuthCredentialAuthFilter;
-import com.hello.suripu.coredw8.oauth.ScopesAllowedDynamicFeature;
-import com.hello.suripu.coredw8.oauth.stores.PersistentAccessTokenStore;
-import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
-import com.hello.suripu.coredw8.util.CustomJSONExceptionMapper;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
+import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
+import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
+import com.hello.suripu.coredropwizard.db.AuthorizationCodeDAO;
+import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredropwizard.db.TimelineLogDAODynamoDB;
+import com.hello.suripu.coredropwizard.metrics.RegexMetricFilter;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AuthDynamicFeature;
+import com.hello.suripu.coredropwizard.oauth.AuthValueFactoryProvider;
+import com.hello.suripu.coredropwizard.oauth.OAuthAuthenticator;
+import com.hello.suripu.coredropwizard.oauth.OAuthAuthorizer;
+import com.hello.suripu.coredropwizard.oauth.OAuthCredentialAuthFilter;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowedDynamicFeature;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentAccessTokenStore;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
+import com.segment.analytics.Analytics;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -242,6 +253,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final SenseMetadataDAO senseMetadataDAO = commonDB.onDemand(SenseMetadataSql.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
@@ -456,7 +468,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultDynamoDBDAO speechResultDynamoDBDAO = SpeechResultDynamoDBDAO.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         if (configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
@@ -482,9 +494,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB respCommandsDynamoDBClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.SYNC_RESPONSE_COMMANDS, ResponseCommandsDAODynamoDB.class);
         final ResponseCommandsDAODynamoDB respCommandsDAODynamoDB = new ResponseCommandsDAODynamoDB(respCommandsDynamoDBClient, tableNames.get(DynamoDBTableName.SYNC_RESPONSE_COMMANDS));
 
-        if (configuration.getDebug()) {
-            environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
-        }
+        environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
 
         environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
         environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(), senseColorDAO, calibrationDAO));
@@ -555,16 +565,37 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(PasswordResetResource.create(accountDAO, passwordResetDB, configuration.emailConfiguration()));
         environment.jersey().register(new SupportResource(supportDAO));
         environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB, timelineLogger));
+
+        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
+        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
+        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ANALYTICS_TRACKING));
+        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
+        environment.lifecycle().manage(new AnalyticsManaged(analytics));
+
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
                 .withDeviceDAO(deviceDAO)
                 .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
                 .withSensorsViewDynamoDB(sensorsViewsDynamoDB)
                 .withPillDataDAODynamoDB(pillDataDAODynamoDB)
                 .withWifiInfoDAO(wifiInfoDAO)
-                .withSenseColorDAO(senseColorDAO)
+                .withSenseMetadataDAO(senseMetadataDAO)
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
+                .withAnalyticsTracker(analyticsTracker)
                 .build();
-        environment.jersey().register(new DeviceResource(deviceProcessor));
+
+
+        // Important, swap_intent has to be connected to the same endpoint as alarm_info
+        // otherwise nothing can be swapped.
+        final Swapper swapper = new DynamoDBSwapper(
+                deviceDAO,
+                new DynamoDB(mergedUserInfoDynamoDBClient),
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.SWAP_INTENTS),
+                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
+        );
+
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
+
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
         environment.jersey().register(new StoreFeedbackResource(storeFeedbackDAO));
@@ -614,8 +645,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepStatsDAODynamoDB
         ));
 
-        if (configuration.getDebug()){
-            environment.jersey().register(new SpeechResource(speechResultDynamoDBDAO, deviceDAO));
-        }
+        environment.jersey().register(new SpeechResource(speechResultDAODynamoDB, deviceDAO));
+        environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
     }
 }

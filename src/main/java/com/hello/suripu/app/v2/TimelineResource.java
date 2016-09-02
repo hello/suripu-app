@@ -25,12 +25,12 @@ import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeedbackUtils;
 import com.hello.suripu.core.util.JsonError;
-import com.hello.suripu.coredw8.db.TimelineDAODynamoDB;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
-import com.hello.suripu.coredw8.timeline.InstrumentedTimelineProcessor;
-import com.hello.suripu.coredw8.resources.BaseResource;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 
 import org.joda.time.DateTime;

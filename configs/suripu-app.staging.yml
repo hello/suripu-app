@@ -100,7 +100,6 @@ server:
       port: 9998
       idleTimeout: 25 seconds
   requestLog:
-    timeZone: UTC
     appenders:
       - type: file
         currentLogFilename: /var/log/suripu-app/suripu-app-access.log
@@ -163,6 +162,7 @@ timeline_algorithm_configuration:
 # v0.2: score uses movement and duration
 sleep_stats_version: v_0_2
 sleep_score_version: v_0_1
+agg_stats_version: v_0_1
 
 max_cache_refresh_days: 20
 
@@ -200,9 +200,11 @@ photo_upload:
 dynamodb:
   region: us-east-1
   tables:
+    agg_stats: agg_stats
     alarm: alarm
     alarm_info: alarm_info
     algorithm_test: algorithm_test
+    analytics_tracking: analytics_tracking
     app_stats: app_stats
     calibration: calibration
     device_data: sense_data
@@ -234,6 +236,7 @@ dynamodb:
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
     speech_results: speech_results
+    swap_intents: swap_intents
     sync_response_commands: response_commands
     teams: teams
     timeline: timeline
@@ -242,9 +245,11 @@ dynamodb:
     wifi_info: wifi_info
 
   endpoints:
+    agg_stats: http://dynamodb.us-east-1.amazonaws.com
     alarm: http://dynamodb.us-east-1.amazonaws.com
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     algorithm_test: http://dynamodb.us-east-1.amazonaws.com
+    analytics_tracking: http://dynamodb.us-east-1.amazonaws.com
     app_stats: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
@@ -275,6 +280,7 @@ dynamodb:
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
+    swap_intents: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
     timeline: http://dynamodb.us-east-1.amazonaws.com

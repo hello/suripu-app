@@ -1,29 +1,34 @@
 package com.hello.suripu.app.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hello.suripu.coredw8.configuration.GraphiteConfiguration;
-import com.hello.suripu.coredw8.configuration.KinesisConfiguration;
-import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
-import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
-import com.hello.suripu.coredw8.configuration.PushNotificationsConfiguration;
-import com.hello.suripu.coredw8.configuration.S3BucketConfiguration;
-import com.hello.suripu.coredw8.configuration.TaimurainHttpClientConfiguration;
-import com.hello.suripu.coredw8.configuration.TimelineAlgorithmConfiguration;
-
-import java.util.Map;
+import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
+import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
+import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
+import com.hello.suripu.coredropwizard.configuration.PushNotificationsConfiguration;
+import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
+import java.util.Map;
 
 public class SuripuAppConfiguration extends Configuration {
+
+    @Valid
+    @NotNull
+    @JsonProperty("agg_stats_version")
+    private String aggStatsVersion;
+    public String getAggStatsVersion() {
+        return this.aggStatsVersion;
+    }
 
     @Valid
     @NotNull
@@ -214,5 +219,11 @@ public class SuripuAppConfiguration extends Configuration {
     private Map<String, String> alexaAppIds = Maps.newHashMap();
     public ImmutableMap<String, String> getAlexaAppIds() {
         return ImmutableMap.copyOf(alexaAppIds);
+    }
+
+    @JsonProperty("segment_write_key")
+    private String segmentWriteKey = "hello";
+    public String segmentWriteKey() {
+        return segmentWriteKey;
     }
 }

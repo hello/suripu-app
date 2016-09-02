@@ -1,5 +1,7 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.google.common.collect.ImmutableList;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -7,7 +9,6 @@ import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -16,7 +17,7 @@ import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.util.DateTimeUtil;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -26,11 +27,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+
+import javax.ws.rs.WebApplicationException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;

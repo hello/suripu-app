@@ -7,10 +7,10 @@ import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.speech.SpeechResult;
-import com.hello.suripu.core.speech.SpeechResultDynamoDBDAO;
-import com.hello.suripu.coredw8.oauth.AccessToken;
-import com.hello.suripu.coredw8.oauth.Auth;
-import com.hello.suripu.coredw8.oauth.ScopesAllowed;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.Auth;
+import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +29,12 @@ import java.util.List;
 public class SpeechResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeechResource.class);
 
-    private final SpeechResultDynamoDBDAO speechResultDynamoDBDAO;
+    private final SpeechResultDAODynamoDB speechResultDAODynamoDB;
     private final DeviceDAO deviceDAO;
 
 
-    public SpeechResource(final SpeechResultDynamoDBDAO speechResultDynamoDBDAO, final DeviceDAO deviceDAO) {
-        this.speechResultDynamoDBDAO = speechResultDynamoDBDAO;
+    public SpeechResource(final SpeechResultDAODynamoDB speechResultDAODynamoDB, final DeviceDAO deviceDAO) {
+        this.speechResultDAODynamoDB = speechResultDAODynamoDB;
         this.deviceDAO = deviceDAO;
     }
 
@@ -55,14 +55,14 @@ public class SpeechResource {
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
-        final Optional<SpeechResult> result = speechResultDynamoDBDAO.getLatest(accountId, senseId, lookBackMinutes);
+        final Optional<SpeechResult> result = Optional.absent(); // speechResultDAODynamoDB.getLatest(accountId, senseId, lookBackMinutes);
 
         if (result.isPresent()) {
             LOGGER.debug("action=get-latest-speech-result sense_id={} found=true command={}", senseId, result.get().command);
             return Lists.newArrayList(result.get());
         }
 
-        LOGGER.debug("action=no-recent-speech-commands lookback={} sense_id={} account_id={}", lookBackMinutes, senseId, accountId);
+        LOGGER.debug("action=no-recent-speech-commands look_back={} sense_id={} account_id={}", lookBackMinutes, senseId, accountId);
         return Collections.emptyList();
     }
 }

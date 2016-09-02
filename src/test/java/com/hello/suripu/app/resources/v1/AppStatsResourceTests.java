@@ -19,7 +19,7 @@ import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.Questions.QuestionCategory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.QuestionProcessor;
-import com.hello.suripu.coredw8.oauth.AccessToken;
+import com.hello.suripu.coredropwizard.oauth.AccessToken;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
