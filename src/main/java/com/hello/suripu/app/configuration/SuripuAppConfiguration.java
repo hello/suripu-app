@@ -226,4 +226,8 @@ public class SuripuAppConfiguration extends Configuration {
     public String segmentWriteKey() {
         return segmentWriteKey;
     }
+
+    @JsonProperty("keys_management_service")
+    private KMSConfiguration kmsConfiguration;
+    public KMSConfiguration kmsConfiguration() { return this.kmsConfiguration; }
 }

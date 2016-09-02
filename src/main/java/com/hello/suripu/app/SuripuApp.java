@@ -10,6 +10,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
+import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -29,6 +30,7 @@ import com.hello.suripu.app.cli.PopulateInsightsUUIDCommand;
 import com.hello.suripu.app.cli.PopulateSleepScoreParametersDynamoDBTable;
 import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
+import com.hello.suripu.app.configuration.KMSConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.managed.AnalyticsManaged;
@@ -140,7 +142,12 @@ import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
 import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
 import com.hello.suripu.core.sense.metadata.sql.SenseMetadataSql;
-import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.speech.KmsVault;
+import com.hello.suripu.core.speech.SpeechResultReadDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechTimelineReadDAODynamoDB;
+import com.hello.suripu.core.speech.interfaces.SpeechResultReadDAO;
+import com.hello.suripu.core.speech.interfaces.SpeechTimelineReadDAO;
+import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.core.store.StoreFeedbackDAO;
 import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.swap.Swapper;
@@ -467,9 +474,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
 
-        final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
-
         if (configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
@@ -645,7 +649,19 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepStatsDAODynamoDB
         ));
 
-        environment.jersey().register(new SpeechResource(speechResultDAODynamoDB, deviceDAO));
+        final KMSConfiguration kmsConfig = configuration.kmsConfiguration();
+        final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
+        awskmsClient.setEndpoint(kmsConfig.endpoint());
+        final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
+
+        final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
+        final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
+
+        final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
+        final SpeechResultReadDAO speechResultReadDAO = SpeechResultReadDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+
+
+        environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
     }
 }
