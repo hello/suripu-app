@@ -55,14 +55,14 @@ public class SpeechResource {
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
-        final Optional<SpeechResult> result = speechResultDAODynamoDB.getLatest(accountId, senseId, lookBackMinutes);
+        final Optional<SpeechResult> result = Optional.absent(); // speechResultDAODynamoDB.getLatest(accountId, senseId, lookBackMinutes);
 
         if (result.isPresent()) {
             LOGGER.debug("action=get-latest-speech-result sense_id={} found=true command={}", senseId, result.get().command);
             return Lists.newArrayList(result.get());
         }
 
-        LOGGER.debug("action=no-recent-speech-commands lookback={} sense_id={} account_id={}", lookBackMinutes, senseId, accountId);
+        LOGGER.debug("action=no-recent-speech-commands look_back={} sense_id={} account_id={}", lookBackMinutes, senseId, accountId);
         return Collections.emptyList();
     }
 }
