@@ -44,7 +44,7 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
-import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
 import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
@@ -856,7 +856,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.SPEECH_RESULTS);
         client.setEndpoint(endpoint);
 
-        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(client, tableName);
+        final SpeechResultIngestDAODynamoDB speechResultDAODynamoDB = SpeechResultIngestDAODynamoDB.create(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));

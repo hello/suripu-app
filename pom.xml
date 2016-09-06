@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <aws.sdk.version>1.9.37</aws.sdk.version>
+        <aws.sdk.version>1.10.34</aws.sdk.version>
         <dagger.version>1.2.2</dagger.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <jackson.version>2.8.1</jackson.version>
@@ -16,7 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5564</suripu.version>
+        <suripu.version>0.8.5577</suripu.version>
     </properties>
 
     <distributionManagement>
