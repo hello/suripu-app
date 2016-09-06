@@ -197,6 +197,11 @@ photo_upload:
   profile_prefix: photos/profile/
   max_upload_size_bytes: 5120000 # 5MB
 
+keys_management_service:
+  endpoint: https://kms.us-east-1.amazonaws.com
+  keys:
+    uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
+
 
 dynamodb:
   region: us-east-1
@@ -237,6 +242,7 @@ dynamodb:
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
     speech_results: prod_speech_results
+    speech_timeline: prod_speech_timeline
     swap_intents: prod_swap_intents
     sync_response_commands: prod_response_commands
     teams: teams
@@ -281,6 +287,7 @@ dynamodb:
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
+    speech_timeline: http://dynamodb.us-east-1.amazonaws.com
     swap_intents: http://dynamodb.us-east-1.amazonaws.com
     sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
     teams: http://dynamodb.us-east-1.amazonaws.com
