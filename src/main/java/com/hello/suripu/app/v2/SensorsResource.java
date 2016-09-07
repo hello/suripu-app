@@ -3,6 +3,7 @@ package com.hello.suripu.app.v2;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hello.suripu.app.sensors.SensorData;
 import com.hello.suripu.app.sensors.SensorQuery;
 import com.hello.suripu.app.sensors.SensorResponse;
@@ -11,6 +12,7 @@ import com.hello.suripu.app.sensors.SensorUnit;
 import com.hello.suripu.app.sensors.SensorView;
 import com.hello.suripu.app.sensors.SensorsDataRequest;
 import com.hello.suripu.app.sensors.SensorsDataResponse;
+import com.hello.suripu.app.sensors.X;
 import com.hello.suripu.app.sensors.converters.SensorQueryParameters;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -24,6 +26,8 @@ import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.Sensor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -34,10 +38,16 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Path("/v2/sensors")
 public class SensorsResource {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SensorsResource.class);
 
     private final DeviceDataDAODynamoDB deviceDataDAODynamoDB;
     private final DeviceDAO deviceDAO;
@@ -86,13 +96,28 @@ public class SensorsResource {
                 queryParameters.start().getMillis(), queryParameters.end().getMillis(), accountId, deviceIdPair.get().externalDeviceId,
                 queryParameters.slotDuration(), -1, color, calibrationOptional, true);
 
-
+        final Set<Sensor> sensorValues = Sets.newHashSet(timeSeries.getAvailableSensors());
         for(final SensorQuery query : request.queries()) {
-            final Sensor type = request.queries().get(0).type();
-            final SensorUnit unit = request.queries().get(0).unit();
-            final SensorData sensorData = SensorData.from(unit, timeSeries.get(query.type()));
-            map.put(query.type(), sensorData);
+            if(sensorValues.contains(query.type())) {
+                final SensorData sensorData = SensorData.from(timeSeries.get(query.type()));
+                map.put(query.type(), sensorData);
+            } else {
+                LOGGER.warn("action=get-sensor-data sensor={} result=missing", query.type());
+            }
         }
-        return SensorsDataResponse.create(map);
+
+        return SensorsDataResponse.create(map, extractTimestamps(timeSeries));
+    }
+
+    public static List<X> extractTimestamps(AllSensorSampleList timeSeries) {
+        if(timeSeries.isEmpty()) {
+            return new ArrayList<>();
+        }
+        final Sensor s = timeSeries.getAvailableSensors().get(0);
+        return timeSeries
+                .get(s)
+                .stream()
+                .map(sample -> new X(sample.dateTime, sample.offsetMillis))
+                .collect(Collectors.toList());
     }
 }
