@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.Sensor;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ public class SensorsDataResponse {
         this.sensorData = sensorData;
         this.timestamps = timestamps;
     }
+
 
     public static SensorsDataResponse ok(final Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
         return new SensorsDataResponse(sensorData, timestamps);
