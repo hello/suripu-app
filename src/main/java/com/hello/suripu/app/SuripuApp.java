@@ -664,8 +664,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
+<<<<<<< ff8adf4e63923d5f4dcce0d6daafa5098fb6b115
         if(configuration.getDebug()) {
             environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO));
         }
+=======
+        environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO));
+>>>>>>> v2 endpoint for sensors
     }
 }

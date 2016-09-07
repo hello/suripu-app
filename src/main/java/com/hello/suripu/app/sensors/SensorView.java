@@ -1,8 +1,9 @@
 package com.hello.suripu.app.sensors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hello.suripu.core.models.CurrentRoomState;
+import com.google.common.base.MoreObjects;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.Condition;
 
 import java.util.List;
 
@@ -12,12 +13,14 @@ public class SensorView {
     private final SensorUnit unit;
     private final String message;
     private final Scale scale;
-    private final CurrentRoomState.State.Condition condition;
+    private final Condition condition;
+    private final Float value;
 
-    public SensorView(String name, Sensor type, SensorUnit unit, String message, CurrentRoomState.State.Condition condition, Scale scale) {
+    public SensorView(String name, Sensor type, SensorUnit unit, Float value, String message, Condition condition, Scale scale) {
         this.name = name;
         this.type = type;
         this.unit = unit;
+        this.value = value;
         this.message = message;
         this.scale = scale;
         this.condition = condition;
@@ -40,16 +43,35 @@ public class SensorView {
 
     @JsonProperty("message")
     public String message() {
-        return message;
+        return message.replace("*","");
     }
 
     @JsonProperty("scale")
     public List<ScaleInterval> scale() {
+//        return new ArrayList<>();
         return scale.intervals();
     }
 
     @JsonProperty("condition")
-    public CurrentRoomState.State.Condition condition() {
+    public Condition condition() {
         return condition;
+    }
+
+    @JsonProperty("value")
+    public Float value() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(SensorView.class)
+                .add("name", name)
+                .add("type", type)
+                .add("unit", unit)
+                .add("message", message)
+                .add("scale", scale)
+                .add("condition", condition)
+                .add("value", value)
+                .toString();
     }
 }
