@@ -60,6 +60,7 @@ import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
+import com.hello.suripu.app.v2.SensorsResource;
 import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
@@ -663,5 +664,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
+        environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO));
     }
 }
