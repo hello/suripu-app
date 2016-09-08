@@ -1,51 +1,46 @@
 package com.hello.suripu.app.sensors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.Maps;
-import com.hello.suripu.core.models.Sensor;
-
-import java.util.ArrayList;
+import com.google.common.base.MoreObjects;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class SensorsDataResponse {
-    private final Map<Sensor, SensorData> sensorData;
-    private final List<X> timestamps;
+public class SensorResponse {
+    private final SensorStatus status;
+    private final List<SensorView> sensorViews;
 
-    private SensorsDataResponse(Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
-        this.sensorData = sensorData;
-        this.timestamps = timestamps;
+    public SensorResponse(SensorStatus status, List<SensorView> sensorViews) {
+        this.status = status;
+        this.sensorViews = sensorViews;
+    }
+
+    @JsonIgnore
+    public List<String> availableSensors() {
+        return sensorViews.stream().map(s -> s.name()).collect(Collectors.toList());
+    }
+
+    @JsonProperty
+    public SensorStatus status() {
+        return status;
+    }
+
+    @JsonProperty
+    public List<SensorView> sensors() {
+        return sensorViews;
+    }
+
+    public static SensorResponse noData(final List<SensorView> sensorViews) {
+        return new SensorResponse(SensorStatus.WAITING_FOR_DATA, sensorViews);
     }
 
 
-    public static SensorsDataResponse ok(final Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
-        return new SensorsDataResponse(sensorData, timestamps);
-    }
-
-    public static SensorsDataResponse noSense() {
-        return new SensorsDataResponse( Maps.newHashMap(), new ArrayList<>());
-    }
-
-    public static SensorsDataResponse noData() {
-        return new SensorsDataResponse(Maps.newHashMap(), new ArrayList<>());
-    }
-
-    @JsonProperty("timestamps")
-    public List<X> timestamps() {
-        return timestamps;
-    }
-
-    @JsonProperty("sensors")
-    public Map<String, float[]> sensors() {
-
-        return sensorData.entrySet()
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                e -> e.getKey().name(),
-                                e -> e.getValue().values())
-                );
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(SensorResponse.class)
+                .add("status", status)
+                .add("views", sensorViews)
+                .toString();
     }
 }
