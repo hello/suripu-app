@@ -38,52 +38,9 @@ public class SensorsResource {
     @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     public SensorResponse list(@Auth final AccessToken token) {
-<<<<<<< 2150c4628d4344ac74062912aa617e2b66d22ce0
         LOGGER.debug("action=list-sensors account_id={}", token.accountId);
         final SensorResponse response = viewLogic.list(token.accountId, DateTime.now(DateTimeZone.UTC));
         LOGGER.debug("action=list-sensors account_id={} sensors={}", token.accountId, response.availableSensors());
-=======
-
-        final Long accountId = token.accountId;
-        final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
-        if(!deviceIdPair.isPresent()) {
-            return new SensorResponse(SensorStatus.NO_SENSE, Lists.newArrayList());
-        }
-
-
-        final DateTime maxDT = DateTime.now(DateTimeZone.UTC).plusMinutes(2);
-        final DateTime minDT = DateTime.now(DateTimeZone.UTC).minusMinutes(30);
-        final Optional<DeviceData> data = deviceDataDAODynamoDB.getMostRecent(
-                token.accountId, deviceIdPair.get().externalDeviceId, maxDT, minDT);
-
-        if(!data.isPresent()) {
-            return new SensorResponse(SensorStatus.WAITING_FOR_DATA, Lists.newArrayList());
-        }
-
-        final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(deviceIdPair.get().externalDeviceId);
-
-        //default -- return the usual
-        final DeviceData deviceData = data.get().withCalibratedLight(colorOptional);
-
-        LOGGER.debug("Last device data in db = {}", deviceData);
-
-        final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), 15, "c", Optional.absent(), (float) 35);
-
-        final Scale tempScale = new TemperatureScale();
-        final SensorView temperature = new SensorView(
-                "Temperature", Sensor.TEMPERATURE, SensorUnit.CELCIUS, roomState.temperature.value,
-                "some clever message", roomState.temperature.condition, tempScale
-        );
-        final SensorView humidity = new SensorView(
-                "Humidity", Sensor.HUMIDITY, SensorUnit.PERCENT, roomState.humidity.value, roomState.humidity.message, roomState.humidity.condition, tempScale);
-
-        final SensorView sound = new SensorView(
-                "Sound", Sensor.SOUND, SensorUnit.DB, roomState.sound.value, roomState.sound.message, roomState.sound.condition, tempScale);
-
-        final SensorResponse response = new SensorResponse(
-                SensorStatus.OK, Lists.newArrayList(temperature, humidity, sound)
-        );
->>>>>>> Add value to sensor view
         return response;
     }
 
