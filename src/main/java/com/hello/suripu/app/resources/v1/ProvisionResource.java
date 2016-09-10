@@ -48,10 +48,14 @@ public class ProvisionResource {
     //    910-00101
     //    PRODUCT ASSY, SENSE 1.5 DVT, Black
 
-    private final static Integer MIN_SN_LENGTH = "91000100".length();
+
 
     private final static String SENSE_ONE_FIVE_WHITE = "91000100";
     private final static String SENSE_ONE_FIVE_BLACK = "91000101";
+    private final static Integer MIN_SN_LENGTH = SENSE_ONE_FIVE_BLACK.length();
+
+    private final static String SENSE_ONE_WHITE = "91000008W";
+    private final static String SENSE_ONE_BLACK = "91000008B";
 
     @Context
     HttpServletRequest request;
@@ -165,13 +169,14 @@ public class ProvisionResource {
 
     public static HardwareVersion fromSerialNumber(final String serialNumber) {
         if(serialNumber != null && serialNumber.length() > MIN_SN_LENGTH) {
-           final HardwareVersion hardwareVersion = (serialNumber.startsWith(SENSE_ONE_FIVE_BLACK)
-                                                    || serialNumber.startsWith(SENSE_ONE_FIVE_WHITE))
-                    ? HardwareVersion.SENSE_ONE_FIVE
-                    : HardwareVersion.SENSE_ONE;
-            return hardwareVersion;
+            if (serialNumber.startsWith(SENSE_ONE_FIVE_BLACK) || serialNumber.startsWith(SENSE_ONE_FIVE_WHITE)) {
+                return HardwareVersion.SENSE_ONE_FIVE;
+            }
+            else if(serialNumber.startsWith(SENSE_ONE_BLACK) || serialNumber.startsWith(SENSE_ONE_WHITE))  {
+                return HardwareVersion.SENSE_ONE;
+            }
         }
 
-        return HardwareVersion.SENSE_ONE;
+        throw new IllegalArgumentException(String.format("invalid sn=%s", serialNumber));
     }
 }
