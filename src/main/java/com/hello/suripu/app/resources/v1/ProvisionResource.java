@@ -48,10 +48,10 @@ public class ProvisionResource {
     //    910-00101
     //    PRODUCT ASSY, SENSE 1.5 DVT, Black
 
-    private final static Integer MIN_SN_LENGTH = "910-00100".length();
+    private final static Integer MIN_SN_LENGTH = "91000100".length();
 
-    private final static String SENSE_ONE_FIVE_WHITE = "910-00100";
-    private final static String SENSE_ONE_FIVE_BLACK = "910-00101";
+    private final static String SENSE_ONE_FIVE_WHITE = "91000100";
+    private final static String SENSE_ONE_FIVE_BLACK = "91000101";
 
     @Context
     HttpServletRequest request;
