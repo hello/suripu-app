@@ -666,7 +666,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
         if(configuration.getDebug()) {
-            environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO));
+            environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO));
         }
     }
 }
