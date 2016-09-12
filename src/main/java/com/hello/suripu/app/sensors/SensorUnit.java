@@ -1,7 +1,7 @@
 package com.hello.suripu.app.sensors;
 
 public enum  SensorUnit {
-    CELCIUS,
+    CELSIUS,
     FAHRENHEIT,
     MG_CM,
     PERCENT,
