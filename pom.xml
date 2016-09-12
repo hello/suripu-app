@@ -16,7 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5586</suripu.version>
+        <suripu.version>0.8.5601</suripu.version>
     </properties>
 
     <distributionManagement>
