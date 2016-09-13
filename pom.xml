@@ -16,7 +16,8 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5580</suripu.version>
+        <suripu.version>0.8.0-SNAPSHOT</suripu.version>
+        <home_automation.version>1.0-SNAPSHOT</home_automation.version>
     </properties>
 
     <distributionManagement>
@@ -358,6 +359,11 @@
             <groupId>com.segment.analytics.java</groupId>
             <artifactId>analytics</artifactId>
             <version>2.0.0-RC4</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>home-automation</artifactId>
+            <version>${home_automation.version}</version>
         </dependency>
     </dependencies>
     <build>

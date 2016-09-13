@@ -1,5 +1,8 @@
 package com.hello.suripu.app;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -18,8 +21,6 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
@@ -60,6 +61,7 @@ import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
+import com.hello.suripu.app.v2.ExternalAppResource;
 import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
@@ -164,6 +166,10 @@ import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfigur
 import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
 import com.hello.suripu.coredropwizard.db.AuthorizationCodeDAO;
+import com.hello.suripu.coredropwizard.db.ExternalApplicationDataDAO;
+import com.hello.suripu.coredropwizard.db.ExternalApplicationsDAO;
+import com.hello.suripu.coredropwizard.db.ExternalAuthorizationStateDAO;
+import com.hello.suripu.coredropwizard.db.ExternalTokenDAO;
 import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.db.TimelineLogDAODynamoDB;
@@ -176,10 +182,25 @@ import com.hello.suripu.coredropwizard.oauth.OAuthAuthorizer;
 import com.hello.suripu.coredropwizard.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentAccessTokenStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
+
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -191,16 +212,6 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -246,6 +257,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final ApplicationsDAO applicationsDAO = commonDB.onDemand(ApplicationsDAO.class);
         final AccessTokenDAO accessTokenDAO = commonDB.onDemand(AccessTokenDAO.class);
         final AuthorizationCodeDAO authCodeDAO = commonDB.onDemand(AuthorizationCodeDAO.class);
+        final ExternalAuthorizationStateDAO externalAuthorizationStateDAO = commonDB.onDemand(ExternalAuthorizationStateDAO.class);
 
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final PillProvisionDAO pillProvisionDAO = commonDB.onDemand(PillProvisionDAO.class);
@@ -264,6 +276,17 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
+
+
+
+        final ExternalApplicationsDAO externalApplicationsDAO = commonDB.onDemand(ExternalApplicationsDAO.class);
+        final PersistentExternalApplicationStore externalApplicationStore = new PersistentExternalApplicationStore(externalApplicationsDAO);
+
+        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, externalApplicationStore);
+
+        final ExternalApplicationDataDAO externalApplicationDataDAO = commonDB.onDemand(ExternalApplicationDataDAO.class);
+        final PersistentExternalAppDataStore externalAppDataStore = new PersistentExternalAppDataStore(externalApplicationDataDAO);
 
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.withConnectionTimeout(200); // in ms
@@ -492,7 +515,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         );
         environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
 
-        environment.jersey().register(new OAuthResource(accessTokenStore, applicationStore, accountDAO, notificationSubscriptionDAOWrapper));
         final AmazonDynamoDB otaHistoryClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.OTA_HISTORY, OTAHistoryDAODynamoDB.class);
         final OTAHistoryDAODynamoDB otaHistoryDAODynamoDB = new OTAHistoryDAODynamoDB(otaHistoryClient, tableNames.get(DynamoDBTableName.OTA_HISTORY));
         final AmazonDynamoDB respCommandsDynamoDBClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.SYNC_RESPONSE_COMMANDS, ResponseCommandsDAODynamoDB.class);
@@ -653,6 +675,22 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
         awskmsClient.setEndpoint(kmsConfig.endpoint());
         final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
+
+        final Vault tokenKMSVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().token());
+
+        environment.jersey().register(new OAuthResource(
+            accessTokenStore,
+            applicationStore,
+            accountDAO,
+            notificationSubscriptionDAOWrapper));
+
+        environment.jersey().register(new ExternalAppResource(
+            externalApplicationStore,
+            externalAuthorizationStateDAO,
+            deviceDAO,
+            externalTokenStore,
+            externalAppDataStore,
+            tokenKMSVault));
 
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
         final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
