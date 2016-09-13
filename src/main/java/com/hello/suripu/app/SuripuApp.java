@@ -58,6 +58,7 @@ import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
 import com.hello.suripu.app.sensors.ScaleFactory;
 import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
@@ -669,7 +670,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         if(configuration.getDebug()) {
             final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory());
-            environment.jersey().register(new SensorsResource(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory));
+            final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+            environment.jersey().register(new SensorsResource(sensorViewLogic));
         }
     }
 }

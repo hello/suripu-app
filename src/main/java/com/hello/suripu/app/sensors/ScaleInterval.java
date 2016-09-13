@@ -1,15 +1,15 @@
 package com.hello.suripu.app.sensors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hello.suripu.core.models.CurrentRoomState;
+import com.hello.suripu.core.roomstate.Condition;
 
 public class ScaleInterval {
     private final String name;
     private final Integer min;
     private final Integer max;
-    private final CurrentRoomState.State.Condition condition;
+    private final Condition condition;
 
-    public ScaleInterval(String name, Integer min, Integer max, CurrentRoomState.State.Condition condition) {
+    public ScaleInterval(String name, Integer min, Integer max, Condition condition) {
         this.name = name;
         this.min = min;
         this.max = max;
@@ -32,7 +32,7 @@ public class ScaleInterval {
     }
 
     @JsonProperty("condition")
-    public CurrentRoomState.State.Condition condition() {
+    public Condition condition() {
         return condition;
     }
 }

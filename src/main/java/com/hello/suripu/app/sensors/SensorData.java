@@ -14,11 +14,9 @@ public class SensorData {
     private final float[] values;
     private static final Logger LOGGER = LoggerFactory.getLogger(SensorData.class);
 
-
     private SensorData(final float[] values) {
         this.values = values;
     }
-
 
     public static SensorData from(final List<Sample> values) {
         if(values == null) {
@@ -34,7 +32,7 @@ public class SensorData {
 
 
     public static float parse(Sample sample) {
-        if (sample == null) {
+        if(sample == null) {
             return -1f;
         }
         try {

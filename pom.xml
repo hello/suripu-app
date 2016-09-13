@@ -16,11 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-<<<<<<< 114174b1566c6133ddf6f913c635fe6824527fdc
         <suripu.version>0.8.5626</suripu.version>
-=======
-        <suripu.version>0.8.5600</suripu.version>
->>>>>>> Lookup sensors by hw version
     </properties>
 
     <distributionManagement>

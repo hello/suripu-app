@@ -147,7 +147,11 @@ public class RoomConditionsResource extends BaseResource {
         if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
         final Sensor sensor = nameToSensor(sensorName);
+=======
+        final Sensor sensor = Sensor.valueOf(sensorName);
+>>>>>>> Refactoring.
         return retrieveWeekData(accessToken.accountId, sensor, queryEndTimestampUTC);
     }
 
@@ -184,10 +188,17 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLast24hours(
             @Auth final AccessToken accessToken,
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
             @PathParam("sensor") String sensorName,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
         if (hiddenSensors.contains(sensorName)) {
+=======
+            @PathParam("sensor") String sensorname,
+            @QueryParam("from_utc") Long queryEndTimestampUTC) {
+
+        if (hiddenSensors.contains(sensorname)) {
+>>>>>>> Refactoring.
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
         validateQueryRange(queryEndTimestampUTC, DateTime.now(), accessToken.accountId, allowedRangeInSeconds);
@@ -208,7 +219,12 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceIdPair.get().externalDeviceId);
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
         final Sensor sensor = nameToSensor(sensorName);
+=======
+
+        final Sensor sensor = Sensor.valueOf(sensorname);
+>>>>>>> Refactoring.
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -338,7 +354,12 @@ public class RoomConditionsResource extends BaseResource {
         if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
         final Sensor sensor = nameToSensor(sensorName);
+=======
+
+        final Sensor sensor = Sensor.valueOf(sensorName);
+>>>>>>> Refactoring.
         return retrieveDayData(accessToken.accountId, sensor, queryEndTimestampInUTC);
     }
 
@@ -390,7 +411,11 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
         final Sensor sensor = nameToSensor(sensorName);
+=======
+        final Sensor sensor = Sensor.valueOf(sensorName);
+>>>>>>> Refactoring.
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeInUTC, queryEndTimestampInUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -437,7 +462,11 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
+<<<<<<< e2878dec7b58924ced00881a35afeff5cc7d26a1
         final Sensor sensor = nameToSensor(sensorName);
+=======
+        final Sensor sensor = Sensor.valueOf(sensorName);
+>>>>>>> Refactoring.
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
