@@ -62,7 +62,7 @@ public class SpeechResource {
         final Optional<SpeechResult> result = getLatest(accountId, lookBackMinutes);
 
         if (result.isPresent()) {
-            LOGGER.debug("action=get-latest-speech-result sense_id={} found=true command={}", senseId, result.get().command.get());
+            LOGGER.debug("action=get-latest-speech-result sense_id={} found=true", senseId);
             return Lists.newArrayList(result.get());
         }
 
@@ -77,9 +77,6 @@ public class SpeechResource {
         }
 
         final String uuid = optionalLastSpeechCommand.get().audioUUID;
-        final Optional<SpeechResult> result = speechResultReadDAO.getItem(uuid);
-        LOGGER.debug("action=get-speech-result uuid={} found={}", uuid, result.isPresent());
-
-        return result;
+        return speechResultReadDAO.getItem(uuid);
     }
 }
