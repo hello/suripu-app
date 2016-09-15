@@ -1,5 +1,7 @@
 package com.hello.suripu.app.sensors;
 
+import com.hello.suripu.app.sensors.scales.HumidityScale;
+import com.hello.suripu.app.sensors.scales.LightScale;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
 
 import java.util.ArrayList;
@@ -20,9 +22,9 @@ public class ScaleFactory {
             case TEMPERATURE:
                 return new TemperatureScale();
             case HUMIDITY:
-                return new TemperatureScale();
+                return new HumidityScale();
             case LIGHT:
-                return new TemperatureScale();
+                return new LightScale();
             case PARTICULATES:
                 return new TemperatureScale();
             case LIGHT_TEMPERATURE:
