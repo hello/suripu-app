@@ -32,6 +32,10 @@ public class SensorQueryParameters {
         switch(scope) {
             case DAY_5_MINUTE:
                 return new SensorQueryParameters(refUTC.minusHours(24), refUTC, 5);
+            case LAST_3H_5_MINUTE:
+                return new SensorQueryParameters(refUTC.minusHours(3), refUTC, 5);
+            case WEEK_1_HOUR:
+                return new SensorQueryParameters(refUTC.minusDays(7), refUTC, 60);
             default:
                 throw new IllegalArgumentException("not supported");
         }

@@ -44,17 +44,17 @@ public class SensorViewLogic {
     private final CalibrationDAO calibrationDAO;
     private final SensorViewFactory sensorViewFactory;
 
-    private static ImmutableMap<HardwareVersion, List<SensorName>> availableSensors;
+    private static ImmutableMap<HardwareVersion, List<Sensor>> availableSensors;
     static {
-        final Map<HardwareVersion, List<SensorName>> temp = new HashMap<>();
-        final List<SensorName> senseOneSensors = Lists.newArrayList(
-                SensorName.TEMPERATURE, SensorName.HUMIDITY, SensorName.LIGHT, SensorName.PARTICULATES, SensorName.SOUND
+        final Map<HardwareVersion, List<Sensor>> temp = new HashMap<>();
+        final List<Sensor> senseOneSensors = Lists.newArrayList(
+                Sensor.TEMPERATURE, Sensor.HUMIDITY, Sensor.LIGHT, Sensor.PARTICULATES, Sensor.SOUND
         );
 
-        final List<SensorName> senseOneFiveSensors = Lists.newArrayList(senseOneSensors);
+        final List<Sensor> senseOneFiveSensors = Lists.newArrayList(senseOneSensors);
         senseOneFiveSensors.addAll(
                 Lists.newArrayList(
-                        SensorName.CO2, SensorName.VOC, SensorName.UV, SensorName.LIGHT_TEMPERATURE
+                        Sensor.CO2, Sensor.TVOC, Sensor.UV
                 ));
 
         temp.put(HardwareVersion.SENSE_ONE, senseOneSensors);

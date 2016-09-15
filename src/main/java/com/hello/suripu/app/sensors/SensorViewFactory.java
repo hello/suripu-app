@@ -15,10 +15,10 @@ public class SensorViewFactory {
         this.scaleFactory = scaleFactory;
     }
 
-    public Optional<SensorView> from(SensorName sensorName, CurrentRoomState roomState) {
-        final Scale scale = scaleFactory.forSensor(sensorName);
+    public Optional<SensorView> from(Sensor sensor, CurrentRoomState roomState) {
+        final Scale scale = scaleFactory.forSensor(sensor);
 
-        switch (sensorName) {
+        switch (sensor) {
             case TEMPERATURE:
                 final SensorView temperature = new SensorView(
                         "Temperature", Sensor.TEMPERATURE, SensorUnit.CELSIUS, roomState.temperature().value,
@@ -46,7 +46,7 @@ public class SensorViewFactory {
                     return Optional.of(airQuality);
                 }
         }
-        LOGGER.warn("msg=missing-sensor-data sensor={}", sensorName);
+        LOGGER.warn("msg=missing-sensor-data sensor={}", sensor);
         return Optional.absent();
     }
 }
