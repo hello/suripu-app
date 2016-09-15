@@ -17,7 +17,7 @@
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <suripu.version>0.8.0-SNAPSHOT</suripu.version>
-        <gaibu.version>1.0-SNAPSHOT</gaibu.version>
+        <gaibu.version>0.1.4</gaibu.version>
     </properties>
 
     <distributionManagement>
