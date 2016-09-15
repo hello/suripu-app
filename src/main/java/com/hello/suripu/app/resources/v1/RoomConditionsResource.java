@@ -12,7 +12,7 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.AllSensorSampleList;
 import com.hello.suripu.core.models.Calibration;
-import com.hello.suripu.core.models.CurrentRoomState;
+import com.hello.suripu.core.roomstate.CurrentRoomState;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
@@ -141,16 +141,25 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastWeek(
             @Auth final AccessToken accessToken,
-            @PathParam("sensor") final String sensor,
+            @PathParam("sensor") final String sensorName,
             @QueryParam("from") Long queryEndTimestampUTC) { // utc or local???
 
-        if (hiddenSensors.contains(sensor)) {
+        if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
-
+        final Sensor sensor = nameToSensor(sensorName);
         return retrieveWeekData(accessToken.accountId, sensor, queryEndTimestampUTC);
     }
 
+
+    public static Sensor nameToSensor(String sensorName) {
+        for(Sensor sensor: Sensor.values()) {
+            if(sensor.toString().equalsIgnoreCase(sensorName)) {
+                return sensor;
+            }
+        }
+        throw new IllegalArgumentException("invalid sensor name");
+    }
 
     // TODO this should be deprecated
     @ScopesAllowed({OAuthScope.SENSORS_BASIC})
@@ -175,10 +184,10 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLast24hours(
             @Auth final AccessToken accessToken,
-            @PathParam("sensor") String sensor,
+            @PathParam("sensor") String sensorName,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
-        if (hiddenSensors.contains(sensor)) {
+        if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
         validateQueryRange(queryEndTimestampUTC, DateTime.now(), accessToken.accountId, allowedRangeInSeconds);
@@ -199,7 +208,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceIdPair.get().externalDeviceId);
-
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -320,15 +329,16 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastDay(
             @Auth final AccessToken accessToken,
-            @PathParam("sensor") String sensor,
+            @PathParam("sensor") String sensorName,
 
             // The @QueryParam("from") should be named as @QueryParam("from_local_utc")
             // to make it explicit that the API is expecting a local time and not confuse
             // the user.
             @QueryParam("from") Long queryEndTimestampInUTC) {
-        if (hiddenSensors.contains(sensor)) {
+        if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
+        final Sensor sensor = nameToSensor(sensorName);
         return retrieveDayData(accessToken.accountId, sensor, queryEndTimestampInUTC);
     }
 
@@ -344,7 +354,7 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLastDayDeviceName(
             @Auth final AccessToken accessToken,
-            @PathParam("sensor") String sensor,
+            @PathParam("sensor") String sensorName,
             @PathParam("device_name") String deviceName,
 
             // The @QueryParam("from") should be named as @QueryParam("from_local_utc")
@@ -352,7 +362,7 @@ public class RoomConditionsResource extends BaseResource {
             // the user.
             @QueryParam("from") Long queryEndTimestampInUTC) {
 
-        if (hiddenSensors.contains(sensor)) {
+        if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
 
@@ -380,7 +390,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
-
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeInUTC, queryEndTimestampInUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -400,11 +410,11 @@ public class RoomConditionsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Sample> getLast24hoursDeviceName(
             @Auth final AccessToken accessToken,
-            @PathParam("sensor") String sensor,
+            @PathParam("sensor") String sensorName,
             @PathParam("device_name") String deviceName,
             @QueryParam("from_utc") Long queryEndTimestampUTC) {
 
-        if (hiddenSensors.contains(sensor)) {
+        if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
 
@@ -427,7 +437,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
-
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -455,7 +465,7 @@ public class RoomConditionsResource extends BaseResource {
         }
     }
 
-    private List<Sample> retrieveDayData(final Long accountId, final String sensor, final Long queryEndTimestampInUTC) {
+    private List<Sample> retrieveDayData(final Long accountId, final Sensor sensor, final Long queryEndTimestampInUTC) {
 
         if(isSensorsViewUnavailable(accountId)) {
             LOGGER.warn("SENSORS VIEW UNAVAILABLE FOR USER {}", accountId);
@@ -499,7 +509,7 @@ public class RoomConditionsResource extends BaseResource {
 
     }
 
-    private List<Sample> retrieveWeekData(final Long accountId, final String sensor, final Long queryEndTimestampInUTC) {
+    private List<Sample> retrieveWeekData(final Long accountId, final Sensor sensor, final Long queryEndTimestampInUTC) {
 
         if(isSensorsViewUnavailable(accountId)) {
             LOGGER.warn("SENSORS VIEW UNAVAILABLE FOR USER {}", accountId);
@@ -608,10 +618,10 @@ public class RoomConditionsResource extends BaseResource {
         return calibrationDAO.getStrict(senseId);
     }
 
-    private List<Sample> adjustTimeSeries (final List<Sample> samples, final String sensor, final String senseId) {
-        if (Sensor.PARTICULATES.name().equalsIgnoreCase(sensor) && this.hasDustSmoothEnabled(senseId)) {
+    private List<Sample> adjustTimeSeries (final List<Sample> samples, final Sensor sensor, final String senseId) {
+        if (Sensor.PARTICULATES.equals(sensor) && this.hasDustSmoothEnabled(senseId)) {
             return SmoothSample.convert(samples);
-        } else if (Sensor.SOUND.name().equalsIgnoreCase(sensor)) {
+        } else if (Sensor.SOUND.equals(sensor)) {
             return SmoothSample.replaceAll(samples, NO_SOUND_CAPTURED_DB, NO_SOUND_FILL_VALUE_DB);
         }
         return samples;
