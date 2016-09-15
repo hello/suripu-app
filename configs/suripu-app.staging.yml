@@ -117,6 +117,7 @@ logging:
   loggers:
     com.hello.suripu: DEBUG
     com.amazonaws: WARN
+    org.whispersystems: DEBUG
   appenders:
     - type: file
       threshold: DEBUG
@@ -201,6 +202,7 @@ keys_management_service:
   endpoint: https://kms.us-east-1.amazonaws.com
   keys:
     uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845 # audio_uuid_dev
+    token: arn:aws:kms:us-east-1:053216739513:key/9ab23bc3-1b49-4f02-a951-a9d97ca906bc # external app tokens
 
 dynamodb:
   region: us-east-1

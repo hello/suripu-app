@@ -11,13 +11,13 @@
         <dagger.version>1.2.2</dagger.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <jackson.version>2.8.1</jackson.version>
-        <java.version>1.7</java.version>
+        <java.version>1.8</java.version>
         <joda.version>2.9.4</joda.version>
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <suripu.version>0.8.0-SNAPSHOT</suripu.version>
-        <home_automation.version>1.0-SNAPSHOT</home_automation.version>
+        <gaibu.version>1.0-SNAPSHOT</gaibu.version>
     </properties>
 
     <distributionManagement>
@@ -363,7 +363,12 @@
         <dependency>
             <groupId>is.hello.gaibu</groupId>
             <artifactId>home-automation</artifactId>
-            <version>${home_automation.version}</version>
+            <version>${gaibu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>gaibu-core</artifactId>
+            <version>${gaibu.version}</version>
         </dependency>
     </dependencies>
     <build>

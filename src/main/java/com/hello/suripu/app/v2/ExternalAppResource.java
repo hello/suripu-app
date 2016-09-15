@@ -13,20 +13,9 @@ import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.speech.interfaces.Vault;
-import com.hello.suripu.coredropwizard.db.ExternalAuthorizationStateDAO;
-import com.hello.suripu.coredropwizard.models.HueApplicationData;
-import com.hello.suripu.coredropwizard.models.NestApplicationData;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
-import com.hello.suripu.coredropwizard.oauth.ExternalApplication;
-import com.hello.suripu.coredropwizard.oauth.ExternalApplicationData;
-import com.hello.suripu.coredropwizard.oauth.ExternalAuthorizationState;
-import com.hello.suripu.coredropwizard.oauth.ExternalToken;
-import com.hello.suripu.coredropwizard.oauth.InvalidExternalTokenException;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-import com.hello.suripu.coredropwizard.oauth.stores.ExternalApplicationStore;
-import com.hello.suripu.coredropwizard.oauth.stores.ExternalOAuthTokenStore;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -58,6 +47,17 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
+import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
+import is.hello.gaibu.core.models.ExternalApplication;
+import is.hello.gaibu.core.models.ExternalApplicationData;
+import is.hello.gaibu.core.models.ExternalAuthorizationState;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.models.HueApplicationData;
+import is.hello.gaibu.core.models.NestApplicationData;
+import is.hello.gaibu.core.stores.ExternalApplicationStore;
+import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
+import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
 import is.hello.gaibu.homeauto.services.HueLight;
 import is.hello.gaibu.homeauto.services.NestThermostat;
 
@@ -93,7 +93,7 @@ public class ExternalAppResource {
     }
 
 
-    @ScopesAllowed({OAuthScope.AUTH})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("apps")
@@ -108,7 +108,7 @@ public class ExternalAppResource {
         return appIds;
     }
 
-    @ScopesAllowed({OAuthScope.AUTH})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path("auth")
@@ -251,7 +251,7 @@ public class ExternalAppResource {
         return Response.ok().build();
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Timed
     @Path("hue/whitelist")
@@ -315,7 +315,7 @@ public class ExternalAppResource {
         return appData;
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @POST
     @Timed
     @Path("hue/state")
@@ -347,7 +347,7 @@ public class ExternalAppResource {
         return Response.ok().build();
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @POST
     @Timed
     @Path("hue/group")
@@ -394,7 +394,7 @@ public class ExternalAppResource {
         return Response.ok().build();
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @GET
     @Timed
     @Path("hue/groups")
@@ -411,7 +411,7 @@ public class ExternalAppResource {
         return hueLight.getGroups();
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @POST
     @Timed
     @Path("nest/state")
@@ -433,7 +433,7 @@ public class ExternalAppResource {
         return Response.ok().build();
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Timed
     @Path("nest/thermostats")
@@ -458,7 +458,7 @@ public class ExternalAppResource {
         return NestThermostat.getThermostats(decryptedToken);
     }
 
-    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @POST
     @Timed
     @Path("nest/thermostat")
