@@ -147,10 +147,19 @@ public class RoomConditionsResource extends BaseResource {
         if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
-        final Sensor sensor = Sensor.valueOf(sensorName);
+        final Sensor sensor = nameToSensor(sensorName);
         return retrieveWeekData(accessToken.accountId, sensor, queryEndTimestampUTC);
     }
 
+
+    public static Sensor nameToSensor(String sensorName) {
+        for(Sensor sensor: Sensor.values()) {
+            if(sensor.toString().equalsIgnoreCase(sensorName)) {
+                return sensor;
+            }
+        }
+        throw new IllegalArgumentException("invalid sensor name");
+    }
 
     // TODO this should be deprecated
     @ScopesAllowed({OAuthScope.SENSORS_BASIC})
@@ -199,7 +208,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceIdPair.get().externalDeviceId);
-        final Sensor sensor = Sensor.valueOf(sensorName);
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -329,7 +338,7 @@ public class RoomConditionsResource extends BaseResource {
         if (hiddenSensors.contains(sensorName)) {
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
         }
-        final Sensor sensor = Sensor.valueOf(sensorName);
+        final Sensor sensor = nameToSensor(sensorName);
         return retrieveDayData(accessToken.accountId, sensor, queryEndTimestampInUTC);
     }
 
@@ -381,7 +390,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
-        final Sensor sensor = Sensor.valueOf(sensorName);
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeInUTC, queryEndTimestampInUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
@@ -428,7 +437,7 @@ public class RoomConditionsResource extends BaseResource {
         }
 
         final Optional<Calibration> calibrationOptional = getCalibrationStrict(deviceName);
-        final Sensor sensor = Sensor.valueOf(sensorName);
+        final Sensor sensor = nameToSensor(sensorName);
         final List<Sample> timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTime(
                 queryStartTimeUTC, queryEndTimestampUTC, accessToken.accountId, deviceIdPair.get().externalDeviceId,
                 slotDurationInMinutes, sensor, missingDataDefaultValue(accessToken.accountId), color, calibrationOptional,
