@@ -1,7 +1,9 @@
 package com.hello.suripu.app.sensors;
 
 import com.google.common.base.Optional;
+import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +38,7 @@ public class SensorViewFactory {
                 return Optional.of(light);
             case SOUND:
                 final SensorView sound = new SensorView(
-                        "Sound", Sensor.SOUND, SensorUnit.DB, roomState.sound().value, roomState.sound().message, roomState.sound().condition(), scale);
+                        "Noise", Sensor.SOUND, SensorUnit.DB, roomState.sound().value, roomState.sound().message, roomState.sound().condition(), scale);
                 return Optional.of(sound);
             case PARTICULATES:
                 if(roomState.particulates() != null) {
@@ -45,8 +47,24 @@ public class SensorViewFactory {
                             roomState.particulates().message, roomState.particulates().condition(), scale);
                     return Optional.of(airQuality);
                 }
+
+
         }
         LOGGER.warn("msg=missing-sensor-data sensor={}", sensor);
         return Optional.absent();
+    }
+
+    public Optional<SensorView> from(Sensor sensor, CurrentRoomState roomState, DeviceData deviceData) {
+        final Scale scale = scaleFactory.forSensor(sensor);
+        switch (sensor) {
+            case CO2:
+                if(deviceData.hasExtra()) {
+                    final SensorView co2 = new SensorView(
+                            "Co2", Sensor.CO2, SensorUnit.RATIO, (float) deviceData.extra().co2(), "Co2 message", Condition.WARNING, scale);
+                    return Optional.of(co2);
+                }
+
+        }
+        return from(sensor, roomState);
     }
 }

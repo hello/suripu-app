@@ -123,7 +123,7 @@ public class SensorViewLogic {
         final CurrentRoomState withDust = roomState.withDust(calibrationOptional.isPresent());
         final List<SensorView> views = availableSensors.get(hardwareVersion)
                 .stream()
-                .flatMap(s -> streamopt(sensorViewFactory.from(s, withDust))) // remove optional responses
+                .flatMap(s -> streamopt(sensorViewFactory.from(s, withDust, deviceData))) // remove optional responses
                 .collect(Collectors.toList());
 
         return new SensorResponse(SensorStatus.OK, views);
