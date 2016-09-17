@@ -58,9 +58,10 @@ public class SensorViewFactory {
         final Scale scale = scaleFactory.forSensor(sensor);
         switch (sensor) {
             case CO2:
-                if(deviceData.hasExtra()) {
+                if(deviceData != null && deviceData.hasExtra()) {
+                    LOGGER.warn("test={}", deviceData);
                     final SensorView co2 = new SensorView(
-                            "Co2", Sensor.CO2, SensorUnit.RATIO, (float) deviceData.extra().co2(), "Co2 message", Condition.WARNING, scale);
+                            "Co2", Sensor.CO2, SensorUnit.RATIO, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
                     return Optional.of(co2);
                 }
 

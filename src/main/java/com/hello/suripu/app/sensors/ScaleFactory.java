@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ScaleFactory {
 
-    public static class EmptyScale implements Scale {
+    public class EmptyScale implements Scale {
 
         @Override
         public List<ScaleInterval> intervals() {

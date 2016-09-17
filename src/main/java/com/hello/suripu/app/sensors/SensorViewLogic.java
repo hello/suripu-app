@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.hello.suripu.app.sensors.converters.SensorQueryParameters;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -14,12 +13,13 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.models.AllSensorSampleList;
 import com.hello.suripu.core.models.Calibration;
-import com.hello.suripu.core.roomstate.CurrentRoomState;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.DeviceKeyStoreRecord;
+import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.CurrentRoomState;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -112,6 +111,7 @@ public class SensorViewLogic {
             return SensorResponse.noData(views);
         }
 
+        LOGGER.warn("get={}", data.get());
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
 
         //default -- return the usual
@@ -121,19 +121,33 @@ public class SensorViewLogic {
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), 15, "c", calibrationOptional, (float) 35);
         final CurrentRoomState withDust = roomState.withDust(calibrationOptional.isPresent());
-        final List<SensorView> views = availableSensors.get(hardwareVersion)
-                .stream()
-                .flatMap(s -> streamopt(sensorViewFactory.from(s, withDust, deviceData))) // remove optional responses
-                .collect(Collectors.toList());
+        final List<SensorView> views = toView(
+                availableSensors.get(hardwareVersion),
+                sensorViewFactory,
+                withDust,
+                deviceData
+        );
 
         return new SensorResponse(SensorStatus.OK, views);
     }
 
-    public static List<X> extractTimestamps(AllSensorSampleList timeSeries) {
+    public static List<SensorView> toView(
+            List<Sensor> sensors,
+            final SensorViewFactory sensorViewFactory,
+            final CurrentRoomState roomState,
+            final DeviceData deviceData) {
+        return sensors.stream()
+                .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState, deviceData))) // remove optional responses
+                .collect(Collectors.toList());
+    }
+
+    public static List<X> extractTimestamps(final AllSensorSampleList timeSeries, List<Sensor> sensors) {
         if(timeSeries.isEmpty()) {
             return new ArrayList<>();
         }
-        final Sensor s = timeSeries.getAvailableSensors().get(0);
+
+        // Bug right here.
+        final Sensor s = sensors.get(0);
         return timeSeries
                 .get(s)
                 .stream()
@@ -154,8 +168,12 @@ public class SensorViewLogic {
         final String senseId = deviceIdPair.get().externalDeviceId;
         final Optional<Device.Color> color = senseColorDAO.getColorForSense(senseId);
         final Optional<Calibration> calibrationOptional = calibrationDAO.getStrict(senseId);
-        final Map<Sensor, SensorData> map = Maps.newHashMap();
+        final Optional<DeviceKeyStoreRecord> record = keyStore.getKeyStoreRecord(senseId);
+        if(!record.isPresent()) {
+            return SensorsDataResponse.noSense();
+        }
 
+        final List<Sensor> sensors = availableSensors.get(record.get().hardwareVersion);
         final SensorQueryParameters queryParameters = SensorQueryParameters.from(request.queries().get(0).scope(), DateTime.now(DateTimeZone.UTC));
         final AllSensorSampleList timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTimeAllSensors(
                 queryParameters.start().getMillis(), queryParameters.end().getMillis(), accountId, senseId,
@@ -165,17 +183,29 @@ public class SensorViewLogic {
             return SensorsDataResponse.noData();
         }
 
-        final Set<Sensor> sensorValues = Sets.newHashSet(timeSeries.getAvailableSensors());
-        for(final SensorQuery query : request.queries()) {
-            if(sensorValues.contains(query.type())) {
+        return convert(timeSeries, request, sensors);
+    }
 
-                final SensorData sensorData = SensorData.from(timeSeries.get(query.type()));
-                map.put(query.type(), sensorData);
+    public static SensorsDataResponse convert(final AllSensorSampleList timeSeries, final SensorsDataRequest request, final List<Sensor> availableSensors) {
+        final Map<Sensor, SensorData> map = Maps.newHashMap();
+
+        for(final SensorQuery query : request.queries()) {
+            if(availableSensors.contains(query.type())) {
+                final List<Sample> samples = timeSeries.get(query.type());
+                if(samples != null && !samples.isEmpty()) {
+                    final SensorData sensorData = SensorData.from(samples);
+                    map.put(query.type(), sensorData);
+                } else {
+                    LOGGER.warn("action=get-sensor-data sensor={} result=null", query.type());
+                }
+
             } else {
                 LOGGER.warn("action=get-sensor-data sensor={} result=missing", query.type());
             }
         }
-
-        return SensorsDataResponse.ok(map, extractTimestamps(timeSeries));
+        final List<X> timestamps = extractTimestamps(timeSeries, availableSensors);
+        return SensorsDataResponse.ok(map, timestamps);
     }
+
+
 }
