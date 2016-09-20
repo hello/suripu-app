@@ -59,7 +59,7 @@ public class SensorViewFactory {
             case CO2:
                 if(deviceData != null && deviceData.hasExtra()) {
                     final SensorView co2 = new SensorView(
-                            "CO2", Sensor.CO2, SensorUnit.RATIO, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
+                            "CO2", Sensor.CO2, SensorUnit.PPM, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
                     return Optional.of(co2);
                 }
 
