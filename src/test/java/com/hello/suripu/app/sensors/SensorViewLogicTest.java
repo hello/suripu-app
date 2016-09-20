@@ -49,17 +49,13 @@ public class SensorViewLogicTest {
     @Test
     public void testConvert() {
         final AllSensorSampleList allSensorSampleList = new AllSensorSampleList();
-        final SensorsDataRequest request = SensorsDataRequest.create(
-                Lists.newArrayList(SensorQuery.create(
-                        Sensor.CO2,
-                        QueryScope.LAST_3H_5_MINUTE,
-                        SensorUnit.RATIO,
-                        AggregationMethod.MAX
-                ))
+        final BatchQuery query = BatchQuery.create(
+                QueryScope.LAST_3H_5_MINUTE,
+                Lists.newArrayList(Sensor.CO2)
         );
 //        allSensorSampleList.add(Sensor.CO2, Lists.newArrayList(new Sample(0,1f,0)));
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2);
-        final SensorsDataResponse response = SensorViewLogic.convert(allSensorSampleList, request, sensors);
+        final BatchQueryResponse response = SensorViewLogic.convert(allSensorSampleList, query, sensors);
         assertTrue("should be empty", response.sensors().isEmpty());
         assertThat("same size", response.sensors().size(), equalTo(response.timestamps().size()));
     }
@@ -67,17 +63,13 @@ public class SensorViewLogicTest {
     @Test
     public void testConvertNotEmpty() {
         final AllSensorSampleList allSensorSampleList = new AllSensorSampleList();
-        final SensorsDataRequest request = SensorsDataRequest.create(
-                Lists.newArrayList(SensorQuery.create(
-                        Sensor.CO2,
-                        QueryScope.LAST_3H_5_MINUTE,
-                        SensorUnit.RATIO,
-                        AggregationMethod.MAX
-                ))
+        final BatchQuery query = BatchQuery.create(
+                QueryScope.LAST_3H_5_MINUTE,
+                Lists.newArrayList(Sensor.CO2)
         );
         allSensorSampleList.add(Sensor.CO2, Lists.newArrayList(new Sample(0,1f,0)));
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2);
-        final SensorsDataResponse response = SensorViewLogic.convert(allSensorSampleList, request, sensors);
+        final BatchQueryResponse response = SensorViewLogic.convert(allSensorSampleList, query, sensors);
         assertFalse("should not be empty", response.sensors().isEmpty());
         assertThat("same size", response.sensors().size(), equalTo(response.timestamps().size()));
     }

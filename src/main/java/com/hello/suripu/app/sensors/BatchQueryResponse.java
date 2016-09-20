@@ -9,25 +9,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class SensorsDataResponse {
+public class BatchQueryResponse {
     private final Map<Sensor, SensorData> sensorData;
     private final List<X> timestamps;
 
-    private SensorsDataResponse(Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
+    private BatchQueryResponse(Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
         this.sensorData = sensorData;
         this.timestamps = timestamps;
     }
 
-    public static SensorsDataResponse ok(final Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
-        return new SensorsDataResponse(sensorData, timestamps);
+    public static BatchQueryResponse ok(final Map<Sensor, SensorData> sensorData, final List<X> timestamps) {
+        return new BatchQueryResponse(sensorData, timestamps);
     }
 
-    public static SensorsDataResponse noSense() {
-        return new SensorsDataResponse( Maps.newHashMap(), new ArrayList<>());
+    public static BatchQueryResponse noSense() {
+        return new BatchQueryResponse( Maps.newHashMap(), new ArrayList<>());
     }
 
-    public static SensorsDataResponse noData() {
-        return new SensorsDataResponse(Maps.newHashMap(), new ArrayList<>());
+    public static BatchQueryResponse noData() {
+        return new BatchQueryResponse(Maps.newHashMap(), new ArrayList<>());
     }
 
     @JsonProperty("timestamps")
