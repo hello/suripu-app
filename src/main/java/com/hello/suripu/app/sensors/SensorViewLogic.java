@@ -156,13 +156,13 @@ public class SensorViewLogic {
     /**
      * Fetch data in batch for given account, with sensors specified in request
      */
-    public SensorsDataResponse data(final Long accountId, final SensorsDataRequest request) {
+    public BatchQueryResponse data(final Long accountId, final BatchQuery query) {
 
-        LOGGER.debug("account_id={} request={}", accountId, request);
+        LOGGER.debug("account_id={} query={}", accountId, query);
 
         final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if(!deviceIdPair.isPresent()) {
-            return SensorsDataResponse.noSense();
+            return BatchQueryResponse.noSense();
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
@@ -170,41 +170,41 @@ public class SensorViewLogic {
         final Optional<Calibration> calibrationOptional = calibrationDAO.getStrict(senseId);
         final Optional<DeviceKeyStoreRecord> record = keyStore.getKeyStoreRecord(senseId);
         if(!record.isPresent()) {
-            return SensorsDataResponse.noSense();
+            return BatchQueryResponse.noSense();
         }
 
         final List<Sensor> sensors = availableSensors.get(record.get().hardwareVersion);
-        final SensorQueryParameters queryParameters = SensorQueryParameters.from(request.queries().get(0).scope(), DateTime.now(DateTimeZone.UTC));
+        final SensorQueryParameters queryParameters = SensorQueryParameters.from(query.scope(), DateTime.now(DateTimeZone.UTC));
         final AllSensorSampleList timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTimeAllSensors(
                 queryParameters.start().getMillis(), queryParameters.end().getMillis(), accountId, senseId,
                 queryParameters.slotDuration(), -1, color, calibrationOptional, true);
 
         if (timeSeries.isEmpty()) {
-            return SensorsDataResponse.noData();
+            return BatchQueryResponse.noData();
         }
 
-        return convert(timeSeries, request, sensors);
+        return convert(timeSeries, query, sensors);
     }
 
-    public static SensorsDataResponse convert(final AllSensorSampleList timeSeries, final SensorsDataRequest request, final List<Sensor> availableSensors) {
+    public static BatchQueryResponse convert(final AllSensorSampleList timeSeries, final BatchQuery query, final List<Sensor> availableSensors) {
         final Map<Sensor, SensorData> map = Maps.newHashMap();
-        for(final SensorQuery query : request.queries()) {
-            if(availableSensors.contains(query.type())) {
-                final List<Sample> samples = timeSeries.get(query.type());
+        for(final Sensor sensor: query.sensors()) {
+            if(availableSensors.contains(sensor)) {
+                final List<Sample> samples = timeSeries.get(sensor);
                 if(samples != null && !samples.isEmpty()) {
                     final SensorData sensorData = SensorData.from(samples);
-                    map.put(query.type(), sensorData);
+                    map.put(sensor, sensorData);
                 } else {
-                    LOGGER.warn("action=get-sensor-data sensor={} result=null_or_empty", query.type());
+                    LOGGER.warn("action=get-sensor-data sensor={} result=null_or_empty", sensor);
                     LOGGER.warn("samples={}", samples);
                 }
 
             } else {
-                LOGGER.warn("action=get-sensor-data sensor={} result=missing", query.type());
+                LOGGER.warn("action=get-sensor-data sensor={} result=missing", sensor);
             }
         }
         final List<X> timestamps = extractTimestamps(timeSeries, availableSensors);
-        return SensorsDataResponse.ok(map, timestamps);
+        return BatchQueryResponse.ok(map, timestamps);
     }
 
 

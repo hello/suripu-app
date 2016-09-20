@@ -2,10 +2,10 @@ package com.hello.suripu.app.v2;
 
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
+import com.hello.suripu.app.sensors.BatchQuery;
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
-import com.hello.suripu.app.sensors.SensorsDataRequest;
-import com.hello.suripu.app.sensors.SensorsDataResponse;
+import com.hello.suripu.app.sensors.BatchQueryResponse;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
@@ -61,13 +61,13 @@ public class SensorsResource extends BaseResource {
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public SensorsDataResponse data(@Auth final AccessToken token, @Valid final SensorsDataRequest request) {
+    public BatchQueryResponse data(@Auth final AccessToken token, @Valid final BatchQuery query) {
         if(!flipper.userFeatureActive(AppFeatureFlipper.SENSORS_V2_ENABLED, token.accountId, new ArrayList<>())) {
             throw new WebApplicationException(404);
         }
 
         LOGGER.debug("action=get-sensors-data account_id={}", token.accountId);
-        final SensorsDataResponse response = viewLogic.data(token.accountId, request);
+        final BatchQueryResponse response = viewLogic.data(token.accountId, query);
         LOGGER.debug("action=get-sensors-data account_id={} sensors={}", token.accountId, response.sensors().keySet());
         return response;
     }
