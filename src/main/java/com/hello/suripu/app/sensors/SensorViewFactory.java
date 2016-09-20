@@ -54,14 +54,23 @@ public class SensorViewFactory {
     }
 
     public Optional<SensorView> from(final Sensor sensor, final CurrentRoomState roomState, final DeviceData deviceData) {
-        final Scale scale = scaleFactory.forSensor(sensor);
-        switch (sensor) {
-            case CO2:
-                if(deviceData != null && deviceData.hasExtra()) {
+        if (deviceData.hasExtra()) {
+            final Scale scale = scaleFactory.forSensor(sensor);
+            switch (sensor) {
+                case CO2:
                     final SensorView co2 = new SensorView(
                             "CO2", Sensor.CO2, SensorUnit.PPM, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
                     return Optional.of(co2);
-                }
+
+                case TVOC:
+                    final SensorView tvoc = new SensorView(
+                            "VOC", Sensor.TVOC, SensorUnit.PPM, new Float(deviceData.extra().tvoc()), "VOC message", Condition.WARNING, scale);
+                    return Optional.of(tvoc);
+
+                case UV:
+                    final SensorView uv = new SensorView(
+                            "UV Light", Sensor.UV, SensorUnit.COUNT, new Float(deviceData.extra().uvCount()), "UV message", Condition.IDEAL, scale);
+            }
 
         }
         final Optional<SensorView> view = from(sensor, roomState);

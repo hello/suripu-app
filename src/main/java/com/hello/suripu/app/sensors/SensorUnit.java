@@ -11,5 +11,6 @@ public enum  SensorUnit {
     PPM,
     RATIO,
     KELVIN,
-    KPA;
+    KPA,
+    COUNT;
 }
