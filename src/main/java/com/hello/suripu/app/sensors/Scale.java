@@ -1,10 +1,17 @@
 package com.hello.suripu.app.sensors;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
 
 import java.util.List;
 
-@JsonSerialize(as=Scale.class)
-public interface Scale {
-    List<ScaleInterval> intervals();
+public abstract class Scale {
+
+    abstract public List<ScaleInterval> intervals();
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(Scale.class)
+                .add("intervals", intervals())
+                .toString();
+    }
 }

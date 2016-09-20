@@ -2,6 +2,7 @@ package com.hello.suripu.app.sensors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 
 import java.util.List;
 
@@ -22,4 +23,11 @@ public class SensorsDataRequest {
         return sensorQueries;
     }
 
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(SensorsDataRequest.class)
+                .add("queries", sensorQueries)
+                .toString();
+    }
 }

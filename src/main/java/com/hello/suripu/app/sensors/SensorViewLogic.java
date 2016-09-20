@@ -107,11 +107,10 @@ public class SensorViewLogic {
                     .stream()
                     .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState))) // remove optional responses
                     .collect(Collectors.toList());
-
+            LOGGER.warn("status=no-data account_id={} sense_id={}", accountId, senseId);
             return SensorResponse.noData(views);
         }
 
-        LOGGER.warn("get={}", data.get());
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
 
         //default -- return the usual
@@ -127,7 +126,6 @@ public class SensorViewLogic {
                 withDust,
                 deviceData
         );
-
         return new SensorResponse(SensorStatus.OK, views);
     }
 
@@ -160,6 +158,8 @@ public class SensorViewLogic {
      */
     public SensorsDataResponse data(final Long accountId, final SensorsDataRequest request) {
 
+        LOGGER.debug("account_id={} request={}", accountId, request);
+
         final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if(!deviceIdPair.isPresent()) {
             return SensorsDataResponse.noSense();
@@ -188,7 +188,6 @@ public class SensorViewLogic {
 
     public static SensorsDataResponse convert(final AllSensorSampleList timeSeries, final SensorsDataRequest request, final List<Sensor> availableSensors) {
         final Map<Sensor, SensorData> map = Maps.newHashMap();
-
         for(final SensorQuery query : request.queries()) {
             if(availableSensors.contains(query.type())) {
                 final List<Sample> samples = timeSeries.get(query.type());
@@ -196,7 +195,8 @@ public class SensorViewLogic {
                     final SensorData sensorData = SensorData.from(samples);
                     map.put(query.type(), sensorData);
                 } else {
-                    LOGGER.warn("action=get-sensor-data sensor={} result=null", query.type());
+                    LOGGER.warn("action=get-sensor-data sensor={} result=null_or_empty", query.type());
+                    LOGGER.warn("samples={}", samples);
                 }
 
             } else {

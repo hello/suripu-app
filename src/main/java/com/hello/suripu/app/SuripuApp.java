@@ -380,6 +380,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         // disable all default exception mappers
         sf.setRegisterDefaultExceptionMappers(false);
 
+
+
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
                 .setAuthenticator(new OAuthAuthenticator(accessTokenStore))

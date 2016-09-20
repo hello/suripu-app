@@ -2,6 +2,7 @@ package com.hello.suripu.app.sensors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.hello.suripu.core.models.Sensor;
 
 public class SensorQuery {
@@ -22,7 +23,7 @@ public class SensorQuery {
             @JsonProperty("type") Sensor type,
             @JsonProperty("scope")QueryScope scope,
             @JsonProperty("unit") SensorUnit unit,
-            @JsonProperty("aggregation_method")AggregationMethod aggregationMethod) {
+            @JsonProperty("aggregation_method") AggregationMethod aggregationMethod) {
         return new SensorQuery(type, scope, unit, aggregationMethod);
     }
 
@@ -40,5 +41,16 @@ public class SensorQuery {
 
     public AggregationMethod aggregationMethod() {
         return aggregationMethod;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(SensorQuery.class)
+                .add("type", type)
+                .add("scope", scope)
+                .add("unit", unit)
+                .add("aggregation_method", aggregationMethod)
+                .toString();
+
     }
 }

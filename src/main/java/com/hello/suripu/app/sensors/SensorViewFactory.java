@@ -43,29 +43,31 @@ public class SensorViewFactory {
             case PARTICULATES:
                 if(roomState.particulates() != null) {
                     final SensorView airQuality = new SensorView(
-                            "Air quality", Sensor.PARTICULATES, SensorUnit.MG_CM, roomState.particulates().value,
+                            "Particulates", Sensor.PARTICULATES, SensorUnit.MG_CM, roomState.particulates().value,
                             roomState.particulates().message, roomState.particulates().condition(), scale);
                     return Optional.of(airQuality);
                 }
 
 
         }
-        LOGGER.warn("msg=missing-sensor-data sensor={}", sensor);
         return Optional.absent();
     }
 
-    public Optional<SensorView> from(Sensor sensor, CurrentRoomState roomState, DeviceData deviceData) {
+    public Optional<SensorView> from(final Sensor sensor, final CurrentRoomState roomState, final DeviceData deviceData) {
         final Scale scale = scaleFactory.forSensor(sensor);
         switch (sensor) {
             case CO2:
                 if(deviceData != null && deviceData.hasExtra()) {
-                    LOGGER.warn("test={}", deviceData);
                     final SensorView co2 = new SensorView(
-                            "Co2", Sensor.CO2, SensorUnit.RATIO, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
+                            "CO2", Sensor.CO2, SensorUnit.RATIO, new Float(deviceData.extra().co2()), "Co2 message", Condition.WARNING, scale);
                     return Optional.of(co2);
                 }
 
         }
-        return from(sensor, roomState);
+        final Optional<SensorView> view = from(sensor, roomState);
+        if(!view.isPresent()) {
+            LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", sensor, deviceData.accountId);
+        }
+        return view;
     }
 }

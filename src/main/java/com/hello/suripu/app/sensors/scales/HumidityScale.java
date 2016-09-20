@@ -7,7 +7,8 @@ import com.hello.suripu.core.roomstate.Condition;
 
 import java.util.List;
 
-public class HumidityScale implements Scale {
+public class HumidityScale extends Scale {
+
     @Override
     public List<ScaleInterval> intervals() {
         final ScaleInterval interval1 = new ScaleInterval("Dry", 0, 20, Condition.ALERT);

@@ -13,7 +13,7 @@ public class SensorViewTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private class StupidScale implements Scale {
+    private class StupidScale extends Scale {
 
         @Override
         public List<ScaleInterval> intervals() {

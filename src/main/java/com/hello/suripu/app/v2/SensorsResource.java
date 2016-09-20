@@ -49,14 +49,9 @@ public class SensorsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public SensorsDataResponse data(@Auth final AccessToken token, @Valid final SensorsDataRequest request) {
-<<<<<<< efd1e8cb99b0f4a1c14e0ebb2554b8dbb6b175dd
         LOGGER.debug("action=get-sensors-data account_id={}", token.accountId);
         final SensorsDataResponse response = viewLogic.data(token.accountId, request);
         LOGGER.debug("action=get-sensors-data account_id={} sensors={}", token.accountId, response.sensors().keySet());
         return response;
-=======
-
-        return viewLogic.data(token.accountId, request);
->>>>>>> Adding tests. Trying to find NPE
     }
 }

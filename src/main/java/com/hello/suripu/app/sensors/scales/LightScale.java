@@ -7,7 +7,7 @@ import com.hello.suripu.core.roomstate.Condition;
 
 import java.util.List;
 
-public class LightScale implements Scale {
+public class LightScale extends Scale {
     @Override
     public List<ScaleInterval> intervals() {
         final ScaleInterval interval1 = new ScaleInterval("Ideal", 0, 2, Condition.IDEAL);

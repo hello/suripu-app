@@ -1,5 +1,6 @@
 package com.hello.suripu.app.sensors;
 
+import com.hello.suripu.app.sensors.scales.Co2Scale;
 import com.hello.suripu.app.sensors.scales.HumidityScale;
 import com.hello.suripu.app.sensors.scales.LightScale;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public class ScaleFactory {
 
-    public class EmptyScale implements Scale {
+    public class EmptyScale extends Scale {
 
         @Override
         public List<ScaleInterval> intervals() {
@@ -30,6 +31,8 @@ public class ScaleFactory {
                 return new TemperatureScale();
             case SOUND:
                 return new TemperatureScale();
+            case CO2:
+                return new Co2Scale();
         }
 
         return new EmptyScale();
