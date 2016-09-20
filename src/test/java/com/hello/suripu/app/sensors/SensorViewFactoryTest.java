@@ -43,6 +43,20 @@ public class SensorViewFactoryTest {
     }
 
     @Test
+    public void testNoExtraData() {
+        final DeviceData dataNoExtra = new DeviceData.Builder()
+                .withExternalDeviceId("yo")
+                .withAccountId(999L)
+                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
+                .withOffsetMillis(0)
+                .build();
+
+        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
+        final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra);
+        assertFalse("view is present", view.isPresent());
+    }
+
+    @Test
     public void testWithExtra() throws JsonProcessingException {
         final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
         SenseOneFiveExtraData extra = SenseOneFiveExtraData.create(
@@ -61,20 +75,5 @@ public class SensorViewFactoryTest {
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
             mapper.writeValueAsString(view.get());
         }
-    }
-
-    @Test
-    public void testMissingSensors() {
-
-        final DeviceData dataNoExtra = new DeviceData.Builder()
-                .withExternalDeviceId("yo")
-                .withAccountId(999L)
-                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
-                .withOffsetMillis(0)
-                .build();
-
-        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
-        final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra);
-        assertFalse("view is present", view.isPresent());
     }
 }

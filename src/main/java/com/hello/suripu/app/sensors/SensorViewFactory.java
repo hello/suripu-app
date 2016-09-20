@@ -70,6 +70,7 @@ public class SensorViewFactory {
                 case UV:
                     final SensorView uv = new SensorView(
                             "UV Light", Sensor.UV, SensorUnit.COUNT, new Float(deviceData.extra().uvCount()), "UV message", Condition.IDEAL, scale);
+                    return Optional.of(uv);
             }
 
         }
