@@ -56,10 +56,14 @@ import com.hello.suripu.app.resources.v1.SpeechResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.sensors.ScaleFactory;
+import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
+import com.hello.suripu.app.v2.SensorsResource;
 import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
@@ -376,6 +380,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         // disable all default exception mappers
         sf.setRegisterDefaultExceptionMappers(false);
 
+
+
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
                 .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
@@ -663,5 +669,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
+
+        if(configuration.getDebug()) {
+            final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory());
+            final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+            environment.jersey().register(new SensorsResource(sensorViewLogic));
+        }
     }
 }
