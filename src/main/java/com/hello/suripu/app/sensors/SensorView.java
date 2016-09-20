@@ -48,7 +48,6 @@ public class SensorView {
 
     @JsonProperty("scale")
     public List<ScaleInterval> scale() {
-//        return new ArrayList<>();
         return scale.intervals();
     }
 
