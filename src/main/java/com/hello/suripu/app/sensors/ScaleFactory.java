@@ -4,6 +4,8 @@ import com.hello.suripu.app.sensors.scales.Co2Scale;
 import com.hello.suripu.app.sensors.scales.HumidityScale;
 import com.hello.suripu.app.sensors.scales.LightScale;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
+import com.hello.suripu.app.sensors.scales.UvScale;
+import com.hello.suripu.app.sensors.scales.VocScale;
 import com.hello.suripu.core.models.Sensor;
 
 import java.util.ArrayList;
@@ -33,6 +35,10 @@ public class ScaleFactory {
                 return new TemperatureScale();
             case CO2:
                 return new Co2Scale();
+            case TVOC:
+                return new VocScale();
+            case UV:
+                return new UvScale();
         }
 
         return new EmptyScale();
