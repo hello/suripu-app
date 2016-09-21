@@ -601,7 +601,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 deviceDAO,
                 new DynamoDB(mergedUserInfoDynamoDBClient),
                 configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.SWAP_INTENTS),
-                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
+                mergedUserInfoDynamoDB
         );
 
         environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
