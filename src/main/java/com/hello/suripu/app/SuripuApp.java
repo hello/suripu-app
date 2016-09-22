@@ -70,6 +70,7 @@ import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
@@ -545,7 +546,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
-        environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
+
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        environment.jersey().register(new AlarmResource(deviceDAO, amazonS3, alarmProcessor));
 
         final QuestionProcessor questionProcessor = new QuestionProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseDAO)
