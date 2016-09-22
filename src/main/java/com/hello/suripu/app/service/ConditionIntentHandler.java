@@ -1,24 +1,23 @@
 package com.hello.suripu.app.service;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.models.Calibration;
-import com.hello.suripu.core.models.CurrentRoomState;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.PreferenceName;
+import com.hello.suripu.core.roomstate.Condition;
+import com.hello.suripu.core.roomstate.CurrentRoomState;
 import com.hello.suripu.core.util.RoomConditionUtil;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -93,8 +92,8 @@ public class ConditionIntentHandler extends IntentHandler {
     //Temperature
     switch(condition.toLowerCase()) {
       case "temperature":
-        additionalComment = roomState.temperature.message.replace("*", "");
-        final Float tempInCelsius = roomState.temperature.value;
+        additionalComment = roomState.temperature().message.replace("*", "");
+        final Float tempInCelsius = roomState.temperature().value;
         conditionUnits = "degrees celsius";
         conditionValue = tempInCelsius;
 
@@ -105,54 +104,54 @@ public class ConditionIntentHandler extends IntentHandler {
         break;
 
       case "humidity":
-        additionalComment = roomState.humidity.message.replace("*", "");
+        additionalComment = roomState.humidity().message.replace("*", "");
         conditionUnits = "percent";
-        conditionValue = roomState.humidity.value;
+        conditionValue = roomState.humidity().value;
         break;
 
       case "light level":
         additionalComment = "";
         conditionUnits = "lux";
-        conditionValue = roomState.light.value;
-        additionalComment = roomState.light.message.replace("*", "");
+        conditionValue = roomState.light().value;
+        additionalComment = roomState.light().message.replace("*", "");
         break;
 
       case "noise level":
       case "sound level":
         condition = "sound level";
-        additionalComment = roomState.sound.message.replace("*", "");
+        additionalComment = roomState.sound().message.replace("*", "");
         conditionUnits = "decibels";
-        conditionValue = roomState.sound.value;
+        conditionValue = roomState.sound().value;
         break;
 
       case "air quality":
-        additionalComment = roomState.particulates.message.replace("*", "");
+        additionalComment = roomState.particulates().message.replace("*", "");
         conditionUnits = "micrograms per cubic meter";
-        conditionValue = roomState.particulates.value;
+        conditionValue = roomState.particulates().value;
         break;
 
       default:
-        final CurrentRoomState.State.Condition generalCondition = RoomConditionUtil.getGeneralRoomConditionV2(roomState, hasDust);
-        if (generalCondition.equals(CurrentRoomState.State.Condition.IDEAL)) {
+        final Condition generalCondition = RoomConditionUtil.getGeneralRoomConditionV2(roomState, hasDust);
+        if (generalCondition.equals(Condition.IDEAL)) {
           return buildSpeechletResponse("Your bedroom is all set for a good night's sleep.", true);
 
         } else {
 
           final StringBuilder builder  = new StringBuilder();
-          if (roomState.light.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.light.message.replace("*", ""));
+          if (roomState.light().condition().equals(Condition.ALERT)) {
+            builder.append(roomState.light().message.replace("*", ""));
           }
-          if (roomState.sound.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.sound.message.replace("*", ""));
+          if (roomState.sound().condition().equals(Condition.ALERT)) {
+            builder.append(roomState.sound().message.replace("*", ""));
           }
-          if (roomState.humidity.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.humidity.message.replace("*", ""));
+          if (roomState.humidity().condition().equals(Condition.ALERT)) {
+            builder.append(roomState.humidity().message.replace("*", ""));
           }
-          if (roomState.temperature.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.temperature.message.replace("*", ""));
+          if (roomState.temperature().condition().equals(Condition.ALERT)) {
+            builder.append(roomState.temperature().message.replace("*", ""));
           }
-          if (roomState.particulates.condition.equals(CurrentRoomState.State.Condition.ALERT)) {
-            builder.append(roomState.particulates.message.replace("*", ""));
+          if (roomState.particulates().condition().equals(Condition.ALERT)) {
+            builder.append(roomState.particulates().message.replace("*", ""));
           }
           return buildSpeechletResponse(builder.toString(), true);
         }

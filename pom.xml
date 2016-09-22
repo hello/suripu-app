@@ -11,12 +11,13 @@
         <dagger.version>1.2.2</dagger.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <jackson.version>2.8.1</jackson.version>
-        <java.version>1.7</java.version>
+        <java.version>1.8</java.version>
         <joda.version>2.9.4</joda.version>
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5586</suripu.version>
+        <!--<suripu.version>0.8.5635</suripu.version>-->
+        <suripu.version>0.8.5641</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -288,6 +289,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.java.quickcheck</groupId>
+            <artifactId>quickcheck</artifactId>
+            <version>0.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -56,16 +56,21 @@ import com.hello.suripu.app.resources.v1.SpeechResource;
 import com.hello.suripu.app.resources.v1.SupportResource;
 import com.hello.suripu.app.resources.v1.TimeZoneResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.sensors.ScaleFactory;
+import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
+import com.hello.suripu.app.v2.SensorsResource;
 import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
@@ -376,6 +381,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         // disable all default exception mappers
         sf.setRegisterDefaultExceptionMappers(false);
 
+
+
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
                 .setAuthenticator(new OAuthAuthenticator(accessTokenStore))
@@ -539,7 +546,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
-        environment.jersey().register(new AlarmResource(alarmDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO, amazonS3));
+
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        environment.jersey().register(new AlarmResource(deviceDAO, amazonS3, alarmProcessor));
 
         final QuestionProcessor questionProcessor = new QuestionProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseDAO)
@@ -595,7 +604,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 deviceDAO,
                 new DynamoDB(mergedUserInfoDynamoDBClient),
                 configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.SWAP_INTENTS),
-                configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ALARM_INFO)
+                mergedUserInfoDynamoDB
         );
 
         environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
@@ -663,5 +672,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
+
+        final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory());
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        environment.jersey().register(new SensorsResource(sensorViewLogic));
     }
 }

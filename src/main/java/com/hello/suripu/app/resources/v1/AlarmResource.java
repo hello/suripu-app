@@ -1,19 +1,20 @@
 package com.hello.suripu.app.resources.v1;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-
 import com.codahale.metrics.annotation.Timed;
-import com.hello.suripu.core.db.AlarmDAODynamoDB;
+import com.google.common.collect.Lists;
+import com.hello.suripu.core.alarm.AlarmConflictException;
+import com.hello.suripu.core.alarm.AlarmProcessor;
+import com.hello.suripu.core.alarm.DuplicateSmartAlarmException;
+import com.hello.suripu.core.alarm.GetAlarmException;
+import com.hello.suripu.core.alarm.InvalidAlarmException;
+import com.hello.suripu.core.alarm.InvalidTimezoneException;
+import com.hello.suripu.core.alarm.InvalidUserException;
+import com.hello.suripu.core.alarm.TooManyAlarmsException;
 import com.hello.suripu.core.db.DeviceDAO;
-import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
-import com.hello.suripu.core.exceptions.TooManyAlarmsException;
 import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.models.UserInfo;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.AlarmUtils;
@@ -21,9 +22,7 @@ import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,29 +36,25 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by pangwu on 9/17/14.
+ * Created by pangwu on 9/17/14
  */
 @Path("/v1/alarms")
 public class AlarmResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AlarmResource.class);
-    private final AlarmDAODynamoDB alarmDAODynamoDB;
-    private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
     private final DeviceDAO deviceDAO;
     private final AmazonS3 amazonS3;
+    private final AlarmProcessor alarmProcessor;
 
-    public AlarmResource(final AlarmDAODynamoDB alarmDAODynamoDB,
-                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-                         final DeviceDAO deviceDAO,
-                         final AmazonS3 amazonS3){
-        this.alarmDAODynamoDB = alarmDAODynamoDB;
-        this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
+    public AlarmResource(final DeviceDAO deviceDAO,
+                         final AmazonS3 amazonS3,
+                         final AlarmProcessor alarmProcessor){
         this.deviceDAO = deviceDAO;
         this.amazonS3 = amazonS3;
+        this.alarmProcessor = alarmProcessor;
     }
 
     @ScopesAllowed({OAuthScope.ALARM_READ})
@@ -67,49 +62,37 @@ public class AlarmResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public List<Alarm> getAlarms(@Auth final AccessToken token){
-        LOGGER.debug("Before getting device account map from account_id");
+
         final List<DeviceAccountPair> deviceAccountMap = this.deviceDAO.getSensesForAccountId(token.accountId);
         if(deviceAccountMap.size() == 0){
-            LOGGER.error("User {} tries to retrieve alarm without paired with a Morpheus.", token.accountId);
+            LOGGER.error("error=get-alarm-fail reason=no-paired-sense account_id={}", token.accountId);
             throw new WebApplicationException(Response.status(Response.Status.PRECONDITION_FAILED).entity(
-                    new JsonError(Response.Status.PRECONDITION_FAILED.getStatusCode(), "Please make sure your Sense is paired to your account before setting your alarm.")).build());
+                    new JsonError(Response.Status.PRECONDITION_FAILED.getStatusCode(),
+                            "Please make sure your Sense is paired to your account before setting your alarm.")).build());
         }
 
         try {
-            LOGGER.debug("Before getting device account map from account_id");
-            final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(deviceAccountMap.get(0).externalDeviceId, token.accountId);
-            LOGGER.debug("Fetched alarm info optional");
+            final List<Alarm> alarms = alarmProcessor.getAlarms(token.accountId, deviceAccountMap.get(0).externalDeviceId);
+            LOGGER.debug("action=get-alarms alarm_size={}", alarms.size());
 
-            if(!alarmInfoOptional.isPresent()){
-                LOGGER.warn("Merge alarm info table doesn't have record for device {}, account {}.", deviceAccountMap.get(0).externalDeviceId, token.accountId);
-//                throw new WebApplicationException(Response.Status.BAD_REQUEST);
-                return Collections.emptyList();
-            }
+            return alarms;
 
+        } catch (InvalidTimezoneException timezoneException) {
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
+                    new JsonError(Response.Status.BAD_REQUEST.getStatusCode(),
+                            timezoneException.getMessage())).build());
 
-            final UserInfo userInfo = alarmInfoOptional.get();
-            if(!userInfo.timeZone.isPresent()){
-                LOGGER.error("User {} tries to get alarm without having a time zone.", token.accountId);
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
-                        new JsonError(Response.Status.BAD_REQUEST.getStatusCode(), "Please update your timezone and try again.")).build());
-            }
+        } catch (InvalidAlarmException alarmException) {
+            throw new WebApplicationException(Response.status(Response.Status.CONFLICT).entity(
+                    new JsonError(Response.Status.CONFLICT.getStatusCode(),
+                            alarmException.getMessage())).build());
 
-            final DateTimeZone userTimeZone = userInfo.timeZone.get();
-            final List<Alarm> smartAlarms = Alarm.Utils.disableExpiredNoneRepeatedAlarms(userInfo.alarmList, DateTime.now().getMillis(), userTimeZone);
-            final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(smartAlarms, DateTime.now(), userTimeZone);
-            if(!status.equals(Alarm.Utils.AlarmStatus.OK)){
-                LOGGER.error("Invalid alarm for user {} device {}", token.accountId, userInfo.deviceId);
-                throw new WebApplicationException(Response.status(Response.Status.CONFLICT).entity(
-                        new JsonError(Response.Status.CONFLICT.getStatusCode(), "We could not save your changes, please try again.")).build());
-            }
-
-            return smartAlarms;
-        }catch (AmazonServiceException awsException){
-            LOGGER.error("Aws failed when user {} tries to get alarms.", token.accountId);
+        } catch (GetAlarmException getAlarmException) {
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(
-                    new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Please try again.")).build());
-        }
+                    new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+                            "Please try again.")).build());
 
+        }
     }
 
 
@@ -125,7 +108,7 @@ public class AlarmResource {
 
         final DateTime now = DateTime.now();
         if(!AlarmUtils.isWithinReasonableBounds(now, clientTime, 50000)) {
-            LOGGER.error("account_id {} set alarm failed, client time too off.( was {}, now is {}", token.accountId, clientTime, now);
+            LOGGER.error("error=set-alarm-fail reason=client-time-off account_id={} client_now={} actual_now={}", token.accountId, clientTime, now);
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
                     new JsonError(Response.Status.BAD_REQUEST.getStatusCode(), English.ERROR_CLOCK_OUT_OF_SYNC)).build()
             );
@@ -133,61 +116,34 @@ public class AlarmResource {
 
         final List<DeviceAccountPair> deviceAccountMap = this.deviceDAO.getSensesForAccountId(token.accountId);
         if(deviceAccountMap.isEmpty()){
-            LOGGER.error("Account {} tries to set alarm without connected to a Sense.", token.accountId);
+            LOGGER.error("error=set-alarm-fail reason=no-paired-sense account_id={}", token.accountId);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
         // Only update alarms in the account that linked with the most recent sense.
         final DeviceAccountPair deviceAccountPair = deviceAccountMap.get(0);
         try {
-            final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(deviceAccountPair.externalDeviceId, token.accountId);
-            if(!alarmInfoOptional.isPresent()){
-                LOGGER.warn("No merge info for user {}, device {}", token.accountId, deviceAccountPair.externalDeviceId);
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
-            }
+            alarmProcessor.setAlarms(token.accountId, deviceAccountPair.externalDeviceId, alarms);
+        } catch (InvalidUserException | InvalidTimezoneException userRelatedException) {
+            LOGGER.error("error=set-alarm-fail reason=user-info-missing err_msg={} return=BAD_REQUEST", userRelatedException.getMessage());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
 
-            if(!alarmInfoOptional.get().timeZone.isPresent()){
-                LOGGER.warn("No user timezone set for account {}, device {}, alarm set skipped.", deviceAccountPair.accountId, deviceAccountPair.externalDeviceId);
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
-            }
+        } catch (AlarmConflictException alarmConflictException) {
+            throw new WebApplicationException(Response.status(Response.Status.CONFLICT).entity(
+                    new JsonError(Response.Status.CONFLICT.getStatusCode(),
+                            alarmConflictException.getMessage())).build());
 
-            final DateTimeZone timeZone = alarmInfoOptional.get().timeZone.get();
-            final Alarm.Utils.AlarmStatus status = Alarm.Utils.isValidAlarms(alarms, DateTime.now(), timeZone);
+        } catch (DuplicateSmartAlarmException duplicateException) {
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
+                    new JsonError(Response.Status.BAD_REQUEST.getStatusCode(),
+                            duplicateException.getMessage())).build());
 
-            if(status.equals(Alarm.Utils.AlarmStatus.OK)) {
-                if(!this.mergedUserInfoDynamoDB.setAlarms(deviceAccountPair.externalDeviceId, token.accountId,
-                        alarmInfoOptional.get().lastUpdatedAt,
-                        alarmInfoOptional.get().alarmList,
-                        alarms,
-                        alarmInfoOptional.get().timeZone.get())){
-                    LOGGER.warn("Cannot update alarm, race condition for account: {}", token.accountId);
-                    throw new WebApplicationException(Response.status(Response.Status.CONFLICT).entity(
-                            new JsonError(Response.Status.CONFLICT.getStatusCode(),
-                                    "Cannot update alarm, please refresh and try again.")).build());
-                }
-                this.alarmDAODynamoDB.setAlarms(token.accountId, alarms);
-            }
-
-            if(status.equals(Alarm.Utils.AlarmStatus.SMART_ALARM_ALREADY_SET)){
-                LOGGER.error("Invalid alarm for account {}, device {}, alarm set skipped. Smart alarm already set.", deviceAccountPair.accountId, deviceAccountPair.externalDeviceId);
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(
-                        new JsonError(Response.Status.BAD_REQUEST.getStatusCode(), "Currently, you can only set one Smart Alarm per day. You already have a Smart Alarm scheduled for this day.")).build());
-            }
-
-
-        }catch (AmazonServiceException awsException){
-            LOGGER.error("Aws failed when user {} tries to get alarms.", token.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(
-                    new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Please try again.")).build());
-        }catch (TooManyAlarmsException tooManyAlarmException){
-            LOGGER.error("Account {} tries to set {} alarm, too many alarm", token.accountId, alarms.size());
+        } catch (TooManyAlarmsException | GetAlarmException alarmException) {
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(
                     new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-                            String.format("You can not set more than %d alarms.", AlarmDAODynamoDB.MAX_ALARM_COUNT))).build());
+                            alarmException.getMessage())).build());
         }
-
         return alarms;
-
     }
 
     @ScopesAllowed({OAuthScope.ALARM_READ})
