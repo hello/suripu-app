@@ -73,7 +73,7 @@ public class AlarmResource {
 
         try {
             final List<Alarm> alarms = alarmProcessor.getAlarms(token.accountId, deviceAccountMap.get(0).externalDeviceId);
-            LOGGER.debug("action=get-alarms alarm_size={}", alarms.size());
+            LOGGER.debug("action=get-alarms account_id={} alarm_size={}", token.accountId, alarms.size());
 
             return alarms;
 
@@ -124,6 +124,7 @@ public class AlarmResource {
         final DeviceAccountPair deviceAccountPair = deviceAccountMap.get(0);
         try {
             alarmProcessor.setAlarms(token.accountId, deviceAccountPair.externalDeviceId, alarms);
+
         } catch (InvalidUserException | InvalidTimezoneException userRelatedException) {
             LOGGER.error("error=set-alarm-fail reason=user-info-missing err_msg={} return=BAD_REQUEST", userRelatedException.getMessage());
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
@@ -143,6 +144,7 @@ public class AlarmResource {
                     new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
                             alarmException.getMessage())).build());
         }
+
         return alarms;
     }
 
