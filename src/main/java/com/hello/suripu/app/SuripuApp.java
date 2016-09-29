@@ -64,7 +64,7 @@ import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
 import com.hello.suripu.app.v2.DeviceResource;
-import com.hello.suripu.app.v2.ExternalAppResource;
+import com.hello.suripu.app.v2.ExpansionsResource;
 import com.hello.suripu.app.v2.SensorsResource;
 import com.hello.suripu.app.v2.SharingResource;
 import com.hello.suripu.app.v2.SleepSoundsResource;
@@ -111,6 +111,7 @@ import com.hello.suripu.core.db.QuestionResponseDAO;
 import com.hello.suripu.core.db.QuestionResponseReadDAO;
 import com.hello.suripu.core.db.ResponseCommandsDAODynamoDB;
 import com.hello.suripu.core.db.RingTimeHistoryDAODynamoDB;
+import com.hello.suripu.core.db.SenseDataDAO;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.SensorsViewsDynamoDB;
 import com.hello.suripu.core.db.SleepScoreParametersDAO;
@@ -464,6 +465,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
 
         final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
+        final SenseDataDAO senseDataDAO = commonDB.onDemand(SenseDataDAO.class);
 
         // WARNING: Do not use async methods for anything but SensorsViewsDynamoDB for now
         final AmazonDynamoDBAsync senseLastSeenDynamoDBClient = new AmazonDynamoDBAsyncClient(awsCredentialsProvider, AmazonDynamoDBClientFactory.getDefaultClientConfiguration());
@@ -556,10 +558,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepHmmDAODynamoDB,
                 accountDAO,
                 sleepStatsDAODynamoDB,
-                senseColorDAO,
+                senseDataDAO,
                 onlineHmmModelsDAO,
                 featureExtractionDAO,
-                calibrationDAO,
                 defaultModelEnsembleDAO,
                 userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
@@ -693,7 +694,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountDAO,
             notificationSubscriptionDAOWrapper));
 
-        environment.jersey().register(new ExternalAppResource(
+        environment.jersey().register(new ExpansionsResource(
             externalApplicationStore,
             externalAuthorizationStateDAO,
             deviceDAO,

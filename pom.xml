@@ -16,9 +16,8 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <suripu.version>0.8.5620</suripu.version>
-        <gaibu.version>0.1.4</gaibu.version>
-        <suripu.version>0.8.5641</suripu.version>
+        <gaibu.version>0.1.19-SNAPSHOT</gaibu.version>
+        <suripu.version>0.8.5650</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -137,7 +136,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
