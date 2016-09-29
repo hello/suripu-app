@@ -54,7 +54,6 @@ import javax.ws.rs.core.UriBuilder;
 import io.dropwizard.jersey.PATCH;
 import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
 import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
-import is.hello.gaibu.core.factories.ExpansionDataFactory;
 import is.hello.gaibu.core.models.ApplicationData;
 import is.hello.gaibu.core.models.Configuration;
 import is.hello.gaibu.core.models.Expansion;
@@ -62,14 +61,16 @@ import is.hello.gaibu.core.models.ExternalApplication;
 import is.hello.gaibu.core.models.ExternalApplicationData;
 import is.hello.gaibu.core.models.ExternalAuthorizationState;
 import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.models.HueApplicationData;
-import is.hello.gaibu.core.models.NestApplicationData;
+import is.hello.gaibu.core.models.MultiDensityImage;
 import is.hello.gaibu.core.models.StateRequest;
 import is.hello.gaibu.core.stores.ExternalApplicationStore;
 import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
 import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
+import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
+import is.hello.gaibu.homeauto.models.HueApplicationData;
+import is.hello.gaibu.homeauto.models.NestApplicationData;
 import is.hello.gaibu.homeauto.services.HueLight;
 import is.hello.gaibu.homeauto.services.NestThermostat;
 
@@ -104,75 +105,21 @@ public class ExpansionsResource {
         mapper.registerModule(new JodaModule());
     }
 
-
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/")
-    public List<Expansion> getExternalApps(@Auth final AccessToken token) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(token.accountId);
-        if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", token.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
-
-        final List<Expansion> expansions = Lists.newArrayList();
-        final List<ExternalApplication> externalApps = externalApplicationStore.getAll();
-
-        for(final ExternalApplication extApp : externalApps) {
-
-            final Expansion exp = new Expansion.Builder()
-                .withId(extApp.id)
-                .withCategory(extApp.category)
-                .withDeviceName(extApp.description)
-                .withServiceName(Expansion.ServiceName.valueOf(extApp.name.toUpperCase()))
-                .withIconURI("s3://hello-dev/fake_icon.png") //TODO: Replace this URL!
-                .withAuthURI(String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", extApp.id.toString()))
-                .withCompletionURI("https://dev-api-unstable.hello.is/v2/expansions/redirect")
-                .withState(getStateFromExternalAppId(extApp.id, deviceId))
-                .build();
-            expansions.add(exp);
-        }
-
-        return expansions;
+    public List<Expansion> getExpansionsDetail(@Auth final AccessToken token) {
+        return getAllExpansions(token);
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{external_app_id}")
-    public Expansion getExternalApps(@Auth final AccessToken token,
+    public List<Expansion> getExpansionDetail(@Auth final AccessToken token,
                                      @PathParam("external_app_id") final Long appId) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(token.accountId);
-        if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", token.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
-
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationById(appId);
-        if(!externalApplicationOptional.isPresent()) {
-            LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final ExternalApplication extApp = externalApplicationOptional.get();
-
-        final Expansion exp = new Expansion.Builder()
-            .withId(extApp.id)
-            .withCategory(extApp.category)
-            .withDeviceName(extApp.description)
-            .withServiceName(Expansion.ServiceName.valueOf(extApp.name.toUpperCase()))
-            .withIconURI("s3://hello-dev/fake_icon.png") //TODO: Replace this URL!
-            .withAuthURI(String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", extApp.id.toString()))
-            .withCompletionURI("https://dev-api-unstable.hello.is/v2/expansions/redirect")
-            .withState(getStateFromExternalAppId(extApp.id, deviceId))
-            .build();
-
-        return exp;
+        return getExpansions(token, appId);
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
@@ -328,9 +275,9 @@ public class ExpansionsResource {
         Type collectionType = new TypeToken<Map<String, String>>(){}.getType();
 //        TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {};
 //        final Map<String, String> responseMap = mapper.readValue(responseValue, typeRef);
-        Map<String, String> responseJson = gson.fromJson(responseValue, collectionType);
+        Map<String, String> responseMap = gson.fromJson(responseValue, collectionType);
 
-        if(!responseJson.containsKey("access_token")) {
+        if(!responseMap.containsKey("access_token")) {
             LOGGER.error("error=no-access-token-returned");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
@@ -338,7 +285,7 @@ public class ExpansionsResource {
         final Map<String, String> encryptionContext = Maps.newHashMap();
         encryptionContext.put("application_id", externalApplication.id.toString());
 
-        final Optional<String> encryptedTokenOptional = tokenKMSVault.encrypt(responseJson.get("access_token"), encryptionContext);
+        final Optional<String> encryptedTokenOptional = tokenKMSVault.encrypt(responseMap.get("access_token"), encryptionContext);
         if (!encryptedTokenOptional.isPresent()) {
             LOGGER.error("error=token-encryption-failure");
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
@@ -350,16 +297,16 @@ public class ExpansionsResource {
             .withAppId(externalApplication.id)
             .withDeviceId(authorizationState.deviceId);
 
-        if(responseJson.containsKey("expires_in")) {
-            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseJson.get("expires_in")));
+        if(responseMap.containsKey("expires_in")) {
+            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseMap.get("expires_in")));
         }
 
-        if(responseJson.containsKey("access_token_expires_in")) {
-            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseJson.get("access_token_expires_in")));
+        if(responseMap.containsKey("access_token_expires_in")) {
+            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseMap.get("access_token_expires_in")));
         }
 
-        if(responseJson.containsKey("refresh_token")) {
-            final Optional<String> encryptedRefreshTokenOptional = tokenKMSVault.encrypt(responseJson.get("refresh_token"), encryptionContext);
+        if(responseMap.containsKey("refresh_token")) {
+            final Optional<String> encryptedRefreshTokenOptional = tokenKMSVault.encrypt(responseMap.get("refresh_token"), encryptionContext);
             if (!encryptedRefreshTokenOptional.isPresent()) {
                 LOGGER.error("error=token-encryption-failure");
                 throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
@@ -367,8 +314,8 @@ public class ExpansionsResource {
             tokenBuilder.withRefreshToken(encryptedRefreshTokenOptional.get());
         }
 
-        if(responseJson.containsKey("refresh_token_expires_in")) {
-            tokenBuilder.withRefreshExpiresIn(Long.parseLong(responseJson.get("refresh_token_expires_in")));
+        if(responseMap.containsKey("refresh_token_expires_in")) {
+            tokenBuilder.withRefreshExpiresIn(Long.parseLong(responseMap.get("refresh_token_expires_in")));
         }
 
         final ExternalToken externalToken = tokenBuilder.build();
@@ -388,9 +335,10 @@ public class ExpansionsResource {
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("refresh")
+    @Path("/{expansion_id}/refresh")
     public Response refreshToken(@Auth final AccessToken accessToken,
-                               @Context HttpServletRequest request) {
+                                 @Context HttpServletRequest request,
+                                 @PathParam("expansion_id") final Long appId) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
@@ -399,13 +347,17 @@ public class ExpansionsResource {
 
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
 
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Hue"); //TODO: Pass app_id as query_param
+        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationById(appId);
         if(!externalApplicationOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
         final ExternalApplication externalApplication = externalApplicationOptional.get();
+        if(externalApplication.refreshURI.isEmpty()) {
+            LOGGER.warn("warning=token-refresh-not-allowed expansion_id={}", externalApplication.id);
+            throw new WebApplicationException(Response.status(Response.Status.FORBIDDEN).build());
+        }
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(deviceId, externalApplication.id);
         if(!externalTokenOptional.isPresent()) {
@@ -419,8 +371,7 @@ public class ExpansionsResource {
 
         //Make request to TOKEN_URL for access_token
         Client client = ClientBuilder.newClient();
-        final String refreshURL = externalApplication.tokenURI.replace("token", "refresh") + "?grant_type=refresh_token";
-        WebTarget resourceTarget = client.target(UriBuilder.fromUri(refreshURL).build());
+        WebTarget resourceTarget = client.target(UriBuilder.fromUri(externalApplication.refreshURI).build());
         Invocation.Builder builder = resourceTarget.request();
 
         final Form form = new Form();
@@ -578,7 +529,7 @@ public class ExpansionsResource {
     @Timed
     @Path("hue/state")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response setState(@Auth final AccessToken accessToken,
+    public Response setHueState(@Auth final AccessToken accessToken,
                              @QueryParam("light_on") Boolean lightOn,
                              @QueryParam("adjust_bright") Integer adjBright,
                              @QueryParam("adjust_temp") Integer adjTemp) {
@@ -600,6 +551,28 @@ public class ExpansionsResource {
 
         if(adjTemp != null) {
             hueLight.adjustTemperature(adjTemp);
+        }
+
+        return Response.ok().build();
+    }
+
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
+    @PATCH
+    @Timed
+    @Path("nest/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response setNestState(@Auth final AccessToken accessToken,
+                                 @QueryParam("temp") Integer temperature) {
+        final Optional<NestThermostat> nestThermostatOptional = getNestFromToken(accessToken);
+        if(!nestThermostatOptional.isPresent()) {
+            LOGGER.error("error=failure-fetching-nest account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+        }
+
+        final NestThermostat nestThermostat = nestThermostatOptional.get();
+
+        if(temperature != null) {
+            nestThermostat.setTargetTemperature(temperature);
         }
 
         return Response.ok().build();
@@ -638,9 +611,9 @@ public class ExpansionsResource {
 
         //Enumerate devices on a service-specific basis
         final String decryptedToken = getDecryptedExternalToken(deviceId, externalApplication.id, false);
-        final ApplicationData appData = ExpansionDataFactory.getAppData(mapper, extData.data, externalApplication.name);
+        final ApplicationData appData = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, externalApplication.serviceName);
 
-        final HomeAutomationExpansion expansion = HomeAutomationExpansionFactory.getEmptyExpansion(externalApplication.name, appData, decryptedToken);
+        final HomeAutomationExpansion expansion = HomeAutomationExpansionFactory.getEmptyExpansion(externalApplication.serviceName, appData, decryptedToken);
 
         return expansion.getConfigurations();
     }
@@ -692,9 +665,9 @@ public class ExpansionsResource {
             final ApplicationData appData;
             if(extAppDataOptional.isPresent()) {
                 extData = extAppDataOptional.get();
-                appData = ExpansionDataFactory.getAppData(mapper, extData.data, externalApplication.name);
+                appData = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, externalApplication.serviceName);
             }else {
-                appData = ExpansionDataFactory.getEmptyAppData(externalApplication.name);
+                appData = HomeAutomationExpansionDataFactory.getEmptyAppData(externalApplication.serviceName);
             }
 
             appData.setId(configuration.getId());
@@ -715,165 +688,6 @@ public class ExpansionsResource {
 
         return configuration;
 
-    }
-
-    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
-    @POST
-    @Timed
-    @Path("hue/group")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response setGroup(@Auth final AccessToken accessToken,
-                             @QueryParam("group_id") Integer groupId) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
-        if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
-
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Hue");
-        if(!externalApplicationOptional.isPresent()) {
-            LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-
-        final ExternalApplication externalApplication = externalApplicationOptional.get();
-
-        final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApplication.id, deviceId);
-        if(!extAppDataOptional.isPresent()) {
-            LOGGER.error("error=no-ext-app-data account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final ExternalApplicationData extData = extAppDataOptional.get();
-        try {
-            final HueApplicationData currentHueData = mapper.readValue(extData.data, HueApplicationData.class);
-            final HueApplicationData updatedHueData = new HueApplicationData(currentHueData.bridgeId, currentHueData.whitelistId, groupId);
-            final ExternalApplicationData newData = new ExternalApplicationData.Builder()
-                .withAppId(extData.appId)
-                .withDeviceId(extData.deviceId)
-                .withData(mapper.writeValueAsString(updatedHueData))
-                .withEnabled(true)
-                .build();
-            externalAppDataStore.updateAppData(newData);
-        } catch (IOException io) {
-            LOGGER.warn("warn=bad-json-data");
-        }
-
-        return Response.ok().build();
-    }
-
-    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
-    @GET
-    @Timed
-    @Path("hue/groups")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String getGroups(@Auth final AccessToken accessToken) {
-
-        final Optional<HueLight> hueLightOptional = getHueFromToken(accessToken);
-        if(!hueLightOptional.isPresent()) {
-            LOGGER.error("error=failure-fetching-hue account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final HueLight hueLight = hueLightOptional.get();
-        return hueLight.getGroups();
-    }
-
-    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
-    @PATCH
-    @Timed
-    @Path("nest/state")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response setState(@Auth final AccessToken accessToken,
-                             @QueryParam("temp") Integer temperature) {
-        final Optional<NestThermostat> nestThermostatOptional = getNestFromToken(accessToken);
-        if(!nestThermostatOptional.isPresent()) {
-            LOGGER.error("error=failure-fetching-nest account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final NestThermostat nestThermostat = nestThermostatOptional.get();
-
-        if(temperature != null) {
-            nestThermostat.setTargetTemperature(temperature);
-        }
-
-        return Response.ok().build();
-    }
-
-    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
-    @GET
-    @Timed
-    @Path("nest/thermostats")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String getThermostats(@Auth final AccessToken accessToken) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
-        if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
-
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
-        if(!externalApplicationOptional.isPresent()) {
-            LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-
-        final ExternalApplication externalApplication = externalApplicationOptional.get();
-        final String decryptedToken = getDecryptedExternalToken(deviceId, externalApplication.id, false);
-        return NestThermostat.getThermostats(decryptedToken);
-    }
-
-    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
-    @POST
-    @Timed
-    @Path("nest/thermostat")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response setGroup(@Auth final AccessToken accessToken,
-                             @QueryParam("thermostat_id") String thermostatId) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
-        if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
-
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
-        if(!externalApplicationOptional.isPresent()) {
-            LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-
-        final ExternalApplication externalApplication = externalApplicationOptional.get();
-
-        final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApplication.id, deviceId);
-
-        final NestApplicationData nestData = new NestApplicationData(thermostatId);
-        try {
-            final ExternalApplicationData newData = new ExternalApplicationData.Builder()
-                .withAppId(externalApplication.id)
-                .withDeviceId(deviceId)
-                .withData(mapper.writeValueAsString(nestData))
-                .withEnabled(true)
-                .build();
-
-            //Create new external app data if none exists
-            if(!extAppDataOptional.isPresent()) {
-                LOGGER.error("error=no-ext-app-data account_id={} application_id={}", accessToken.accountId, externalApplication.id);
-                externalAppDataStore.insertAppData(newData);
-            }
-            externalAppDataStore.updateAppData(newData);
-
-        } catch (IOException io) {
-            LOGGER.warn("warn=bad-json-data");
-        }
-
-        return Response.ok().build();
     }
 
     private String getDecryptedExternalToken(final String deviceId, final Long applicationId, final Boolean isRefreshToken) {
@@ -929,7 +743,7 @@ public class ExpansionsResource {
 
         final ExternalApplicationData extData = extAppDataOptional.get();
 
-        final HueApplicationData hueData = (HueApplicationData) ExpansionDataFactory.getAppData(mapper, extData.data, "Hue");
+        final HueApplicationData hueData = (HueApplicationData) HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, "Hue");
 
         final String decryptedToken = getDecryptedExternalToken(deviceId, externalApplication.id, false);
         if(hueData.groupId == null || hueData.groupId < 1) {
@@ -984,12 +798,6 @@ public class ExpansionsResource {
 
     private Expansion.State getStateFromExternalAppId(final Long appId, final String deviceId) {
 
-//        NOT_CONNECTED,  //No connection to the expansion has existed
-//            CONNECTED_ON,   //Expansion has been authorized/authenticated, and the user has enabled it in the app
-//            CONNECTED_OFF,  //Expansion has been authorized/authenticated, but the user has disabled it in the app
-//            REVOKED,        //User has requested the revocation of all credentials for the Expansion
-//            NOT_CONFIGURED  //Expansion is authenticated, but lacks required configuration information to function
-
         final Integer externalTokenCount = externalTokenStore.getTokenCount(deviceId, appId);
         if(externalTokenCount < 1) {
             LOGGER.warn("warning=token-not-found");
@@ -1019,5 +827,60 @@ public class ExpansionsResource {
         }
 
         return Expansion.State.CONNECTED_ON;
+    }
+
+    private List<Expansion> getAllExpansions(final AccessToken accessToken) {
+        return getExpansions(accessToken, 0L);
+    }
+
+    private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId) {
+        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
+        if(sensePairedWithAccount.size() == 0){
+            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+        }
+
+        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
+
+        final List<ExternalApplication> externalApps = Lists.newArrayList();
+
+        if(appId > 0L) {
+            final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationById(appId);
+            if(!externalApplicationOptional.isPresent()) {
+                LOGGER.warn("warning=application-not-found");
+                throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            }
+            externalApps.add(externalApplicationOptional.get());
+        } else {
+            externalApps.addAll(externalApplicationStore.getAll());
+        }
+
+        final List<Expansion> expansions = Lists.newArrayList();
+
+        for(final ExternalApplication extApp : externalApps) {
+
+            final String iconFilenameBase = "icon-" + extApp.serviceName.toLowerCase();
+            //TODO: Move These Icons and pull this base URL from configs!
+            final MultiDensityImage icon = MultiDensityImage.create("https://hello-dev.s3.amazonaws.com/josef/expansions/",
+                Optional.of(iconFilenameBase + "@1x.png"),
+                Optional.of(iconFilenameBase + "@2x.png"),
+                Optional.of(iconFilenameBase + "@3x.png"));
+
+            final Expansion exp = new Expansion.Builder()
+                .withId(extApp.id)
+                .withCategory(extApp.category)
+                .withDeviceName(extApp.deviceName)
+                .withServiceName(Expansion.ServiceName.valueOf(extApp.serviceName.toUpperCase()))
+                .withDescription(extApp.description)
+                .withIcon(icon)
+                .withAuthURI(String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", extApp.id.toString()))
+                .withCompletionURI("https://dev-api-unstable.hello.is/v2/expansions/redirect")
+                .withState(getStateFromExternalAppId(extApp.id, deviceId))
+                .build();
+            expansions.add(exp);
+        }
+
+        return expansions;
+
     }
 }
