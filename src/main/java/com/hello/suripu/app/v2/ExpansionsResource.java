@@ -144,19 +144,15 @@ public class ExpansionsResource {
 
         final Expansion expansion = expansionOptional.get();
 
-        //Check to see if we need to whitelist
         final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, deviceId);
-        if(!expDataOptional.isPresent()) {
-            LOGGER.error("error=no-ext-app-data account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
 
-        final ExpansionData extData = expDataOptional.get();
-
-        final ExpansionData.Builder newDataBuilder = new ExpansionData.Builder()
-            .withAppId(extData.appId)
+        final ExpansionData.Builder newDataBuilder = new ExpansionData.Builder();
+        if(expDataOptional.isPresent()) {
+            final ExpansionData extData = expDataOptional.get();
+            newDataBuilder.withAppId(extData.appId)
             .withDeviceId(extData.deviceId)
             .withData(extData.data);
+        }
 
         if(stateRequest.state.equals(Expansion.State.CONNECTED_OFF)){
             newDataBuilder.withEnabled(false);
