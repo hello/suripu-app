@@ -214,12 +214,12 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
-import is.hello.gaibu.core.db.ExternalApplicationDataDAO;
-import is.hello.gaibu.core.db.ExternalApplicationsDAO;
+import is.hello.gaibu.core.db.ExpansionsDAO;
+import is.hello.gaibu.core.db.ExpansionDataDAO;
 import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
 import is.hello.gaibu.core.db.ExternalTokenDAO;
-import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
-import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 
 
@@ -288,14 +288,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
 
 
-        final ExternalApplicationsDAO externalApplicationsDAO = commonDB.onDemand(ExternalApplicationsDAO.class);
-        final PersistentExternalApplicationStore externalApplicationStore = new PersistentExternalApplicationStore(externalApplicationsDAO);
+        final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
+        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
 
         final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, externalApplicationStore);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
 
-        final ExternalApplicationDataDAO externalApplicationDataDAO = commonDB.onDemand(ExternalApplicationDataDAO.class);
-        final PersistentExternalAppDataStore externalAppDataStore = new PersistentExternalAppDataStore(externalApplicationDataDAO);
+        final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+        final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.withConnectionTimeout(200); // in ms
@@ -699,7 +699,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             notificationSubscriptionDAOWrapper));
 
         environment.jersey().register(new ExpansionsResource(
-            externalApplicationStore,
+            expansionStore,
             externalAuthorizationStateDAO,
             deviceDAO,
             externalTokenStore,
