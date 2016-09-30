@@ -225,7 +225,7 @@ public class ExpansionsResource {
 
         externalAuthorizationStateDAO.storeAuthCode(new ExternalAuthorizationState(stateId, DateTime.now(DateTimeZone.UTC), deviceId, appId));
 
-        LOGGER.debug("Application ID: {}, ClientID: {}", appId, expansion.clientId);
+        LOGGER.debug("action=auth-redirect expansion_id={} auth_uri={} redirect_uri={}", appId, expansion.authURI, authURI.toString());
         return Response.temporaryRedirect(authURI).build();
     }
 
@@ -664,19 +664,11 @@ public class ExpansionsResource {
             LOGGER.error("error=no-ext-app-data account_id={}", accessToken.accountId);
         }
 
-        ExpansionData extData = new ExpansionData.Builder()
-            .withData("")
-            .build();
-
-        if(expDataOptional.isPresent()) {
-            extData = expDataOptional.get();
-        }
-
         try {
             final ExpansionDeviceData appData;
-            if(expDataOptional.isPresent()) {
-                extData = expDataOptional.get();
-                appData = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansion.serviceName);
+            if(expDataOptional.isPresent() && !expDataOptional.get().data.isEmpty()) {
+                final ExpansionData expData = expDataOptional.get();
+                appData = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
             }else {
                 appData = HomeAutomationExpansionDataFactory.getEmptyAppData(expansion.serviceName);
             }
