@@ -38,9 +38,12 @@ public class AlarmGroups {
 
     @JsonProperty("voice")
     public List<Alarm> voice() {
-        return classic.stream()
+        final List<Alarm> filtered = classic.stream()
                 .filter(a -> AlarmSource.VOICE_SERVICE.equals(a.alarmSource))
                 .collect(Collectors.toList());
+
+        filtered.addAll(voice);
+        return filtered;
     }
 
     @JsonProperty("classic")
