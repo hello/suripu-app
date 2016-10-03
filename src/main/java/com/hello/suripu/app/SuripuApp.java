@@ -62,6 +62,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
+import com.hello.suripu.app.alarms.AlarmGroupsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.SensorsResource;
 import com.hello.suripu.app.v2.SharingResource;
@@ -681,5 +682,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory());
         final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
         environment.jersey().register(new SensorsResource(sensorViewLogic));
+
+        environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
     }
 }
