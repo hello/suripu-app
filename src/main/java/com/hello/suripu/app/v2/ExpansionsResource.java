@@ -50,6 +50,7 @@ import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
 import io.dropwizard.jersey.PATCH;
 import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
@@ -107,8 +108,9 @@ public class ExpansionsResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/")
-    public List<Expansion> getExpansionsDetail(@Auth final AccessToken token) {
-        return getAllExpansions(token);
+    public List<Expansion> getExpansionsDetail(@Auth final AccessToken token,
+                                               @Context UriInfo uriInfo) {
+        return getAllExpansions(token, uriInfo);
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
@@ -116,8 +118,9 @@ public class ExpansionsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{expansion_id}")
     public List<Expansion> getExpansionDetail(@Auth final AccessToken token,
-                                     @PathParam("expansion_id") final Long appId) {
-        return getExpansions(token, appId);
+                                              @PathParam("expansion_id") final Long appId,
+                                              @Context UriInfo uriInfo) {
+        return getExpansions(token, appId, uriInfo);
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
@@ -880,11 +883,11 @@ public class ExpansionsResource {
         return Expansion.State.CONNECTED_ON;
     }
 
-    private List<Expansion> getAllExpansions(final AccessToken accessToken) {
-        return getExpansions(accessToken, 0L);
+    private List<Expansion> getAllExpansions(final AccessToken accessToken, final UriInfo uriInfo) {
+        return getExpansions(accessToken, 0L, uriInfo);
     }
 
-    private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId) {
+        private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
@@ -908,6 +911,7 @@ public class ExpansionsResource {
 
         final List<Expansion> updatedExpansions = Lists.newArrayList();
 
+        final String baseURI = uriInfo.getBaseUriBuilder().path(ExpansionsResource.class).build().toString();
         for(final Expansion exp : expansions) {
 
             final Expansion newExpansion = new Expansion.Builder()
@@ -918,8 +922,8 @@ public class ExpansionsResource {
                 .withCategory(exp.category)
                 .withIcon(exp.icon)
                 .withState(getStateFromExternalAppId(exp.id, deviceId))
-                .withCompletionURI("https://dev-api-unstable.hello.is/v2/expansions/redirect")
-                .withAuthURI(String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", exp.id.toString()))
+                .withCompletionURI(baseURI + "/redirect")
+                .withAuthURI(String.format("%s/%s/auth", baseURI, exp.id.toString()))
                 .withApiURI(exp.apiURI)
                 .build();
             updatedExpansions.add(newExpansion);
