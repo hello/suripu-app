@@ -15,6 +15,12 @@ public class KMSConfiguration {
         @JsonProperty("uuid")
         private String uuidKey;
         public String uuid() { return this.uuidKey; }
+
+        @Valid
+        @NotNull
+        @JsonProperty("token")
+        private String tokenKey;
+        public String token() { return this.tokenKey; }
     }
 
     @Valid

@@ -16,6 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <gaibu.version>0.1.29</gaibu.version>
         <suripu.version>0.8.5650</suripu.version>
     </properties>
 
@@ -135,7 +136,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -364,6 +365,16 @@
             <groupId>com.segment.analytics.java</groupId>
             <artifactId>analytics</artifactId>
             <version>2.0.0-RC4</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>home-automation</artifactId>
+            <version>${gaibu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>gaibu-core</artifactId>
+            <version>${gaibu.version}</version>
         </dependency>
     </dependencies>
     <build>
