@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.api.logging.LoggingProtos;
+import com.hello.suripu.app.utils.SerialNumberUtils;
 import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.provision.PillBlobProvision;
@@ -40,22 +41,6 @@ public class ProvisionResource {
     private final KeyStoreUtils keyStoreUtils;
     private final PillProvisionDAO pillProvisionDAO;
     private final AmazonS3 s3;
-
-    // August 1st
-    //    910-00100
-    //    PRODUCT ASSY, SENSE 1.5 DVT, WHITE
-    //
-    //    910-00101
-    //    PRODUCT ASSY, SENSE 1.5 DVT, Black
-
-
-
-    private final static String SENSE_ONE_FIVE_WHITE = "91000100";
-    private final static String SENSE_ONE_FIVE_BLACK = "91000101";
-    private final static Integer MIN_SN_LENGTH = SENSE_ONE_FIVE_BLACK.length();
-
-    private final static String SENSE_ONE_WHITE = "91000008W";
-    private final static String SENSE_ONE_BLACK = "91000008B";
 
     @Context
     HttpServletRequest request;
@@ -99,7 +84,7 @@ public class ProvisionResource {
         s3.putObject("hello-provision-blobs", key, byteArrayInputStream, metadata);
         byteArrayInputStream.close();
 
-        final HardwareVersion hardwareVersion = ProvisionResource.fromSerialNumber(serialNumber);
+        final HardwareVersion hardwareVersion = SerialNumberUtils.fromSerialNumber(serialNumber);
         LOGGER.info("action=provision sn={} hw_version={}", serialNumber, hardwareVersion);
         try{
             final Optional<SenseProvision> sense = keyStoreUtils.decrypt(body);
@@ -165,18 +150,5 @@ public class ProvisionResource {
         }
         final String message = String.format("OK SN created on %s\n", pillProvisionOptional.get().created.toString());
         return Response.ok().entity(message).build();
-    }
-
-    public static HardwareVersion fromSerialNumber(final String serialNumber) {
-        if(serialNumber != null && serialNumber.length() > MIN_SN_LENGTH) {
-            if (serialNumber.startsWith(SENSE_ONE_FIVE_BLACK) || serialNumber.startsWith(SENSE_ONE_FIVE_WHITE)) {
-                return HardwareVersion.SENSE_ONE_FIVE;
-            }
-            else if(serialNumber.startsWith(SENSE_ONE_BLACK) || serialNumber.startsWith(SENSE_ONE_WHITE))  {
-                return HardwareVersion.SENSE_ONE;
-            }
-        }
-
-        throw new IllegalArgumentException(String.format("invalid sn=%s", serialNumber));
     }
 }
