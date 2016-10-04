@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
+import com.hello.suripu.app.alarms.AlarmGroupsResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
 import com.hello.suripu.app.cli.MigratePillHeartbeatCommand;
@@ -35,6 +36,7 @@ import com.hello.suripu.app.configuration.KMSConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.managed.AnalyticsManaged;
+import com.hello.suripu.app.models.MetadataDAODynamoDB;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.app.resources.v1.AccountPreferencesResource;
 import com.hello.suripu.app.resources.v1.AccountResource;
@@ -63,7 +65,6 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
-import com.hello.suripu.app.alarms.AlarmGroupsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
 import com.hello.suripu.app.v2.SensorsResource;
@@ -153,7 +154,6 @@ import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
 import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
-import com.hello.suripu.core.sense.metadata.sql.SenseMetadataSql;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultReadDAODynamoDB;
 import com.hello.suripu.core.speech.SpeechTimelineReadDAODynamoDB;
@@ -282,7 +282,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
-        final SenseMetadataDAO senseMetadataDAO = commonDB.onDemand(SenseMetadataSql.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
@@ -603,6 +602,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.lifecycle().manage(new AnalyticsManaged(analytics));
 
+        final SenseMetadataDAO senseMetadataDAO = new MetadataDAODynamoDB(senseKeyStore);
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
                 .withDeviceDAO(deviceDAO)
                 .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
