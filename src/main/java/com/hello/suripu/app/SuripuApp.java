@@ -286,17 +286,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
 
-
-
-        final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
-        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
-
-        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
-
-        final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
-        final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
-
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.withConnectionTimeout(200); // in ms
         clientConfiguration.withMaxErrorRetry(1);
@@ -699,6 +688,15 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             notificationSubscriptionDAOWrapper));
 
         if (configuration.getDebug()) {
+            final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
+            final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
+
+            final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+            final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
+
+            final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+            final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
+
             environment.jersey().register(new ExpansionsResource(
                 expansionStore,
                 externalAuthorizationStateDAO,
