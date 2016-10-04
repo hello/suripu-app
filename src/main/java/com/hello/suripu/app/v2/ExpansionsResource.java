@@ -173,8 +173,8 @@ public class ExpansionsResource {
                 LOGGER.warn("warning=token-not-found");
                 throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
             }
-            final ExternalToken externalToken = externalTokenOptional.get();
-            externalTokenStore.disable(externalToken);
+
+            externalTokenStore.disableByDeviceId(deviceId, appId);
             LOGGER.debug("action=tokens-revoked");
         }
 
@@ -279,7 +279,8 @@ public class ExpansionsResource {
         final Map<String, String> encryptionContext = Maps.newHashMap();
         encryptionContext.put("application_id", expansion.id.toString());
 
-        final Optional<String> encryptedTokenOptional = tokenKMSVault.encrypt(responseMap.get("access_token"), encryptionContext);
+        final String newAccessToken = responseMap.get("access_token");
+        final Optional<String> encryptedTokenOptional = tokenKMSVault.encrypt(newAccessToken, encryptionContext);
         if (!encryptedTokenOptional.isPresent()) {
             LOGGER.error("error=token-encryption-failure");
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
@@ -323,6 +324,41 @@ public class ExpansionsResource {
         }
 
         response.close();
+
+        //TODO: Replace this one-off with a more generalized approach to initializing expansions
+        if(expansion.serviceName == Expansion.ServiceName.HUE) {
+
+            final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, authorizationState.deviceId);
+
+            final HueLight hueLight = new HueLight(newAccessToken);
+            final String bridgeId = hueLight.getBridge(newAccessToken);
+
+            final Optional<String> whitelistIdOptional = hueLight.getWhitelistId(bridgeId, newAccessToken);
+            if(!whitelistIdOptional.isPresent()) {
+                LOGGER.warn("warning=whitelistId-not-found");
+                throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            }
+
+            final String whitelistId = whitelistIdOptional.get();
+
+            final Map<String, String> dataMap = Maps.newHashMap();
+            dataMap.put("bridge_id", bridgeId);
+            dataMap.put("whitelist_id", whitelistId);
+
+            //Store this information in DB
+            final ExpansionData appData = new ExpansionData.Builder()
+                .withAppId(externalToken.appId)
+                .withDeviceId(authorizationState.deviceId)
+                .withData(gson.toJson(dataMap))
+                .withEnabled(true)
+                .build();
+            if(expDataOptional.isPresent()){
+                expansionDataStore.updateAppData(appData);
+            } else {
+                expansionDataStore.insertAppData(appData);
+            }
+        }
+
         return Response.ok().build();
     }
 
@@ -815,13 +851,29 @@ public class ExpansionsResource {
             return Expansion.State.NOT_CONFIGURED;
         }
 
-        final ExpansionData extData = expDataOptional.get();
-        if(extData.data.isEmpty()){
+        final ExpansionData expData = expDataOptional.get();
+
+        if(expData.data.isEmpty()){
             LOGGER.error("error=no-ext-app-data device_id={}", deviceId);
             return Expansion.State.NOT_CONFIGURED;
         }
 
-        if(!extData.enabled) {
+        final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
+        if(!expansionOptional.isPresent()) {
+            LOGGER.warn("warning=application-not-found");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final Expansion expansion = expansionOptional.get();
+
+        final ExpansionDeviceData appData = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
+
+        if(appData.getId().isEmpty()) {
+            LOGGER.error("error=no-ext-app-device-id device_id={}", deviceId);
+            return Expansion.State.NOT_CONFIGURED;
+        }
+
+        if(!expData.enabled) {
             return Expansion.State.CONNECTED_OFF;
         }
 
@@ -858,11 +910,19 @@ public class ExpansionsResource {
 
         for(final Expansion exp : expansions) {
 
-            //Update some values... for now
-            exp.completionURI = "https://dev-api-unstable.hello.is/v2/expansions/redirect";
-            exp.state = getStateFromExternalAppId(exp.id, deviceId);
-            exp.authURI = String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", exp.id.toString());
-            updatedExpansions.add(exp);
+            final Expansion newExpansion = new Expansion.Builder()
+                .withId(exp.id)
+                .withServiceName(exp.serviceName)
+                .withDeviceName(exp.deviceName)
+                .withDescription(exp.description)
+                .withCategory(exp.category)
+                .withIcon(exp.icon)
+                .withState(getStateFromExternalAppId(exp.id, deviceId))
+                .withCompletionURI("https://dev-api-unstable.hello.is/v2/expansions/redirect")
+                .withAuthURI(String.format("https://dev-api-unstable.hello.is/v2/expansions/%s/auth", exp.id.toString()))
+                .withApiURI(exp.apiURI)
+                .build();
+            updatedExpansions.add(newExpansion);
         }
 
         return updatedExpansions;

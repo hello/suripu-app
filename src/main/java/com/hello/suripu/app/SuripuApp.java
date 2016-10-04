@@ -698,14 +698,16 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountDAO,
             notificationSubscriptionDAOWrapper));
 
-        environment.jersey().register(new ExpansionsResource(
-            expansionStore,
-            externalAuthorizationStateDAO,
-            deviceDAO,
-            externalTokenStore,
-            externalAppDataStore,
-            tokenKMSVault));
+        if (configuration.getDebug()) {
+            environment.jersey().register(new ExpansionsResource(
+                expansionStore,
+                externalAuthorizationStateDAO,
+                deviceDAO,
+                externalTokenStore,
+                externalAppDataStore,
+                tokenKMSVault));
 
+        }
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
         final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
 
