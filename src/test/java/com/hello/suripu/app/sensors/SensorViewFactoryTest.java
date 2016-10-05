@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.hello.suripu.app.sensors.scales.TemperatureScale;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
 import com.hello.suripu.core.sense.data.SenseOneFiveExtraData;
 import org.joda.time.DateTime;
@@ -14,6 +16,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -75,5 +78,23 @@ public class SensorViewFactoryTest {
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
             mapper.writeValueAsString(view.get());
         }
+    }
+
+    @Test
+    public void testNullValues() {
+        final SensorState state = SensorViewFactory.fromScale(null, new TemperatureScale());
+        assertEquals("conditions should be equal", Condition.UNKNOWN, state.condition);
+    }
+
+    @Test
+    public void testRange() {
+        final ScaleInterval noLowerBound = new ScaleInterval("name", "message", null, 10f, Condition.UNKNOWN);
+        assertTrue("no lower bound", SensorViewFactory.inRange(-10f, noLowerBound));
+
+        final ScaleInterval noUpperBound = new ScaleInterval("name", "message", 0f, null, Condition.UNKNOWN);
+        assertTrue("no upper bound", SensorViewFactory.inRange(10f,  noUpperBound));
+
+        final ScaleInterval inRange = new ScaleInterval("name", "message", 0f, 5f, Condition.UNKNOWN);
+        assertTrue("in range", SensorViewFactory.inRange(2f,  inRange));
     }
 }

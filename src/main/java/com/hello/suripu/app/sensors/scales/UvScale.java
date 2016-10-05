@@ -1,23 +1,24 @@
 package com.hello.suripu.app.sensors.scales;
 
-import com.google.common.collect.Lists;
 import com.hello.suripu.app.sensors.Scale;
 import com.hello.suripu.app.sensors.ScaleInterval;
 import com.hello.suripu.core.roomstate.Condition;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UvScale extends Scale {
 
+    private static List<ScaleInterval> intervals = new ArrayList<>();
+    static {
+        intervals.add(new ScaleInterval("Low", "The UV level is just right.", 0f, 2.9f, Condition.IDEAL));
+        intervals.add(new ScaleInterval("Moderate", "The UV level is a bit high.", 3f, 5.9f, Condition.WARNING));
+        intervals.add(new ScaleInterval("High", "The UV level is far too high.", 6f, 7.9f, Condition.ALERT));
+        intervals.add(new ScaleInterval("Very High", "The UV level is far too high.", 8f, 10.9f, Condition.ALERT));
+        intervals.add(new ScaleInterval("Extreme", "The UV level is far too high.", 11f, null, Condition.ALERT));
+    }
     @Override
     public List<ScaleInterval> intervals() {
-
-        return Lists.newArrayList(
-                new ScaleInterval("Ideal", 0, 3, Condition.IDEAL),
-                new ScaleInterval("Moderate", 3, 6, Condition.IDEAL),
-                new ScaleInterval("High", 6, 8, Condition.WARNING),
-                new ScaleInterval("Very High", 8, 11, Condition.WARNING),
-                new ScaleInterval("Extreme", 11, null, Condition.ALERT)
-        );
+        return intervals;
     }
 }
