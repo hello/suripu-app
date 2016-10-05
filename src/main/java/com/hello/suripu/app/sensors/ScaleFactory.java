@@ -3,6 +3,9 @@ package com.hello.suripu.app.sensors;
 import com.hello.suripu.app.sensors.scales.Co2Scale;
 import com.hello.suripu.app.sensors.scales.HumidityScale;
 import com.hello.suripu.app.sensors.scales.LightScale;
+import com.hello.suripu.app.sensors.scales.NoiseScale;
+import com.hello.suripu.app.sensors.scales.ParticulatesScale;
+import com.hello.suripu.app.sensors.scales.PressureScale;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
 import com.hello.suripu.app.sensors.scales.UvScale;
 import com.hello.suripu.app.sensors.scales.VocScale;
@@ -30,15 +33,17 @@ public class ScaleFactory {
             case LIGHT:
                 return new LightScale();
             case PARTICULATES:
-                return new TemperatureScale();
+                return new ParticulatesScale();
             case SOUND:
-                return new TemperatureScale();
+                return new NoiseScale();
             case CO2:
                 return new Co2Scale();
             case TVOC:
                 return new VocScale();
             case UV:
                 return new UvScale();
+            case PRESSURE:
+                return new PressureScale();
         }
 
         return new EmptyScale();
