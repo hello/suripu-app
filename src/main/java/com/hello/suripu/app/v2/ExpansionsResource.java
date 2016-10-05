@@ -69,6 +69,7 @@ import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
+import is.hello.gaibu.homeauto.models.HueScene;
 import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
 import is.hello.gaibu.homeauto.services.HueLight;
 import is.hello.gaibu.homeauto.services.NestThermostat;
@@ -590,6 +591,59 @@ public class ExpansionsResource {
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
+    @POST
+    @Timed
+    @Path("hue/scene/default")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response setDefaultHueScene(@Auth final AccessToken accessToken) {
+        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
+        if(sensePairedWithAccount.size() == 0){
+            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+        }
+
+        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
+
+        final Optional<Expansion> expansionOptional = expansionStore.getApplicationByName("Hue");
+        if(!expansionOptional.isPresent()) {
+            LOGGER.warn("warning=application-not-found");
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final Expansion expansion = expansionOptional.get();
+
+        final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, deviceId);
+        if(expDataOptional.isPresent() && !expDataOptional.get().data.isEmpty()) {
+            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+        }
+
+        final ExpansionData expData = expDataOptional.get();
+
+        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
+//        final HueExpansionDeviceData hueData = (HueExpansionDeviceData) HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
+
+        final HueExpansionDeviceData hueData = (HueExpansionDeviceData) expansionDeviceDataOptional.get();
+
+        final Optional<HueLight> hueLightOptional = getHueFromToken(accessToken);
+        if(!hueLightOptional.isPresent()) {
+            LOGGER.error("error=failure-fetching-hue account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+        }
+
+        final HueLight hueLight = hueLightOptional.get();
+        final Optional<HueScene> hueSceneOptional = hueLight.createDefaultScene(hueData.groupId);
+        if(!hueSceneOptional.isPresent()) {
+            LOGGER.error("FAILURE!");
+        }
+
+        final HueScene hueScene = hueSceneOptional.get();
+
+        return Response.ok().build();
+    }
+
+
+
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_WRITE})
     @PATCH
     @Timed
     @Path("nest/state")
@@ -621,20 +675,20 @@ public class ExpansionsResource {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
 
-        final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
-        if(!expansionOptional.isPresent()) {
+        final Optional<Expansion> expansionInfoOptional = expansionStore.getApplicationById(appId);
+        if(!expansionInfoOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
-        final Expansion expansion = expansionOptional.get();
+        final Expansion expansionInfo = expansionInfoOptional.get();
 
-        final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, deviceId);
+        final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansionInfo.id, deviceId);
 
         ExpansionData extData = new ExpansionData.Builder().withData("").build();
 
@@ -643,12 +697,23 @@ public class ExpansionsResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final String decryptedToken = getDecryptedExternalToken(deviceId, expansion.id, false);
-        final ExpansionDeviceData appData = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansion.serviceName);
+        final String decryptedToken = getDecryptedExternalToken(deviceId, expansionInfo.id, false);
+        Optional<ExpansionDeviceData> appDataOptional;
+        appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansionInfo.serviceName);
+        if(!appDataOptional.isPresent()){
+            LOGGER.warn("warning=empty-expansion-data expansion_name={} device_id={}", expansionInfo.serviceName, deviceId);
+            appDataOptional = HomeAutomationExpansionDataFactory.getEmptyAppData(expansionInfo.serviceName);
+        }
 
-        final HomeAutomationExpansion expansionSystem = HomeAutomationExpansionFactory.getEmptyExpansion(expansion.serviceName, appData, decryptedToken);
+        final ExpansionDeviceData appData = appDataOptional.get();
 
-        final List<Configuration> configs = expansionSystem.getConfigurations();
+        final Optional<HomeAutomationExpansion> expansionOptional = HomeAutomationExpansionFactory.getEmptyExpansion(expansionInfo.serviceName, appData, decryptedToken);
+        if(!expansionOptional.isPresent()){
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+        }
+
+        final HomeAutomationExpansion expansion = expansionOptional.get();
+        final List<Configuration> configs = expansion.getConfigurations();
 
         if(extData.data.isEmpty()) {
             return configs;
@@ -675,7 +740,7 @@ public class ExpansionsResource {
                                           final Configuration configuration) {
         if(configuration.getId() == null) {
             LOGGER.error("error=no-config-id account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NOT_ACCEPTABLE).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
@@ -700,13 +765,20 @@ public class ExpansionsResource {
         }
 
         try {
-            final ExpansionDeviceData appData;
+            final Optional<ExpansionDeviceData> appDataOptional;
             if(expDataOptional.isPresent() && !expDataOptional.get().data.isEmpty()) {
                 final ExpansionData expData = expDataOptional.get();
-                appData = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
+                appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
             }else {
-                appData = HomeAutomationExpansionDataFactory.getEmptyAppData(expansion.serviceName);
+                appDataOptional = HomeAutomationExpansionDataFactory.getEmptyAppData(expansion.serviceName);
             }
+
+            if(!appDataOptional.isPresent()) {
+                LOGGER.error("error=bad-expansion-data account_id={}", accessToken.accountId);
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+            }
+
+            final ExpansionDeviceData appData = appDataOptional.get();
 
             appData.setId(configuration.getId());
             final ExpansionData newData = new ExpansionData.Builder()
@@ -759,7 +831,7 @@ public class ExpansionsResource {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
@@ -776,12 +848,19 @@ public class ExpansionsResource {
         final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, deviceId);
         if(!expDataOptional.isPresent()) {
             LOGGER.error("error=no-ext-app-data account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
-        final ExpansionData extData = expDataOptional.get();
+        final ExpansionData expData = expDataOptional.get();
 
-        final HueExpansionDeviceData hueData = (HueExpansionDeviceData) HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, Expansion.ServiceName.HUE);
+        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
+
+        if(!expansionDeviceDataOptional.isPresent()){
+            LOGGER.error("error=bad-expansion-data account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+        }
+
+        final HueExpansionDeviceData hueData = (HueExpansionDeviceData) expansionDeviceDataOptional.get();
 
         final String decryptedToken = getDecryptedExternalToken(deviceId, expansion.id, false);
         if(hueData.groupId == null || hueData.groupId < 1) {
@@ -838,41 +917,46 @@ public class ExpansionsResource {
 
         final Integer externalTokenCount = externalTokenStore.getTokenCount(deviceId, appId);
         if(externalTokenCount < 1) {
-            LOGGER.warn("warning=token-not-found");
+            LOGGER.warn("warning=token-not-found expansion_id={} device_id={}", appId, deviceId);
             return Expansion.State.NOT_CONNECTED;
         }
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(deviceId, appId);
         if(!externalTokenOptional.isPresent()) {
-            LOGGER.warn("warning=valid-token-not-found");
+            LOGGER.warn("warning=valid-token-not-found expansion_id={} device_id={}", appId, deviceId);
             return Expansion.State.REVOKED;
         }
 
         final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(appId, deviceId);
         if(!expDataOptional.isPresent()) {
-            LOGGER.error("error=no-ext-app-data device_id={}", deviceId);
+            LOGGER.error("error=no-ext-app-data expansion_id={} device_id={}", appId, deviceId);
             return Expansion.State.NOT_CONFIGURED;
         }
 
         final ExpansionData expData = expDataOptional.get();
 
         if(expData.data.isEmpty()){
-            LOGGER.error("error=no-ext-app-data device_id={}", deviceId);
+            LOGGER.error("error=no-ext-app-data expansion_id={} device_id={}", appId, deviceId);
             return Expansion.State.NOT_CONFIGURED;
         }
 
         final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
         if(!expansionOptional.isPresent()) {
-            LOGGER.warn("warning=application-not-found");
+            LOGGER.warn("warning=expansion-not-found expansion_id={} device_id={}", appId, deviceId);
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
-        final Expansion expansion = expansionOptional.get();
+        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
 
-        final ExpansionDeviceData appData = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
+        if(!expansionDeviceDataOptional.isPresent()){
+            LOGGER.error("error=bad-expansion-data expansion_id={} device_id={}", appId, deviceId);
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+        }
+
+        final ExpansionDeviceData appData = expansionDeviceDataOptional.get();
 
         if(appData.getId().isEmpty()) {
-            LOGGER.error("error=no-ext-app-device-id device_id={}", deviceId);
+            LOGGER.error("error=no-ext-app-device-id expansion_id={} device_id={}", appId, deviceId);
             return Expansion.State.NOT_CONFIGURED;
         }
 
