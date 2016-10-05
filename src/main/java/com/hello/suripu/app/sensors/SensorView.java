@@ -73,4 +73,8 @@ public class SensorView {
                 .add("value", value)
                 .toString();
     }
+
+    public static SensorView from(String name, Sensor type, SensorUnit unit, Scale scale, SensorState state) {
+        return new SensorView(name, type, unit, state.value, state.message, state.condition, scale);
+    }
 }

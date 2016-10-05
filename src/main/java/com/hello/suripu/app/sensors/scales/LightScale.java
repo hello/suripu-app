@@ -1,24 +1,24 @@
 package com.hello.suripu.app.sensors.scales;
 
-import com.google.common.collect.Lists;
 import com.hello.suripu.app.sensors.Scale;
 import com.hello.suripu.app.sensors.ScaleInterval;
 import com.hello.suripu.core.roomstate.Condition;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LightScale extends Scale {
+
+    private static List<ScaleInterval> intervals = new ArrayList<>();
+    static {
+        intervals.add(new ScaleInterval("Ideal", "The light level is just right.", 0f, 1.9f, Condition.IDEAL));
+        intervals.add(new ScaleInterval("Somewhat bright", "It’s a bit bright.", 2f, 7.9f, Condition.WARNING));
+        intervals.add(new ScaleInterval("Bright", "It’s a bit bright.", 8f, 14.9f, Condition.ALERT));
+        intervals.add(new ScaleInterval("Very bright", "It’s far too bright.", 15f, 49.9f, Condition.ALERT));
+        intervals.add(new ScaleInterval("Extremely bright", "It’s far too bright.", 50f, null, Condition.ALERT));
+    }
     @Override
     public List<ScaleInterval> intervals() {
-        final ScaleInterval interval1 = new ScaleInterval("Ideal", 0, 2, Condition.IDEAL);
-        final ScaleInterval interval2 = new ScaleInterval("Somewhat bright", 3, 8, Condition.WARNING);
-        final ScaleInterval interval3 = new ScaleInterval("Bright", 9, 15, Condition.ALERT);
-        final ScaleInterval interval4 = new ScaleInterval("Very bright", 16, 50, Condition.ALERT);
-        final ScaleInterval interval5 = new ScaleInterval("Extremely bright", 51, null, Condition.ALERT);
-
-        final List<ScaleInterval> intervals = Lists.newArrayList(
-                interval1, interval2,interval3,interval4,interval5
-        );
         return intervals;
     }
 }
