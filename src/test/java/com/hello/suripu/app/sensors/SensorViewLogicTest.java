@@ -20,9 +20,10 @@ public class SensorViewLogicTest {
 
     @Test
     public void testSerializeWhatever() {
+        final List<Sensor> sensors = new ArrayList<>();
         final List<SensorView> views = SensorViewLogic.toView(
-                new ArrayList<>(),
-                new SensorViewFactory(new ScaleFactory()),
+                sensors,
+                SensorViewFactory.build(new ScaleFactory()),
                 CurrentRoomState.empty(true),
                 new DeviceData.Builder()
                         .withExternalDeviceId("yo")
@@ -30,7 +31,8 @@ public class SensorViewLogicTest {
                         .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
                         .withOffsetMillis(0)
                         .withExtraSensorData(null)
-                        .build()
+                        .build(),
+                DateTime.now()
         );
 
         assertTrue("empty view", views.isEmpty());

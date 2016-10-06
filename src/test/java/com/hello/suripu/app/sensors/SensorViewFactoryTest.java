@@ -23,17 +23,17 @@ import static org.junit.Assert.assertTrue;
 public class SensorViewFactoryTest {
 
     final private ObjectMapper mapper = new ObjectMapper();
+    final private ScaleFactory scaleFactory = new ScaleFactory();
+    final SensorViewFactory factory = SensorViewFactory.build(scaleFactory);
 
     @Test
     public void testNoDeviceData() {
-        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
         Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true));
         assertFalse("view is present", view.isPresent());
     }
 
     @Test
     public void testNullExtraData() {
-        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
         final DeviceData data = new DeviceData.Builder()
                 .withExternalDeviceId("yo")
                 .withAccountId(999L)
@@ -41,7 +41,7 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .withExtraSensorData(null)
                 .build();
-        Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data);
+        Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC));
         assertFalse("view is present", view.isPresent());
     }
 
@@ -54,14 +54,12 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .build();
 
-        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
-        final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra);
+        final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra, DateTime.now(DateTimeZone.UTC));
         assertFalse("view is present", view.isPresent());
     }
 
     @Test
     public void testWithExtra() throws JsonProcessingException {
-        final SensorViewFactory factory = new SensorViewFactory(new ScaleFactory());
         SenseOneFiveExtraData extra = SenseOneFiveExtraData.create(
                 0,0,0,"",0,0,0,0
         );
@@ -74,7 +72,7 @@ public class SensorViewFactoryTest {
                 .build();
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2, Sensor.TVOC, Sensor.UV);
         for(final Sensor sensor : sensors) {
-            final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data);
+            final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC));
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
             mapper.writeValueAsString(view.get());
         }

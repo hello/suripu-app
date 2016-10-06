@@ -1,5 +1,6 @@
 package com.hello.suripu.app.sensors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.hello.suripu.core.models.Sensor;
@@ -61,6 +62,16 @@ public class SensorView {
         return value;
     }
 
+    @JsonIgnore
+    public Sensor sensor() {
+        return type;
+    }
+
+    @JsonIgnore
+    public Scale rawScale() {
+        return scale;
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(SensorView.class)
@@ -76,5 +87,9 @@ public class SensorView {
 
     public static SensorView from(String name, Sensor type, SensorUnit unit, Scale scale, SensorState state) {
         return new SensorView(name, type, unit, state.value, state.message, state.condition, scale);
+    }
+
+    public static SensorView tooOld(final SensorView sensorView) {
+        return new SensorView(sensorView.name(), sensorView.sensor(), sensorView.unit(), null, "", Condition.UNKNOWN, sensorView.rawScale());
     }
 }
