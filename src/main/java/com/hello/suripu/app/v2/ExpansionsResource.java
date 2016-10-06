@@ -10,6 +10,7 @@ import com.google.gson.reflect.TypeToken;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.hello.suripu.app.configuration.ExpansionConfiguration;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.oauth.OAuthScope;
@@ -65,19 +66,21 @@ import is.hello.gaibu.core.models.StateRequest;
 import is.hello.gaibu.core.stores.ExpansionStore;
 import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.homeauto.clients.HueLight;
+import is.hello.gaibu.homeauto.clients.NestThermostat;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
 import is.hello.gaibu.homeauto.models.HueScene;
 import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
-import is.hello.gaibu.homeauto.services.HueLight;
-import is.hello.gaibu.homeauto.services.NestThermostat;
 
 @Path("/v2/expansions")
 public class ExpansionsResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpansionsResource.class);
+
+    private final ExpansionConfiguration expansionConfig;
     private final ExpansionStore<Expansion> expansionStore;
     private final ExternalAuthorizationStateDAO externalAuthorizationStateDAO;
     private final DeviceDAO deviceDAO;
@@ -88,13 +91,15 @@ public class ExpansionsResource {
     private ObjectMapper mapper = new ObjectMapper();
 
     public ExpansionsResource(
-            final ExpansionStore<Expansion> expansionStore,
-            final ExternalAuthorizationStateDAO externalAuthorizationStateDAO,
-            final DeviceDAO deviceDAO,
-            final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
-            final PersistentExpansionDataStore expansionDataStore,
-            final Vault tokenKMSVault) throws Exception{
+        final ExpansionConfiguration expansionConfig,
+        final ExpansionStore<Expansion> expansionStore,
+        final ExternalAuthorizationStateDAO externalAuthorizationStateDAO,
+        final DeviceDAO deviceDAO,
+        final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
+        final PersistentExpansionDataStore expansionDataStore,
+        final Vault tokenKMSVault) throws Exception{
 
+        this.expansionConfig = expansionConfig;
         this.expansionStore = expansionStore;
         this.externalAuthorizationStateDAO = externalAuthorizationStateDAO;
         this.deviceDAO = deviceDAO;
@@ -334,10 +339,11 @@ public class ExpansionsResource {
 
             final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansion.id, authorizationState.deviceId);
 
-            final HueLight hueLight = new HueLight(newAccessToken);
-            final String bridgeId = hueLight.getBridge(newAccessToken);
+            final HueLight hueLight = HueLight.create(expansionConfig.hueAppName(), newAccessToken);
+            final String bridgeId = hueLight.getBridge();
 
-            final Optional<String> whitelistIdOptional = hueLight.getWhitelistId(bridgeId, newAccessToken);
+            final HueLight hueLightWithBridge = HueLight.create(newAccessToken, bridgeId);
+            final Optional<String> whitelistIdOptional = hueLightWithBridge.getWhitelistId();
             if(!whitelistIdOptional.isPresent()) {
                 LOGGER.warn("warning=whitelistId-not-found");
                 throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
@@ -524,10 +530,11 @@ public class ExpansionsResource {
 
         final ExternalToken externalToken = externalTokenOptional.get();
         final String decryptedToken = getDecryptedExternalToken(deviceId, expansion.id, false);
-        final HueLight hueLight = new HueLight(decryptedToken);
-        final String bridgeId = hueLight.getBridge(decryptedToken);
+        final HueLight hueLight = HueLight.create(expansionConfig.hueAppName(),decryptedToken);
+        final String bridgeId = hueLight.getBridge();
 
-        final Optional<String> whitelistIdOptional = hueLight.getWhitelistId(bridgeId, decryptedToken);
+        final HueLight hueLightWithBridge = HueLight.create(decryptedToken, bridgeId);
+        final Optional<String> whitelistIdOptional = hueLightWithBridge.getWhitelistId();
         if(!whitelistIdOptional.isPresent()) {
             LOGGER.warn("warning=whitelistId-not-found");
             throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
@@ -707,7 +714,7 @@ public class ExpansionsResource {
 
         final ExpansionDeviceData appData = appDataOptional.get();
 
-        final Optional<HomeAutomationExpansion> expansionOptional = HomeAutomationExpansionFactory.getEmptyExpansion(expansionInfo.serviceName, appData, decryptedToken);
+        final Optional<HomeAutomationExpansion> expansionOptional = HomeAutomationExpansionFactory.getEmptyExpansion(expansionConfig.hueAppName(), expansionInfo.serviceName, appData, decryptedToken);
         if(!expansionOptional.isPresent()){
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
@@ -865,9 +872,9 @@ public class ExpansionsResource {
         final String decryptedToken = getDecryptedExternalToken(deviceId, expansion.id, false);
         if(hueData.groupId == null || hueData.groupId < 1) {
             LOGGER.warn("warn=no-hue-group-defined message='Defaulting to single light control'");
-            return Optional.of(new HueLight(HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId));
+            return Optional.of(HueLight.create(expansionConfig.hueAppName(), HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, HueLight.DEFAULT_GROUP_ID));
         }
-        return Optional.of(new HueLight(HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId));
+        return Optional.of(HueLight.create(expansionConfig.hueAppName(), HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId));
 
     }
 
@@ -904,7 +911,7 @@ public class ExpansionsResource {
                 LOGGER.warn("warn=no-thermostat-defined");
                 return Optional.absent();
             }
-            return Optional.of(new NestThermostat(nestData.thermostatId, NestThermostat.DEFAULT_API_PATH, decryptedToken));
+            return Optional.of(NestThermostat.create(NestThermostat.DEFAULT_API_PATH, decryptedToken, nestData.thermostatId));
 
         } catch (IOException io) {
             LOGGER.warn("warn=bad-json-data");

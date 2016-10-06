@@ -1,8 +1,9 @@
 package com.hello.suripu.app.configuration;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
@@ -11,14 +12,16 @@ import com.hello.suripu.coredropwizard.configuration.PushNotificationsConfigurat
 import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
 import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
+
+import java.util.Map;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import java.util.Map;
+
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 public class SuripuAppConfiguration extends Configuration {
 
@@ -230,4 +233,8 @@ public class SuripuAppConfiguration extends Configuration {
     @JsonProperty("keys_management_service")
     private KMSConfiguration kmsConfiguration;
     public KMSConfiguration kmsConfiguration() { return this.kmsConfiguration; }
+
+    @JsonProperty("expansions")
+    private ExpansionConfiguration expansionConfiguration;
+    public ExpansionConfiguration expansionConfiguration() { return this.expansionConfiguration; }
 }
