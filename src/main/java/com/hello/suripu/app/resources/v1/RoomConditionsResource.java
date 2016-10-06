@@ -62,17 +62,19 @@ public class RoomConditionsResource extends BaseResource {
     private final long allowedRangeInSeconds;
     private final SenseColorDAO senseColorDAO;
     private final CalibrationDAO calibrationDAO;
-
+    private final Integer freshnessThresholdInMinutes;
 
     public RoomConditionsResource(
             final DeviceDataDAODynamoDB deviceDataDAODynamoDB, final DeviceDAO deviceDAO,
             final long allowedRangeInSeconds,final SenseColorDAO senseColorDAO,
-            final CalibrationDAO calibrationDAO) {
+            final CalibrationDAO calibrationDAO,
+            final Integer freshnessThresholdInMinutes) {
         this.deviceDataDAODynamoDB = deviceDataDAODynamoDB;
         this.deviceDAO = deviceDAO;
         this.allowedRangeInSeconds = allowedRangeInSeconds;
         this.senseColorDAO = senseColorDAO;
         this.calibrationDAO = calibrationDAO;
+        this.freshnessThresholdInMinutes = freshnessThresholdInMinutes;
     }
 
 
@@ -100,7 +102,7 @@ public class RoomConditionsResource extends BaseResource {
             return CurrentRoomState.empty(hasDust);
         }
 
-        Integer thresholdInMinutes = 15;
+        Integer thresholdInMinutes = freshnessThresholdInMinutes;
         Integer mostRecentLookBackMinutes = 30;
         if (this.hasDelayCurrentRoomStateThreshold(token.accountId)) {
             thresholdInMinutes = 120;

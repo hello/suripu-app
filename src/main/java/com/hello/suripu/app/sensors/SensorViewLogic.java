@@ -119,23 +119,25 @@ public class SensorViewLogic {
         LOGGER.debug("Last device data in db = {}", deviceData);
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), 15, "c", calibrationOptional, (float) 35);
-        final CurrentRoomState withDust = roomState.withDust(calibrationOptional.isPresent());
+        final CurrentRoomState roomStateWithDust = roomState.withDust(calibrationOptional.isPresent());
         final List<SensorView> views = toView(
                 availableSensors.get(hardwareVersion),
                 sensorViewFactory,
-                withDust,
-                deviceData
+                roomStateWithDust,
+                deviceData,
+                new DateTime(DateTimeZone.UTC)
         );
         return new SensorResponse(SensorStatus.OK, views);
     }
 
     public static List<SensorView> toView(
-            List<Sensor> sensors,
+            final List<Sensor> sensors,
             final SensorViewFactory sensorViewFactory,
             final CurrentRoomState roomState,
-            final DeviceData deviceData) {
+            final DeviceData deviceData,
+            final DateTime now) {
         return sensors.stream()
-                .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState, deviceData))) // remove optional responses
+                .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState, deviceData, now))) // remove optional responses
                 .collect(Collectors.toList());
     }
 

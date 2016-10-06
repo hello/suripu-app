@@ -1,8 +1,5 @@
 package com.hello.suripu.app;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -21,6 +18,8 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
@@ -192,18 +191,6 @@ import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
-
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -215,13 +202,23 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
-import is.hello.gaibu.core.db.ExpansionsDAO;
 import is.hello.gaibu.core.db.ExpansionDataDAO;
+import is.hello.gaibu.core.db.ExpansionsDAO;
 import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
 import is.hello.gaibu.core.db.ExternalTokenDAO;
-import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -397,7 +394,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         // disable all default exception mappers
         sf.setRegisterDefaultExceptionMappers(false);
 
-
+        // gray out the sensors
+        final Integer freshnessThresholdInMinutes = 15;
 
         environment.jersey().register(new CustomJSONExceptionMapper(configuration.getDebug()));
         environment.jersey().register(new AuthDynamicFeature(new OAuthCredentialAuthFilter.Builder<AccessToken>()
@@ -523,7 +521,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new OTAResource(deviceDAO, sensorsViewsDynamoDB, otaHistoryDAODynamoDB, respCommandsDAODynamoDB));
 
         environment.jersey().register(new AccountResource(accountDAO, accountLocationDAO, profilePhotoStore));
-        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(), senseColorDAO, calibrationDAO));
+        environment.jersey().register(new RoomConditionsResource(deviceDataDAODynamoDB, deviceDAO, configuration.getAllowedQueryRange(), senseColorDAO, calibrationDAO, freshnessThresholdInMinutes));
         environment.jersey().register(new DeviceResources(deviceDAO, mergedUserInfoDynamoDB, sensorsViewsDynamoDB, pillHeartBeatDAODynamoDB));
 
         final S3BucketConfiguration provisionKeyConfiguration = configuration.getProvisionKeyConfiguration();
@@ -717,7 +715,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
-        final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory());
+        final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory(), freshnessThresholdInMinutes);
         final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 

@@ -5,6 +5,8 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
+import org.joda.time.DateTime;
+import org.joda.time.Minutes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,10 +14,17 @@ public class SensorViewFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SensorViewFactory.class);
     private static String UNKNOWN_MESSAGE = "";
+    private static Integer DEFAULT_FRESHNESS_TRESHOLD = 15;
     private final ScaleFactory scaleFactory;
+    private final Integer minutesBeforeDataTooOld;
 
-    public SensorViewFactory(ScaleFactory scaleFactory) {
+    public SensorViewFactory(final ScaleFactory scaleFactory, final Integer minutesBeforeDataTooOld) {
         this.scaleFactory = scaleFactory;
+        this.minutesBeforeDataTooOld = minutesBeforeDataTooOld;
+    }
+
+    public static SensorViewFactory build(final ScaleFactory scaleFactory) {
+        return new SensorViewFactory(scaleFactory, DEFAULT_FRESHNESS_TRESHOLD);
     }
 
     public Optional<SensorView> from(Sensor sensor, CurrentRoomState roomState) {
@@ -48,28 +57,39 @@ public class SensorViewFactory {
         return Optional.absent();
     }
 
-    public Optional<SensorView> from(final Sensor sensor, final CurrentRoomState roomState, final DeviceData deviceData) {
+
+    public Optional<SensorView> adjustFreshness(final SensorView sensorView, final DateTime sampleTime, final DateTime now) {
+        final boolean tooOld = Minutes.minutesBetween(sampleTime, now).isGreaterThan(Minutes.minutes(minutesBeforeDataTooOld));
+        if(tooOld) {
+            return Optional.of(SensorView.tooOld(sensorView));
+        }
+        return Optional.of(sensorView);
+    }
+
+    public Optional<SensorView> from(final Sensor sensor, final CurrentRoomState roomState, final DeviceData deviceData, final DateTime now) {
+
         if (deviceData.hasExtra()) {
             final Scale scale = scaleFactory.forSensor(sensor);
             switch (sensor) {
                 case CO2:
                     final SensorState co2State = fromScale(new Float(deviceData.extra().co2()), scale);
                     final SensorView co2 = SensorView.from("CO2", Sensor.CO2, SensorUnit.PPM, scale, co2State);
-                    return Optional.of(co2);
+                    return adjustFreshness(co2, deviceData.dateTimeUTC, now);
                 case TVOC:
                     final SensorState tvocState = fromScale(new Float(deviceData.extra().tvoc()), scale);
                     final SensorView tvoc = SensorView.from("VOC", Sensor.TVOC, SensorUnit.MG_CM, scale, tvocState);
-                    return Optional.of(tvoc);
+                    return adjustFreshness(tvoc, deviceData.dateTimeUTC, now);
                 case UV:
                     final SensorState uvState = fromScale(new Float(deviceData.extra().uvCount()), scale);
                     final SensorView uv = SensorView.from("UV Light", Sensor.UV, SensorUnit.COUNT, scale, uvState);
-                    return Optional.of(uv);
+                    return adjustFreshness(uv, deviceData.dateTimeUTC, now);
                 case PRESSURE:
                     final SensorState pressureState = fromScale(new Float(deviceData.extra().pressure()), scale);
                     final SensorView pressure = SensorView.from("Barometric Pressure", Sensor.PRESSURE, SensorUnit.MILLIBAR, scale, pressureState);
-                    return Optional.of(pressure);
+                    return adjustFreshness(pressure, deviceData.dateTimeUTC, now);
             }
         }
+
         final Optional<SensorView> view = from(sensor, roomState);
         if(!view.isPresent()) {
             LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", sensor, deviceData.accountId);
@@ -77,7 +97,7 @@ public class SensorViewFactory {
         return view;
     }
 
-    public static SensorState fromScale(Float value, Scale scale) {
+    public static SensorState fromScale(final Float value, final Scale scale) {
         if(value != null) {
             for(final ScaleInterval interval : scale.intervals()) {
                 if(inRange(value, interval)) {
@@ -102,4 +122,6 @@ public class SensorViewFactory {
         }
         return false;
     }
+
+
 }
