@@ -303,3 +303,6 @@ alexa_app_ids:
 
 # only required for production
 segment_write_key: UiFCuqdEpi6STaMCx3bo70Hii0XvWnOK
+
+expansions:
+  hue_app_name: sense-prod
