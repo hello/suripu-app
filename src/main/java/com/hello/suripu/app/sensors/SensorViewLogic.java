@@ -53,7 +53,7 @@ public class SensorViewLogic {
         final List<Sensor> senseOneFiveSensors = Lists.newArrayList(senseOneSensors);
         senseOneFiveSensors.addAll(
                 Lists.newArrayList(
-                        Sensor.CO2, Sensor.TVOC, Sensor.UV
+                        Sensor.CO2, Sensor.TVOC, Sensor.UV, Sensor.PRESSURE
                 ));
 
         temp.put(HardwareVersion.SENSE_ONE, senseOneSensors);
