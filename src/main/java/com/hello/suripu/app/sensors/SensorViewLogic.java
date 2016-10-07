@@ -112,9 +112,9 @@ public class SensorViewLogic {
         }
 
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
-
+        final Device.Color color = colorOptional.or(Device.Color.BLACK);
         //default -- return the usual
-        final DeviceData deviceData = data.get().withCalibratedLight(colorOptional);
+        final DeviceData deviceData = data.get();
 
         LOGGER.debug("Last device data in db = {}", deviceData);
 
@@ -125,7 +125,8 @@ public class SensorViewLogic {
                 sensorViewFactory,
                 roomStateWithDust,
                 deviceData,
-                new DateTime(DateTimeZone.UTC)
+                new DateTime(DateTimeZone.UTC),
+                color
         );
         return new SensorResponse(SensorStatus.OK, views);
     }
@@ -135,9 +136,12 @@ public class SensorViewLogic {
             final SensorViewFactory sensorViewFactory,
             final CurrentRoomState roomState,
             final DeviceData deviceData,
-            final DateTime now) {
+            final DateTime now,
+            final Device.Color color) {
+
         return sensors.stream()
-                .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState, deviceData, now))) // remove optional responses
+                .flatMap(s -> streamopt( // remove optional responses
+                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, now,color))))
                 .collect(Collectors.toList());
     }
 

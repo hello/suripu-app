@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.hello.suripu.app.sensors.scales.TemperatureScale;
+import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
@@ -41,7 +42,8 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .withExtraSensorData(null)
                 .build();
-        Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC));
+        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC), Device.Color.BLACK);
+        final Optional<SensorView> view = factory.from(query);
         assertFalse("view is present", view.isPresent());
     }
 
@@ -54,7 +56,8 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .build();
 
-        final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra, DateTime.now(DateTimeZone.UTC));
+        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra, DateTime.now(DateTimeZone.UTC), Device.Color.BLACK);
+        final Optional<SensorView> view = factory.from(query);
         assertFalse("view is present", view.isPresent());
     }
 
@@ -72,7 +75,9 @@ public class SensorViewFactoryTest {
                 .build();
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2, Sensor.TVOC, Sensor.UV);
         for(final Sensor sensor : sensors) {
-            final Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC));
+
+            final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC), Device.Color.BLACK);
+            final Optional<SensorView> view = factory.from(query);
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
             mapper.writeValueAsString(view.get());
         }
