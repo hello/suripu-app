@@ -689,26 +689,24 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountDAO,
             notificationSubscriptionDAOWrapper));
 
-        if (configuration.getDebug()) {
-            final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
-            final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
+        final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
+        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
 
-            final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-            final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
+        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
 
-            final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
-            final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
+        final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+        final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
-            environment.jersey().register(new ExpansionsResource(
-                configuration.expansionConfiguration(),
-                expansionStore,
-                externalAuthorizationStateDAO,
-                deviceDAO,
-                externalTokenStore,
-                externalAppDataStore,
-                tokenKMSVault));
+        environment.jersey().register(new ExpansionsResource(
+            configuration.expansionConfiguration(),
+            expansionStore,
+            externalAuthorizationStateDAO,
+            deviceDAO,
+            externalTokenStore,
+            externalAppDataStore,
+            tokenKMSVault));
 
-        }
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
         final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
 
@@ -723,8 +721,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
-        if(configuration.getDebug()) {
-            environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
-        }
+        environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
     }
 }
