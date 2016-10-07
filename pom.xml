@@ -16,7 +16,7 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gaibu.version>0.1.37-SNAPSHOT</gaibu.version>
+        <gaibu.version>0.1.39</gaibu.version>
         <suripu.version>0.8.5664</suripu.version>
     </properties>
 

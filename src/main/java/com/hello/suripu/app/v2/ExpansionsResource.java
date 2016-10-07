@@ -72,7 +72,6 @@ import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
-import is.hello.gaibu.homeauto.models.HueScene;
 import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
 
 @Path("/v2/expansions")
@@ -638,14 +637,13 @@ public class ExpansionsResource {
         }
 
         final HueLight hueLight = hueLightOptional.get();
-        final Optional<HueScene> hueSceneOptional = hueLight.createDefaultScene(hueData.groupId);
+        final Optional<String> hueSceneOptional = hueLight.createDefaultScene(hueData.groupId);
         if(!hueSceneOptional.isPresent()) {
-            LOGGER.error("FAILURE!");
+            LOGGER.error("error=default-scene-create account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
-        final HueScene hueScene = hueSceneOptional.get();
-
-        return Response.ok().build();
+        return Response.ok(hueSceneOptional.get()).build();
     }
 
 
