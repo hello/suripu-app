@@ -1,5 +1,8 @@
 package com.hello.suripu.app;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -18,8 +21,6 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
@@ -191,6 +192,18 @@ import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
+
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -209,16 +222,6 @@ import is.hello.gaibu.core.db.ExternalTokenDAO;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -686,25 +689,23 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             accountDAO,
             notificationSubscriptionDAOWrapper));
 
-        if (configuration.getDebug()) {
-            final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
-            final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
+        final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
+        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
 
-            final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-            final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
+        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
 
-            final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
-            final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
+        final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+        final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
-            environment.jersey().register(new ExpansionsResource(
-                expansionStore,
-                externalAuthorizationStateDAO,
-                deviceDAO,
-                externalTokenStore,
-                externalAppDataStore,
-                tokenKMSVault));
+        environment.jersey().register(new ExpansionsResource(
+            expansionStore,
+            externalAuthorizationStateDAO,
+            deviceDAO,
+            externalTokenStore,
+            externalAppDataStore,
+            tokenKMSVault));
 
-        }
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
         final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
 
