@@ -11,7 +11,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
-import com.hello.suripu.core.db.*;
+import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.AccountDAOImpl;
+import com.hello.suripu.core.db.QuestionResponseReadDAO;
+import com.hello.suripu.core.db.SleepScoreParametersDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.models.AccountDate;
@@ -118,6 +122,8 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
             LOGGER.debug("key=compute-parameters account_id={} num_nights={}", accountId, item.getValue().size());
             int nights = 0;
             long totDuration = 0L;
+            int numMotions = 0;
+            float motionFreq = 0.0f;
 
             for (final DateTime date : item.getValue()){
                 final String queryDate = DateTimeUtil.dateToYmdString(date);
@@ -125,6 +131,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
                 if (singleSleepStats.isPresent()){
                     nights++;
                     totDuration += singleSleepStats.get().sleepStats.sleepDurationInMinutes;
+                    numMotions += singleSleepStats.get().sleepStats.numberOfMotionEvents;
                 }
                 if (nights >= MAX_NIGHT){
                     break;
@@ -133,8 +140,9 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
 
             if (nights > 0 ){
                 final int idealDuration = (int) totDuration/nights;
+                final float idealMotionFreq = (float) numMotions / (float) totDuration;
                 final DateTime dateTime = DateTime.now(DateTimeZone.UTC);
-                final SleepScoreParameters parameter = new SleepScoreParameters(accountId, dateTime, idealDuration);
+                final SleepScoreParameters parameter = new SleepScoreParameters(accountId, dateTime, idealDuration, idealMotionFreq);
                 final Boolean insert = sleepScoreParametersDynamoDB.upsertSleepScoreParameters(accountId, parameter);
                 LOGGER.debug("key=save-parameters, result={}", insert);
             }else{
