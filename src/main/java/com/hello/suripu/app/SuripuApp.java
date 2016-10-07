@@ -699,6 +699,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
         environment.jersey().register(new ExpansionsResource(
+            configuration.expansionConfiguration(),
             expansionStore,
             externalAuthorizationStateDAO,
             deviceDAO,
