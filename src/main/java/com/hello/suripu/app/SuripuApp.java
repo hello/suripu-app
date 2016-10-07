@@ -720,8 +720,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
-        if(configuration.getDebug()) {
-            environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
-        }
+        environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
     }
 }
