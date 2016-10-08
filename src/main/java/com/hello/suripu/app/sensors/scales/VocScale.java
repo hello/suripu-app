@@ -11,8 +11,8 @@ public class VocScale extends Scale {
 
     private static List<ScaleInterval> intervals = new ArrayList<>();
     static {
-        intervals.add(new ScaleInterval("Ideal", "The VOC level is just right.", 0f, 499f, Condition.IDEAL));
-        intervals.add(new ScaleInterval("Elevated", "The VOC level is elevated.", 500f, 3999.9f, Condition.WARNING));
+        intervals.add(new ScaleInterval("Ideal", "The VOC level is just right.", 0f, 499.99f, Condition.IDEAL));
+        intervals.add(new ScaleInterval("Elevated", "The VOC level is elevated.", 500f, 3999.99f, Condition.WARNING));
         intervals.add(new ScaleInterval("Unhealthy", "The VOC level is unhealthy.", 4000f, null, Condition.ALERT));
     }
     @Override

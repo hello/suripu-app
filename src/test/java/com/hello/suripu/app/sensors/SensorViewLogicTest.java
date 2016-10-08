@@ -2,6 +2,7 @@ package com.hello.suripu.app.sensors;
 
 import com.google.common.collect.Lists;
 import com.hello.suripu.core.models.AllSensorSampleList;
+import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
@@ -32,7 +33,8 @@ public class SensorViewLogicTest {
                         .withOffsetMillis(0)
                         .withExtraSensorData(null)
                         .build(),
-                DateTime.now()
+                DateTime.now(),
+                Device.Color.BLACK
         );
 
         assertTrue("empty view", views.isEmpty());
