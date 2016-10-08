@@ -1,7 +1,7 @@
 package com.hello.suripu.app.sensors;
 
 import com.google.common.base.Optional;
-import com.hello.suripu.core.models.DeviceData;
+import com.hello.suripu.core.models.CalibratedDeviceData;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
@@ -66,33 +66,34 @@ public class SensorViewFactory {
         return Optional.of(sensorView);
     }
 
-    public Optional<SensorView> from(final Sensor sensor, final CurrentRoomState roomState, final DeviceData deviceData, final DateTime now) {
+    public Optional<SensorView> from(final SensorViewQuery query) {
 
-        if (deviceData.hasExtra()) {
-            final Scale scale = scaleFactory.forSensor(sensor);
-            switch (sensor) {
+        if (query.deviceData.hasExtra()) {
+            final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, Optional.absent());
+            final Scale scale = scaleFactory.forSensor(query.sensor);
+            switch (query.sensor) {
                 case CO2:
-                    final SensorState co2State = fromScale(new Float(deviceData.extra().co2()), scale);
+                    final SensorState co2State = fromScale(calibratedDeviceData.co2(), scale);
                     final SensorView co2 = SensorView.from("CO2", Sensor.CO2, SensorUnit.PPM, scale, co2State);
-                    return adjustFreshness(co2, deviceData.dateTimeUTC, now);
+                    return adjustFreshness(co2, query.deviceData.dateTimeUTC, query.now);
                 case TVOC:
-                    final SensorState tvocState = fromScale(new Float(deviceData.extra().tvoc()), scale);
+                    final SensorState tvocState = fromScale(calibratedDeviceData.tvoc(), scale);
                     final SensorView tvoc = SensorView.from("VOC", Sensor.TVOC, SensorUnit.MG_CM, scale, tvocState);
-                    return adjustFreshness(tvoc, deviceData.dateTimeUTC, now);
+                    return adjustFreshness(tvoc, query.deviceData.dateTimeUTC, query.now);
                 case UV:
-                    final SensorState uvState = fromScale(new Float(deviceData.extra().uvCount()), scale);
+                    final SensorState uvState = fromScale(new Float(query.deviceData.extra().uvCount()), scale);
                     final SensorView uv = SensorView.from("UV Light", Sensor.UV, SensorUnit.COUNT, scale, uvState);
-                    return adjustFreshness(uv, deviceData.dateTimeUTC, now);
+                    return adjustFreshness(uv, query.deviceData.dateTimeUTC, query.now);
                 case PRESSURE:
-                    final SensorState pressureState = fromScale(new Float(deviceData.extra().pressure()), scale);
+                    final SensorState pressureState = fromScale(calibratedDeviceData.pressure(), scale);
                     final SensorView pressure = SensorView.from("Barometric Pressure", Sensor.PRESSURE, SensorUnit.MILLIBAR, scale, pressureState);
-                    return adjustFreshness(pressure, deviceData.dateTimeUTC, now);
+                    return adjustFreshness(pressure, query.deviceData.dateTimeUTC, query.now);
             }
         }
 
-        final Optional<SensorView> view = from(sensor, roomState);
+        final Optional<SensorView> view = from(query.sensor, query.roomState);
         if(!view.isPresent()) {
-            LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", sensor, deviceData.accountId);
+            LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", query.sensor, query.deviceData.accountId);
         }
         return view;
     }
@@ -105,7 +106,7 @@ public class SensorViewFactory {
                 }
             }
         }
-
+        LOGGER.warn("msg=not-in-range value={} scale={}", value, scale);
         return new SensorState(value, UNKNOWN_MESSAGE, Condition.UNKNOWN);
     }
 
