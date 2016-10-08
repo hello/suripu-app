@@ -106,7 +106,7 @@ public class SensorViewFactory {
                 }
             }
         }
-
+        LOGGER.warn("msg=not-in-range value={} scale={}", value, scale);
         return new SensorState(value, UNKNOWN_MESSAGE, Condition.UNKNOWN);
     }
 
