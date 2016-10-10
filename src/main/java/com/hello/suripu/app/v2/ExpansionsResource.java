@@ -341,7 +341,7 @@ public class ExpansionsResource {
             final HueLight hueLight = HueLight.create(expansionConfig.hueAppName(), newAccessToken);
             final String bridgeId = hueLight.getBridge();
 
-            final HueLight hueLightWithBridge = HueLight.create(newAccessToken, bridgeId);
+            final HueLight hueLightWithBridge = HueLight.create(expansionConfig.hueAppName(), newAccessToken, bridgeId);
             final Optional<String> whitelistIdOptional = hueLightWithBridge.getWhitelistId();
             if(!whitelistIdOptional.isPresent()) {
                 LOGGER.warn("warning=whitelistId-not-found");
