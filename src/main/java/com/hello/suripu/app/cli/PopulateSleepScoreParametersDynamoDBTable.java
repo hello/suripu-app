@@ -131,7 +131,7 @@ public class PopulateSleepScoreParametersDynamoDBTable extends ConfiguredCommand
                 if (singleSleepStats.isPresent()){
                     nights++;
                     totDuration += singleSleepStats.get().sleepStats.sleepDurationInMinutes;
-                    numMotions += singleSleepStats.get().sleepStats.numberOfMotionEvents;
+                    numMotions += singleSleepStats.get().motionScore.numMotions;
                 }
                 if (nights >= MAX_NIGHT){
                     break;
