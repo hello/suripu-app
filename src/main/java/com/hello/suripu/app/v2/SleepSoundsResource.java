@@ -10,9 +10,12 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.hello.suripu.api.input.State;
 import com.hello.suripu.core.db.DeviceDAO;
+import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.models.DeviceKeyStoreRecord;
 import com.hello.suripu.core.models.SenseStateAtTime;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.DurationMap;
@@ -60,6 +63,7 @@ public class SleepSoundsResource extends BaseResource {
 
     private final DurationDAO durationDAO;
     private final SenseStateDynamoDB senseStateDynamoDB;
+    private final KeyStore senseKeyStore;
     private final DeviceDAO deviceDAO;
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
@@ -74,6 +78,7 @@ public class SleepSoundsResource extends BaseResource {
 
     private SleepSoundsResource(final DurationDAO durationDAO,
                                 final SenseStateDynamoDB senseStateDynamoDB,
+                                final KeyStore senseKeyStore,
                                 final DeviceDAO deviceDAO,
                                 final MessejiClient messejiClient,
                                 final SleepSoundsProcessor sleepSoundsProcessor,
@@ -82,6 +87,7 @@ public class SleepSoundsResource extends BaseResource {
     {
         this.durationDAO = durationDAO;
         this.senseStateDynamoDB = senseStateDynamoDB;
+        this.senseKeyStore = senseKeyStore;
         this.deviceDAO = deviceDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -91,6 +97,7 @@ public class SleepSoundsResource extends BaseResource {
 
     public static SleepSoundsResource create(final DurationDAO durationDAO,
                                              final SenseStateDynamoDB senseStateDynamoDB,
+                                             final KeyStore senseKeyStore,
                                              final DeviceDAO deviceDAO,
                                              final MessejiClient messejiClient,
                                              final SleepSoundsProcessor sleepSoundsProcessor,
@@ -113,7 +120,7 @@ public class SleepSoundsResource extends BaseResource {
                         return durationDAO.getDurationBySeconds(durationSeconds);
                     }
                 });
-        return new SleepSoundsResource(durationDAO, senseStateDynamoDB, deviceDAO, messejiClient, sleepSoundsProcessor,
+        return new SleepSoundsResource(durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient, sleepSoundsProcessor,
                 soundByFilePathCache, durationBySecondsCache);
     }
 
@@ -179,8 +186,9 @@ public class SleepSoundsResource extends BaseResource {
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
-
-        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId);
+        final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
+        final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
+        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId, hardwareVersion);
         if (!soundOptional.isPresent()) {
             return invalid_request("invalid sound id");
         }
@@ -302,8 +310,9 @@ public class SleepSoundsResource extends BaseResource {
             }
 
         LOGGER.info("endpoint=sleep-sounds sleep-sounds-enabled=true account-id={}", accountId);
-
-        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId);
+        final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
+        final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
+        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId, hardwareVersion);
 
         return result;
     }
