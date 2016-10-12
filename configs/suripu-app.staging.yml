@@ -238,6 +238,7 @@ dynamodb:
     sense_last_seen: sense_last_seen
     sense_state: sense_state
     sleep_hmm: sleephmm
+    sense_metadata: sense_metadata
     sleep_score: sleep_score
     sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
@@ -283,6 +284,7 @@ dynamodb:
     sense_last_seen: http://dynamodb.us-east-1.amazonaws.com
     sense_state: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    sense_metadata: http://dynamodb.us-east-1.amazonaws.com
     sleep_score: http://dynamodb.us-east-1.amazonaws.com
     sleep_score_parameters: http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
