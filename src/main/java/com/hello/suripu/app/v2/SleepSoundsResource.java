@@ -1,13 +1,14 @@
 package com.hello.suripu.app.v2;
 
-import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+
+import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.api.input.State;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.KeyStore;
@@ -30,8 +31,14 @@ import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
@@ -45,10 +52,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 @Path("/v2/sleep_sounds")
 public class SleepSoundsResource extends BaseResource {
@@ -188,7 +191,7 @@ public class SleepSoundsResource extends BaseResource {
         final String senseId = deviceIdPair.get().externalDeviceId;
         final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
         final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
-        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId, hardwareVersion);
+        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId);
         if (!soundOptional.isPresent()) {
             return invalid_request("invalid sound id");
         }
@@ -312,7 +315,7 @@ public class SleepSoundsResource extends BaseResource {
         LOGGER.info("endpoint=sleep-sounds sleep-sounds-enabled=true account-id={}", accountId);
         final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
         final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
-        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId, hardwareVersion);
+        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId);
 
         return result;
     }

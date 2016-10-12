@@ -8,7 +8,6 @@ import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
-import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
@@ -75,7 +74,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
     String slotName;
     if (nameSlot == null || nameSlot.getValue() == null) {
       //default
-      final SoundResult senseSounds = sleepSoundsProcessor.getSounds(accountPair.externalDeviceId, HardwareVersion.SENSE_ONE);
+      final SoundResult senseSounds = sleepSoundsProcessor.getSounds(accountPair.externalDeviceId);
       if (senseSounds.state == SoundResult.State.OK) {
         slotName = senseSounds.sounds.get(ThreadLocalRandom.current().nextInt(senseSounds.sounds.size())).name;
       } else {
