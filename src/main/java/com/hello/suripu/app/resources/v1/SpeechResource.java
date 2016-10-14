@@ -2,6 +2,7 @@ package com.hello.suripu.app.resources.v1;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
@@ -64,6 +65,22 @@ public class SpeechResource {
         if (result.isPresent()) {
             LOGGER.debug("action=get-latest-speech-result sense_id={} found=true", senseId);
             return Lists.newArrayList(result.get());
+        }
+
+        // check if primary user timeline has something
+        final ImmutableList<DeviceAccountPair> accountPairs = deviceDAO.getAccountIdsForDeviceId(senseId);
+        if (!accountPairs.isEmpty()) {
+            for (final DeviceAccountPair accountPair : accountPairs) {
+                if (accountPair.accountId.equals(accountId)) {
+                    continue;
+                }
+
+                final Optional<SpeechResult> otherResults = getLatest(accountPair.accountId, lookBackMinutes);
+                if (otherResults.isPresent()) {
+                    LOGGER.debug("action=get-latest-speech-result sense_id={} found=true", senseId);
+                    return Lists.newArrayList(otherResults.get());
+                }
+            }
         }
 
         LOGGER.debug("action=no-recent-speech-commands look_back={} sense_id={} account_id={}", lookBackMinutes, senseId, accountId);
