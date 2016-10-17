@@ -26,8 +26,7 @@ public class MetadataDAODynamoDB implements SenseMetadataDAO {
 
         final DeviceKeyStoreRecord record = recordFromDDB.get();
         final Optional<Sense.Color> colorOptional = SerialNumberUtils.extractColorFrom(record.metadata);
-        //TODO: REMOVE THIS VALUE
-        return SenseMetadata.create(s, colorOptional.or(Sense.Color.BLACK), record.hardwareVersion, 1050L);
+        return SenseMetadata.create(s, colorOptional.or(Sense.Color.BLACK), record.hardwareVersion, null);
     }
 
     @Override
