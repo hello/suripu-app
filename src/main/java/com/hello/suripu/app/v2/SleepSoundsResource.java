@@ -191,7 +191,7 @@ public class SleepSoundsResource extends BaseResource {
         final String senseId = deviceIdPair.get().externalDeviceId;
         final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
         final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
-        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId);
+        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, playRequest.soundId, hardwareVersion);
         if (!soundOptional.isPresent()) {
             return invalid_request("invalid sound id");
         }
@@ -315,7 +315,7 @@ public class SleepSoundsResource extends BaseResource {
         LOGGER.info("endpoint=sleep-sounds sleep-sounds-enabled=true account-id={}", accountId);
         final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
         final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
-        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId);
+        final SleepSoundsProcessor.SoundResult result = sleepSoundsProcessor.getSounds(senseId, hardwareVersion);
 
         return result;
     }

@@ -576,7 +576,7 @@ public class SleepSoundsResourceTest {
                 messejiClient, mockedSleepSoundsProcessor, 1, 1);
 
         final List<Sound> sounds = ImmutableList.of(Sound.create(1L, "preview", "name", "filePath", "url"));
-        when(mockedSleepSoundsProcessor.getSounds(senseId)).thenReturn(new SleepSoundsProcessor.SoundResult(sounds, SleepSoundsProcessor.SoundResult.State.OK));
+        when(mockedSleepSoundsProcessor.getSounds(senseId, HardwareVersion.SENSE_ONE)).thenReturn(new SleepSoundsProcessor.SoundResult(sounds, SleepSoundsProcessor.SoundResult.State.OK));
 
         final List<Duration> durations = ImmutableList.of(Duration.create(2L, "duration", 30));
         when(durationDAO.all()).thenReturn(durations);
