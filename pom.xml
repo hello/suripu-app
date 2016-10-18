@@ -18,6 +18,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gaibu.version>0.1.44</gaibu.version>
         <suripu.version>0.8.5700</suripu.version>
+        <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
+        <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
+        <google-speech-api-version>0.4.143</google-speech-api-version>
     </properties>
 
     <distributionManagement>
@@ -390,6 +393,77 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- START               -->
+        <!-- speech dependencies -->
+        <dependency>
+            <groupId>com.ibm.watson.developer_cloud</groupId>
+            <artifactId>java-sdk</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <!--<version>2.5.0</version>-->
+            <!--fix VerifyError "InitialRecognizeRequest$Builder overrides final method setUnknownFields"
+            Interesting that this hasn't been a problem previously-->
+            <version>3.0.0-beta-2</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.speech</groupId>
+            <artifactId>google-api</artifactId>
+            <version>${google-speech-api-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.lame</groupId>
+            <artifactId>java-lame</artifactId>
+            <version>3.98.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.joestelmach</groupId>
+            <artifactId>natty</artifactId>
+            <version>0.12</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>amazon-kinesis-producer</artifactId>
+            <version>0.10.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>amazon-kinesis-client</artifactId>
+            <version>1.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client</artifactId>
+            <version>1.21.0</version>
+        </dependency>
+        <dependency>
+            <!--
+              It is recommended to use OpenSSL: Statically Linked Netty
+              for transport security.  These steps do not use the TLS that
+              comes with JDK (Jetty APLN/NPN), which is not
+              recommended. See
+              https://github.com/grpc/grpc-java/blob/master/SECURITY.md
+              for details.
+            -->
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>1.1.33.Fork14</version>
+            <classifier>${tcnative.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>2.8.0</version>
+        </dependency>
+        <!-- END speech dependencies-->
     </dependencies>
     <build>
         <extensions>
@@ -397,6 +471,11 @@
                 <groupId>org.kuali.maven.wagons</groupId>
                 <artifactId>maven-s3-wagon</artifactId>
                 <version>1.2.1</version>
+            </extension>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
         <plugins>

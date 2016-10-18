@@ -4,12 +4,15 @@ import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -18,8 +21,10 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
@@ -189,7 +194,9 @@ import com.hello.suripu.coredropwizard.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.librato.rollout.RolloutClient;
+import com.maxmind.geoip2.DatabaseReader;
 import com.segment.analytics.Analytics;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
@@ -201,6 +208,7 @@ import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import io.dropwizard.views.ViewBundle;
 import is.hello.gaibu.core.db.ExpansionDataDAO;
 import is.hello.gaibu.core.db.ExpansionsDAO;
@@ -209,6 +217,29 @@ import is.hello.gaibu.core.db.ExternalTokenDAO;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.speech.api.Speech;
+import is.hello.speech.clients.SpeechClient;
+import is.hello.speech.clients.SpeechClientManaged;
+import is.hello.speech.commandhandlers.HandlerFactory;
+import is.hello.speech.configuration.KinesisProducerConfiguration;
+import is.hello.speech.configuration.KinesisStream;
+import is.hello.speech.configuration.SpeechConfiguration;
+import is.hello.speech.configuration.WatsonConfiguration;
+import is.hello.speech.db.SpeechCommandDynamoDB;
+import is.hello.speech.executors.HandlerExecutor;
+import is.hello.speech.executors.RegexAnnotationsHandlerExecutor;
+import is.hello.speech.handler.AudioRequestHandler;
+import is.hello.speech.handler.SignedBodyHandler;
+import is.hello.speech.kinesis.KinesisData;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.models.HandlerType;
+import is.hello.speech.resources.demo.DemoUploadResource;
+import is.hello.speech.resources.v2.UploadResource;
+import is.hello.speech.response.S3ResponseBuilder;
+import is.hello.speech.response.SupichiResponseBuilder;
+import is.hello.speech.response.SupichiResponseType;
+import is.hello.speech.response.WatsonResponseBuilder;
+import is.hello.speech.utils.GeoUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -217,7 +248,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
@@ -293,6 +329,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonKinesisAsyncClient kinesisClient = new AmazonKinesisAsyncClient(awsCredentialsProvider, clientConfiguration);
 
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
+        amazonS3.setEndpoint(configuration.s3Endpoint());
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
 
@@ -710,6 +748,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
         final SpeechResultReadDAO speechResultReadDAO = SpeechResultReadDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
+        final AmazonDynamoDB speechCommandClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_COMMANDS);
+        final SpeechCommandDynamoDB speechCommandDAO = new SpeechCommandDynamoDB(speechCommandClient, tableNames.get(DynamoDBTableName.SPEECH_COMMANDS));
+
 
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
@@ -719,5 +760,130 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
+
+        /*
+            ____ ___   ____ ____ _____ __ __
+           / __// _ \ / __// __// ___// // /
+          _\ \ / ___// _/ / _/ / /__ / _  /
+        /___//_/   /___//___/ \___//_//_/
+        */
+        final SpeechConfiguration speechConfiguration = configuration.speechConfiguration();
+
+        // set up speech client
+        final SpeechClient client = new SpeechClient(
+                speechConfiguration.googleAPIHost(),
+                speechConfiguration.googleAPIPort(),
+                speechConfiguration.audioConfiguration());
+
+        final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
+        environment.lifecycle().manage(speechClientManaged);
+
+        final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(senseKeyStore);
+
+        Optional<DatabaseReader> geoIPDatabase = GeoUtils.geoIPDatabase();
+
+        // set up command-handlers
+        final HandlerFactory handlerFactory = HandlerFactory.create(
+                speechCommandDAO,
+                messejiClient,
+                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                deviceDataDAODynamoDB,
+                deviceDAO,
+                senseColorDAO,
+                calibrationDAO,
+                timeZoneHistoryDAODynamoDB,
+                speechConfiguration.forecastio(),
+                accountLocationDAO,
+                externalTokenStore,
+                expansionStore,
+                externalAppDataStore,
+                tokenKMSVault,
+                alarmDAODynamoDB,
+                mergedUserInfoDynamoDB,
+                sleepStatsDAODynamoDB,
+                timelineProcessor,
+                geoIPDatabase
+        );
+
+        final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
+                .register(HandlerType.ALARM, handlerFactory.alarmHandler())
+                .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
+                .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
+                .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
+                .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
+                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
+                .register(HandlerType.HUE, handlerFactory.hueHandler(configuration.expansionConfiguration().hueAppName()))
+                .register(HandlerType.NEST, handlerFactory.nestHandler())
+                .register(HandlerType.ALEXA, handlerFactory.alexaHandler())
+                .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
+
+        // set up Kinesis Producer
+        final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
+
+        final KinesisProducerConfiguration kinesisProducerConfiguration = speechConfiguration.kinesisProducerConfiguration();
+        final com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration kplConfig = new com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration()
+                .setRegion(kinesisProducerConfiguration.region())
+                .setCredentialsProvider(awsCredentialsProvider)
+                .setMaxConnections(kinesisProducerConfiguration.maxConnections())
+                .setRequestTimeout(kinesisProducerConfiguration.requstTimeout())
+                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime())
+                .setCredentialsRefreshDelay(1000L);
+
+        final ExecutorService kinesisExecutor = environment.lifecycle().executorService("kinesis_producer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
+
+        final ScheduledExecutorService kinesisMetricsExecutor = environment.lifecycle().scheduledExecutorService("kinesis_producer_metrics").threads(1).build();
+
+        final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
+        final String kinesisStreamName = kinesisProducerConfiguration.streams().get(kinesisStream);
+        final BlockingQueue<KinesisData> kinesisEvents = new ArrayBlockingQueue<>(kinesisProducerConfiguration.queueSize());
+        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor);
+
+        environment.lifecycle().manage(speechKinesisProducer);
+
+        // set up watson
+        final TextToSpeech watson = new TextToSpeech();
+        final WatsonConfiguration watsonConfiguration = speechConfiguration.watsonConfiguration();
+        watson.setUsernameAndPassword(watsonConfiguration.getUsername(), watsonConfiguration.getPassword());
+        final Map<String, String> headers = ImmutableMap.of("X-Watson-Learning-Opt-Out", "true");
+        watson.setDefaultHeaders(headers);
+
+        // Map Eq profile to s3 bucket/path
+        final String speechBucket = speechConfiguration.watsonAudioConfiguration().getBucketName();
+        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechConfiguration.watsonAudioConfiguration().getAudioPrefix());
+        final String s3ResponseBucketNoEq = String.format("%s/voice/watson-text2speech/16k", speechBucket);
+        final Map<Speech.Equalizer, String> eqMap = ImmutableMap.<Speech.Equalizer, String>builder()
+                .put(Speech.Equalizer.SENSE_ONE, s3ResponseBucket)
+                .put(Speech.Equalizer.NONE, s3ResponseBucketNoEq)
+                .build();
+
+        // set up response-builders
+        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, eqMap, "WATSON", watsonConfiguration.getVoiceName());
+        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
+
+        final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
+
+        responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
+        responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+
+        // map command-handlers to response-builders
+        final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
+
+
+        final AudioRequestHandler audioRequestHandler = new AudioRequestHandler(
+                client, signedBodyHandler, handlerExecutor, deviceDAO,
+                speechKinesisProducer, responseBuilders, handlersToBuilders,
+                environment.metrics());
+
+        environment.jersey().register(new DemoUploadResource(audioRequestHandler));
+        environment.jersey().register(new UploadResource(audioRequestHandler));
+
+        // END -- Speech
+
+
+
     }
 }
