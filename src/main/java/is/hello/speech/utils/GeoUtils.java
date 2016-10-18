@@ -30,7 +30,7 @@ public class GeoUtils {
             final DatabaseReader reader = new DatabaseReader.Builder(database).build();
             return Optional.of(reader);
         } catch (IOException io) {
-            LOGGER.warn("warning=issues-fetching-geoip-db");
+            LOGGER.warn("warning=issues-fetching-geoip-db error_msg={}", io.getMessage());
             return Optional.absent();
         }
     }
