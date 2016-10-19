@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.codahale.metrics.annotation.Timed;
+import com.hello.suripu.app.utils.ExpansionUtils;
 import com.hello.suripu.core.alarm.AlarmConflictException;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alarm.DuplicateSmartAlarmException;
@@ -43,6 +44,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.stores.ExpansionStore;
+
 @Path("/v2/alarms")
 public class AlarmGroupsResource {
 
@@ -50,13 +54,16 @@ public class AlarmGroupsResource {
     private final DeviceDAO deviceDAO;
     private final AmazonS3 amazonS3;
     private final AlarmProcessor alarmProcessor;
+    private final ExpansionStore<Expansion> expansionStore;
 
     public AlarmGroupsResource(final DeviceDAO deviceDAO,
                                final AmazonS3 amazonS3,
-                               final AlarmProcessor alarmProcessor){
+                               final AlarmProcessor alarmProcessor,
+                               final ExpansionStore<Expansion> expansionStore){
         this.deviceDAO = deviceDAO;
         this.amazonS3 = amazonS3;
         this.alarmProcessor = alarmProcessor;
+        this.expansionStore = expansionStore;
     }
 
     @ScopesAllowed({OAuthScope.ALARM_READ})
@@ -129,7 +136,7 @@ public class AlarmGroupsResource {
         final List<Alarm> alarms = new ArrayList<>();
         alarms.addAll(group.classic());
         alarms.addAll(group.voice());
-        alarms.addAll(group.expansions());
+        alarms.addAll(ExpansionUtils.updateAlarmServiceNames(expansionStore, group.expansions()));
 
         try {
             alarmProcessor.setAlarms(token.accountId, senseId, alarms);
@@ -157,7 +164,7 @@ public class AlarmGroupsResource {
         return group;
     }
 
-    // TODO: extract this logic to not have to repeat it accross API versions;
+    // TODO: extract this logic to not have to repeat it across API versions;
     @ScopesAllowed({OAuthScope.ALARM_READ})
     @Timed
     @GET

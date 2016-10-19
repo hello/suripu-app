@@ -994,7 +994,7 @@ public class ExpansionsResource {
         return getExpansions(accessToken, 0L, uriInfo);
     }
 
-        private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
+    private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
