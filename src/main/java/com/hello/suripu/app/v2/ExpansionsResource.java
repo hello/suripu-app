@@ -405,8 +405,17 @@ public class ExpansionsResource {
         }
         final ExternalToken externalToken = externalTokenOptional.get();
 
-        final String decryptedAccessToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
-        final String decryptedRefreshToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, true);
+        final Optional<String> decryptedAccessTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedAccessTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String decryptedAccessToken = decryptedAccessTokenOptional.get();
+
+        final Optional<String> decryptedRefreshTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, true);
+        if(!decryptedRefreshTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String decryptedRefreshToken = decryptedRefreshTokenOptional.get();
 
         //Make request to TOKEN_URL for access_token
         Client client = ClientBuilder.newClient();
@@ -528,7 +537,12 @@ public class ExpansionsResource {
         }
 
         final ExternalToken externalToken = externalTokenOptional.get();
-        final String decryptedToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
         final HueLight hueLight = HueLight.create(expansionConfig.hueAppName(),decryptedToken);
         final String bridgeId = hueLight.getBridge();
 
@@ -709,7 +723,12 @@ public class ExpansionsResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final String decryptedToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            return Optional.absent();
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
         Optional<ExpansionDeviceData> appDataOptional;
         appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansionInfo.serviceName);
         if(!appDataOptional.isPresent()){
@@ -762,7 +781,12 @@ public class ExpansionsResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final String decryptedToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
         Optional<ExpansionDeviceData> appDataOptional;
         appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansionInfo.serviceName);
         if(!appDataOptional.isPresent()){
@@ -904,7 +928,13 @@ public class ExpansionsResource {
 
         final HueExpansionDeviceData hueData = (HueExpansionDeviceData) expansionDeviceDataOptional.get();
 
-        final String decryptedToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            return Optional.absent();
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
+
         if(hueData.groupId == null || hueData.groupId < 1) {
             LOGGER.warn("warn=no-hue-group-defined message='Defaulting to single light control'");
             return Optional.of(HueLight.create(expansionConfig.hueAppName(), HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, HueLight.DEFAULT_GROUP_ID));
@@ -941,7 +971,13 @@ public class ExpansionsResource {
 
         try {
             final NestExpansionDeviceData nestData = mapper.readValue(extData.data, NestExpansionDeviceData.class);
-            final String decryptedToken = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+            final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+            if(!decryptedTokenOptional.isPresent()) {
+                return Optional.absent();
+            }
+
+            final String decryptedToken = decryptedTokenOptional.get();
+
             if(nestData.thermostatId == null) {
                 LOGGER.warn("warn=no-thermostat-defined");
                 return Optional.absent();
@@ -1051,6 +1087,7 @@ public class ExpansionsResource {
                 .withCompletionURI(baseURI + "/redirect")
                 .withAuthURI(String.format("%s/%s/auth", baseURI, exp.id.toString()))
                 .withApiURI(exp.apiURI)
+                .withValueRange(HomeAutomationExpansionFactory.getValueRangeByServiceName(exp.serviceName))
                 .build();
             updatedExpansions.add(newExpansion);
         }
