@@ -1,19 +1,18 @@
 package com.hello.suripu.app.service;
 
-import com.google.common.base.Optional;
-
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.google.common.base.Optional;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +89,7 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
     final Integer volumeScalingFactor = convertToSenseVolumePercent(100);
 
     final Optional<Long> messageId = messejiClient.playAudio(
-        accountPair.externalDeviceId, MessejiClient.Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
+        accountPair.externalDeviceId, Sender.fromAccountId(accountPair.accountId), System.currentTimeMillis(),
         durationOptional.get(), soundOptional.get(), 0, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
 
     if (messageId.isPresent()) {
