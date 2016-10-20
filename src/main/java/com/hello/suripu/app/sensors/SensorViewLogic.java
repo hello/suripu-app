@@ -105,7 +105,7 @@ public class SensorViewLogic {
             final CurrentRoomState roomState = CurrentRoomState.empty(calibrationOptional.isPresent());
             final List<SensorView> views = availableSensors.get(hardwareVersion)
                     .stream()
-                    .flatMap(s -> streamopt(sensorViewFactory.from(s, roomState))) // remove optional responses
+                    .flatMap(s -> streamopt(sensorViewFactory.tooOld(s))) // remove optional responses
                     .collect(Collectors.toList());
             LOGGER.warn("status=no-data account_id={} sense_id={}", accountId, senseId);
             return SensorResponse.noData(views);

@@ -28,12 +28,6 @@ public class SensorViewFactoryTest {
     final SensorViewFactory factory = SensorViewFactory.build(scaleFactory);
 
     @Test
-    public void testNoDeviceData() {
-        Optional<SensorView> view = factory.from(Sensor.CO2, CurrentRoomState.empty(true));
-        assertFalse("view is present", view.isPresent());
-    }
-
-    @Test
     public void testNullExtraData() {
         final DeviceData data = new DeviceData.Builder()
                 .withExternalDeviceId("yo")
@@ -75,7 +69,6 @@ public class SensorViewFactoryTest {
                 .build();
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2, Sensor.TVOC, Sensor.UV);
         for(final Sensor sensor : sensors) {
-
             final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, DateTime.now(DateTimeZone.UTC), Device.Color.BLACK);
             final Optional<SensorView> view = factory.from(query);
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
