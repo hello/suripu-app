@@ -190,6 +190,7 @@ dynamodb:
     sense_last_seen: sense_last_seen
     sense_state: sense_state
     sleep_hmm: sleephmm
+    sense_metadata: sense_metadata
     sleep_score: sleep_score
     sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
@@ -233,6 +234,7 @@ dynamodb:
     sense_key_store: http://localhost:7777
     sense_last_seen: http://localhost:7777
     sleep_hmm: http://localhost:7777
+    sense_metadata: http://localhost:7777
     sense_state: http://localhost:7777
     sleep_score: http://localhost:7777
     sleep_score_parameters: http://localhost:7777

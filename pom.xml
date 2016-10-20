@@ -17,10 +17,10 @@
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gaibu.version>0.1.44</gaibu.version>
-        <suripu.version>0.8.5700</suripu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
         <google-speech-api-version>0.4.143</google-speech-api-version>
+        <suripu.version>0.8.5736</suripu.version>
     </properties>
 
     <distributionManagement>
