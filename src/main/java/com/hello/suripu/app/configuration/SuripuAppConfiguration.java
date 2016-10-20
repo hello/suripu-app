@@ -13,7 +13,7 @@ import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfigur
 import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
-import is.hello.speech.configuration.SpeechConfiguration;
+import is.hello.supichi.configuration.SpeechConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
