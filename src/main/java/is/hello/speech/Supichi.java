@@ -1,29 +1,47 @@
 package is.hello.speech;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
+import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.FileInfoDAO;
+import com.hello.suripu.core.db.FileManifestDAO;
+import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.KeyStore;
+import com.hello.suripu.core.db.KeyStoreDynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
+import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.maxmind.geoip2.DatabaseReader;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
+import is.hello.gaibu.core.db.ExpansionDataDAO;
+import is.hello.gaibu.core.db.ExpansionsDAO;
+import is.hello.gaibu.core.db.ExternalTokenDAO;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
@@ -35,7 +53,7 @@ import is.hello.speech.configuration.KinesisProducerConfiguration;
 import is.hello.speech.configuration.KinesisStream;
 import is.hello.speech.configuration.SpeechConfiguration;
 import is.hello.speech.configuration.WatsonConfiguration;
-import is.hello.speech.db.SpeechCommandDAO;
+import is.hello.speech.db.SpeechCommandDynamoDB;
 import is.hello.speech.executors.HandlerExecutor;
 import is.hello.speech.executors.RegexAnnotationsHandlerExecutor;
 import is.hello.speech.handler.AudioRequestHandler;
@@ -50,6 +68,7 @@ import is.hello.speech.response.SupichiResponseBuilder;
 import is.hello.speech.response.SupichiResponseType;
 import is.hello.speech.response.WatsonResponseBuilder;
 import is.hello.speech.utils.GeoUtils;
+import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,28 +90,73 @@ public class Supichi
 
     public Supichi(
             final Environment environment,
-            final SpeechConfiguration speechConfiguration,
-            final KeyStore senseKeyStore,
-            final SpeechCommandDAO speechCommandDAO,
-            final MessejiClient messejiClient,
-            final SleepSoundsProcessor sleepSoundsProcessor,
-            final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
-            final DeviceDAO deviceDAO,
-            final SenseColorDAO senseColorDAO,
-            final CalibrationDAO calibrationDAO,
-            final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
-            final AccountLocationDAO accountLocationDAO,
-            final PersistentExternalTokenStore externalTokenStore,
-            final PersistentExpansionStore expansionStore,
-            final PersistentExpansionDataStore externalAppDataStore,
-            final Vault tokenKMSVault,
-            final AlarmDAODynamoDB alarmDAODynamoDB,
-            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-            final SleepStatsDAODynamoDB sleepStatsDAODynamoDB,
+            final SuripuAppConfiguration configuration,
+            final AmazonDynamoDBClientFactory dynamoDBClientFactory,
+            final ImmutableMap<DynamoDBTableName, String> tableNames,
+            final DBI commonDB,
             final InstrumentedTimelineProcessor timelineProcessor,
-            final String hueName,
-            final AWSCredentialsProvider awsCredentialsProvider,
-            final AmazonS3 amazonS3) {
+            final MessejiClient messejiClient,
+            final Vault tokenKMSVault) {
+
+        final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
+        final ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.withConnectionTimeout(200); // in ms
+        clientConfiguration.withMaxErrorRetry(1);
+
+        final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
+        amazonS3.setEndpoint(configuration.s3Endpoint());
+
+        final SpeechConfiguration speechConfiguration = configuration.speechConfiguration();
+
+        // set up all the DAOs
+        final AmazonDynamoDB speechCommandClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_COMMANDS);
+        final SpeechCommandDynamoDB speechCommandDAO = new SpeechCommandDynamoDB(speechCommandClient, tableNames.get(DynamoDBTableName.SPEECH_COMMANDS));
+
+        final AmazonDynamoDB senseKeyStoreDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
+        final KeyStore senseKeyStore = new KeyStoreDynamoDB(
+                senseKeyStoreDynamoDBClient,
+                tableNames.get(DynamoDBTableName.SENSE_KEY_STORE),
+                "1234567891234567".getBytes(), // TODO: REMOVE THIS WHEN WE ARE NOT SUPPOSED TO HAVE A DEFAULT KEY
+                120 // 2 minutes for cache
+        );
+
+        final AmazonDynamoDB fileManifestDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FILE_MANIFEST);
+        final FileManifestDAO fileManifestDAO = new FileManifestDynamoDB(fileManifestDynamoDBClient, tableNames.get(DynamoDBTableName.FILE_MANIFEST));
+
+        final AmazonDynamoDB deviceDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.DEVICE_DATA);
+        final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(deviceDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.DEVICE_DATA));
+
+        final AmazonDynamoDB calibrationDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.CALIBRATION);
+        final CalibrationDAO calibrationDAO = CalibrationDynamoDB.create(calibrationDynamoDBClient, tableNames.get(DynamoDBTableName.CALIBRATION));
+
+        final AmazonDynamoDB timezoneHistoryDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.TIMEZONE_HISTORY);
+        final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = new TimeZoneHistoryDAODynamoDB(timezoneHistoryDynamoDBClient, tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY));
+
+        final AmazonDynamoDB mergedUserInfoDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ALARM_INFO);
+        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB = new MergedUserInfoDynamoDB(mergedUserInfoDynamoDBClient, tableNames.get(DynamoDBTableName.ALARM_INFO));
+
+        final AmazonDynamoDB alarmDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ALARM);
+        final AlarmDAODynamoDB alarmDAODynamoDB = new AlarmDAODynamoDB(alarmDynamoDBClient, tableNames.get(DynamoDBTableName.ALARM));
+
+        final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
+        final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
+
+        final ExpansionsDAO expansionsDAO = commonDB.onDemand(ExpansionsDAO.class);
+        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(expansionsDAO);
+
+        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
+
+        final ExpansionDataDAO expansionsDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+        final PersistentExpansionDataStore expansionsDataStore = new PersistentExpansionDataStore(expansionsDataDAO);
+
+        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
+        final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
+        final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
+
+        final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
 
         // set up speech client
         final SpeechClient client;
@@ -125,7 +189,7 @@ public class Supichi
                 accountLocationDAO,
                 externalTokenStore,
                 expansionStore,
-                externalAppDataStore,
+                expansionsDataStore,
                 tokenKMSVault,
                 alarmDAODynamoDB,
                 mergedUserInfoDynamoDB,
@@ -142,7 +206,7 @@ public class Supichi
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
-                .register(HandlerType.HUE, handlerFactory.hueHandler(hueName))
+                .register(HandlerType.HUE, handlerFactory.hueHandler(configuration.expansionConfiguration().hueAppName()))
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
                 .register(HandlerType.ALEXA, handlerFactory.alexaHandler())
                 .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());

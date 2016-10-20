@@ -212,7 +212,6 @@ import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.speech.Supichi;
-import is.hello.speech.db.SpeechCommandDynamoDB;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -298,7 +297,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
         amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
-        amazonS3.setEndpoint(configuration.s3Endpoint());
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
 
@@ -716,10 +714,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
         final SpeechResultReadDAO speechResultReadDAO = SpeechResultReadDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
-        final AmazonDynamoDB speechCommandClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_COMMANDS);
-        final SpeechCommandDynamoDB speechCommandDAO = new SpeechCommandDynamoDB(speechCommandClient, tableNames.get(DynamoDBTableName.SPEECH_COMMANDS));
-
-
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
@@ -730,31 +724,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor));
 
         // speech resources
-        final Supichi supichi = new Supichi(
-                environment,
-                configuration.speechConfiguration(),
-                senseKeyStore,
-                speechCommandDAO,
-                messejiClient,
-                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
-                timeZoneHistoryDAODynamoDB,
-                accountLocationDAO,
-                externalTokenStore,
-                expansionStore,
-                externalAppDataStore,
-                tokenKMSVault,
-                alarmDAODynamoDB,
-                mergedUserInfoDynamoDB,
-                sleepStatsDAODynamoDB,
-                timelineProcessor,
-                configuration.expansionConfiguration().hueAppName(),
-                awsCredentialsProvider,
-                amazonS3
-        );
+        final Supichi supichi = new Supichi(environment, configuration, dynamoDBClientFactory, tableNames, commonDB, timelineProcessor, messejiClient, tokenKMSVault);
 
         environment.jersey().register(supichi.demoUploadResource());
         environment.jersey().register(supichi.uploadResource());
