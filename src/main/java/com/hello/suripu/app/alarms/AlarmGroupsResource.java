@@ -136,7 +136,7 @@ public class AlarmGroupsResource {
         final List<Alarm> alarms = new ArrayList<>();
         alarms.addAll(group.classic());
         alarms.addAll(group.voice());
-        alarms.addAll(ExpansionUtils.updateAlarmServiceNames(expansionStore, group.expansions()));
+        alarms.addAll(ExpansionUtils.updateExpansionAlarms(expansionStore, group.expansions(), token.accountId));
 
         try {
             alarmProcessor.setAlarms(token.accountId, senseId, alarms);
