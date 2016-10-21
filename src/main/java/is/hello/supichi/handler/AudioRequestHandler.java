@@ -10,7 +10,10 @@ import com.hello.suripu.core.speech.models.Result;
 import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
-import is.hello.supichi.clients.SpeechClient;
+import is.hello.supichi.api.Response;
+import is.hello.supichi.api.Speech;
+import is.hello.supichi.api.SpeechResultsKinesis;
+import is.hello.supichi.clients.InstrumentedSpeechClient;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.executors.HandlerExecutor;
 import is.hello.supichi.kinesis.SpeechKinesisProducer;
@@ -22,9 +25,6 @@ import is.hello.supichi.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.utils.AudioUtils;
-import is.hello.supichi.api.Response;
-import is.hello.supichi.api.Speech;
-import is.hello.supichi.api.SpeechResultsKinesis;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class AudioRequestHandler {
     private static String SNOOZE_STRING = "snooze";
     private static String STOP_STRING = "stop";
 
-    private final SpeechClient speechClient;
+    private final InstrumentedSpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;
 
@@ -64,7 +64,7 @@ public class AudioRequestHandler {
     private Meter requestInvalidSignature;
     private Meter transcriptFail;
 
-    public AudioRequestHandler(final SpeechClient speechClient,
+    public AudioRequestHandler(final InstrumentedSpeechClient speechClient,
                                final SignedBodyHandler signedBodyHandler,
                                final HandlerExecutor handlerExecutor,
                                final DeviceDAO deviceDAO,
@@ -168,6 +168,7 @@ public class AudioRequestHandler {
             // convert audio: ADPCM to 16-bit 16k PCM
             final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
             LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
+
             final SpeechServiceResult resp = speechClient.stream(decoded, uploadData.request.getSamplingRate());
 
 

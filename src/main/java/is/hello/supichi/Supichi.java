@@ -45,7 +45,8 @@ import is.hello.gaibu.core.db.ExternalTokenDAO;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import is.hello.supichi.clients.SpeechClient;
+import is.hello.supichi.api.Speech;
+import is.hello.supichi.clients.InstrumentedSpeechClient;
 import is.hello.supichi.clients.SpeechClientManaged;
 import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.configuration.KinesisProducerConfiguration;
@@ -67,7 +68,6 @@ import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.response.WatsonResponseBuilder;
 import is.hello.supichi.utils.GeoUtils;
-import is.hello.supichi.api.Speech;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,12 +159,13 @@ public class Supichi
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
 
         // set up speech client
-        final SpeechClient client;
+        final InstrumentedSpeechClient client;
         try {
-            client = new SpeechClient(
+            client = new InstrumentedSpeechClient(
                     speechConfiguration.googleAPIHost(),
                     speechConfiguration.googleAPIPort(),
-                    speechConfiguration.audioConfiguration());
+                    speechConfiguration.audioConfiguration(),
+                    environment.metrics());
         } catch (IOException e) {
             LOGGER.error("error=fail-to-create-google-speech-client error_msg={}", e.getMessage());
             throw new RuntimeException("Fail to create google speech client");
@@ -255,7 +256,7 @@ public class Supichi
 
         // set up response-builders
         final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, eqMap, "WATSON", watsonConfiguration.getVoiceName());
-        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
+        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName(), environment.metrics());
 
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
 
