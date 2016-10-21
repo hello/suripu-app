@@ -15,6 +15,7 @@ import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.firmware.HardwareVersion;
+import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceKeyStoreRecord;
 import com.hello.suripu.core.models.SenseStateAtTime;
@@ -199,7 +200,7 @@ public class SleepSoundsResource extends BaseResource {
         // Send to Messeji
         final Integer volumeScalingFactor = convertToSenseVolumePercent(playRequest.volumePercent);
         final Optional<Long> messageId = messejiClient.playAudio(
-                senseId, MessejiClient.Sender.fromAccountId(accountId), playRequest.order,
+                senseId, Sender.fromAccountId(accountId), playRequest.order,
                 durationOptional.get(), soundOptional.get(), FADE_IN, FADE_OUT, volumeScalingFactor, TIMEOUT_FADE_OUT);
 
         if (messageId.isPresent()) {
@@ -246,7 +247,7 @@ public class SleepSoundsResource extends BaseResource {
         final String senseId = deviceIdPair.get().externalDeviceId;
 
         final Optional<Long> messageId = messejiClient.stopAudio(
-                senseId, MessejiClient.Sender.fromAccountId(accountId), stopRequest.order, FADE_OUT);
+                senseId, Sender.fromAccountId(accountId), stopRequest.order, FADE_OUT);
         if (messageId.isPresent()) {
             return Response.status(Response.Status.ACCEPTED).entity("").build();
         } else {

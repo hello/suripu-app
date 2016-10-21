@@ -44,6 +44,7 @@ import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
+import com.hello.suripu.core.sense.voice.VoiceMetadataDAODynamoDB;
 import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
 import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
@@ -89,7 +90,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         // This should not be in app
         // createFWUpgradePathTable(configuration, awsCredentialsProvider);
         createFeatureExtractionModelsTable(configuration, awsCredentialsProvider);
-        createOnlineHmmModelsTable(configuration,awsCredentialsProvider);
+        createOnlineHmmModelsTable(configuration, awsCredentialsProvider);
         createCalibrationTable(configuration, awsCredentialsProvider);
         createWifiInfoTable(configuration, awsCredentialsProvider);
         createAppStatsTable(configuration, awsCredentialsProvider);
@@ -107,6 +108,8 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSpeechResultsTable(configuration, awsCredentialsProvider);
         createAnalyticsTrackingTable(configuration, awsCredentialsProvider);
         createSwapIntentsTable(configuration, awsCredentialsProvider);
+
+        createMetadataTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -898,6 +901,24 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
             DynamoDBSwapper.createTable(tableName, client);
+            System.out.println(String.format("%s created", tableName));
+        }
+    }
+
+    private void createMetadataTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
+
+        final String tableName = tableNames.get(DynamoDBTableName.SENSE_METADATA);
+        final String endpoint = endpoints.get(DynamoDBTableName.SENSE_METADATA);
+        client.setEndpoint(endpoint);
+
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            VoiceMetadataDAODynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
     }

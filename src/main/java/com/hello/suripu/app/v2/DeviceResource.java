@@ -4,6 +4,9 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.firmware.HardwareVersion;
+import com.hello.suripu.core.messeji.MessejiApi;
+import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.WifiInfo;
@@ -11,16 +14,23 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.sense.metadata.SenseMetadata;
+import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
+import com.hello.suripu.core.sense.voice.VoiceMetadata;
+import com.hello.suripu.core.sense.voice.VoiceMetadataDAO;
 import com.hello.suripu.core.swap.IntentResult;
 import com.hello.suripu.core.swap.Request;
 import com.hello.suripu.core.swap.Status;
 import com.hello.suripu.core.swap.Swapper;
 import com.hello.suripu.core.util.JsonError;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
+import io.dropwizard.jersey.PATCH;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +47,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.Map;
 
 @Path("/v2/devices")
 public class DeviceResource extends BaseResource {
@@ -49,11 +60,17 @@ public class DeviceResource extends BaseResource {
     private final DeviceProcessor deviceProcessor;
     private final Swapper swapper;
     private final AccountDAO accountDAO;
+    private final SenseMetadataDAO senseMetadataDAO;
+    private final VoiceMetadataDAO voiceMetadataDAO;
+    private final MessejiApi messejiClient;
 
-    public DeviceResource(final DeviceProcessor deviceProcessor,final Swapper swapper, final AccountDAO accountDAO) {
+    public DeviceResource(final DeviceProcessor deviceProcessor,final Swapper swapper, final AccountDAO accountDAO, final SenseMetadataDAO senseMetadataDAO, final VoiceMetadataDAO voiceMetadataDAO, final MessejiClient messejiClient) {
         this.deviceProcessor = deviceProcessor;
         this.swapper = swapper;
         this.accountDAO = accountDAO;
+        this.senseMetadataDAO = senseMetadataDAO;
+        this.voiceMetadataDAO = voiceMetadataDAO;
+        this.messejiClient = messejiClient;
     }
 
     @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
@@ -174,5 +191,59 @@ public class DeviceResource extends BaseResource {
         }
 
         return com.hello.suripu.core.swap.Response.create(result.status());
+    }
+
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @PATCH
+    @Path("/sense/{sense_id}/voice")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateVoice(@Auth final AccessToken accessToken, @NotEmpty Map<VoiceMetadata.UpdateType, Object> properties, @PathParam("sense_id") String senseId) {
+
+        final boolean legitPairing = deviceProcessor.isPairedTo(accessToken.accountId, senseId);
+        if(!legitPairing) {
+            LOGGER.error("action=update-voice-metadata error=sense-not-paired-to-account account_id={} sense_id={}", accessToken.accountId, senseId);
+            throw new WebApplicationException(404);
+        }
+
+        for(final VoiceMetadata.UpdateType type : properties.keySet()) {
+            switch (type) {
+                case MUTED:
+                    boolean shouldMute = (boolean) properties.get(type);
+                    messejiClient.mute(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), shouldMute);
+                    break;
+                case IS_PRIMARY_USER:
+                    if((boolean) properties.get(type)) {
+                        voiceMetadataDAO.updatePrimaryAccount(senseId, accessToken.accountId);
+                    }
+                    break;
+                case VOLUME:
+                    int volume = (int) properties.get(VoiceMetadata.UpdateType.VOLUME);
+                    messejiClient.setSystemVolume(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), volume);
+                    break;
+            }
+        }
+
+        return Response.noContent().build();
+    }
+
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @GET
+    @Path("/sense/{sense_id}/voice")
+    @Produces(MediaType.APPLICATION_JSON)
+    public VoiceMetadata voiceMetadata(@Auth final AccessToken accessToken, @PathParam("sense_id") String senseId) {
+        final boolean legitPairing = deviceProcessor.isPairedTo(accessToken.accountId, senseId);
+        if(!legitPairing) {
+            LOGGER.error("action=get-voice-metadata error=sense-not-paired-to-account account_id={} sense_id={}", accessToken.accountId, senseId);
+            throw new WebApplicationException(404);
+        }
+
+        final SenseMetadata senseMetadata = senseMetadataDAO.get(senseId);
+        if(!HardwareVersion.SENSE_ONE_FIVE.equals(senseMetadata.hardwareVersion())) {
+            LOGGER.error("action=get-voice-metadata error=sense-one sense_id={} account_id={}", senseId, accessToken.accountId);
+            throw new WebApplicationException(400);
+        }
+
+        return deviceProcessor.voiceMetadata(senseId, accessToken.accountId);
     }
 }

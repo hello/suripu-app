@@ -154,6 +154,8 @@ import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
 import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
+import com.hello.suripu.core.sense.voice.VoiceMetadataDAO;
+import com.hello.suripu.core.sense.voice.VoiceMetadataDAODynamoDB;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultReadDAODynamoDB;
 import com.hello.suripu.core.speech.SpeechTimelineReadDAODynamoDB;
@@ -598,12 +600,25 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
         final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
-        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, configuration.dynamoDBConfiguration().tables().get(DynamoDBTableName.ANALYTICS_TRACKING));
+        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
         final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
 
         environment.lifecycle().manage(new AnalyticsManaged(analytics));
 
-        final SenseMetadataDAO senseMetadataDAO = new MetadataDAODynamoDB(senseKeyStore);
+        final DurationDAO durationDAO = commonDB.onDemand(DurationDAO.class);
+        final MessejiHttpClientConfiguration messejiHttpClientConfiguration = configuration.getMessejiHttpClientConfiguration();
+        final MessejiClient messejiClient = MessejiHttpClient.create(
+                new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
+                messejiHttpClientConfiguration.getEndpoint());
+        environment.jersey().register(SleepSoundsResource.create(
+                durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
+
+        final AmazonDynamoDB senseMetadataClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_METADATA);
+        final SenseMetadataDAO senseMetadataDAO = MetadataDAODynamoDB.create(senseKeyStore);
+        final VoiceMetadataDAO voiceMetadataDAO = VoiceMetadataDAODynamoDB.create(senseMetadataClient, tableNames.get(DynamoDBTableName.SENSE_METADATA), senseStateDynamoDB);
+
+
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
                 .withDeviceDAO(deviceDAO)
                 .withMergedUserInfoDynamoDB(mergedUserInfoDynamoDB)
@@ -613,6 +628,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withSenseMetadataDAO(senseMetadataDAO)
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
                 .withAnalyticsTracker(analyticsTracker)
+                .withVoiceMetadataDAO(voiceMetadataDAO)
                 .build();
 
 
@@ -625,7 +641,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 mergedUserInfoDynamoDB
         );
 
-        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO));
+
 
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
@@ -635,18 +651,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final TrendsProcessor trendsProcessor = new TrendsProcessor(sleepStatsDAODynamoDB, accountDAO, timeZoneHistoryDAODynamoDB);
         environment.jersey().register(new TrendsResource(trendsProcessor));
 
-        final DurationDAO durationDAO = commonDB.onDemand(DurationDAO.class);
-        final MessejiHttpClientConfiguration messejiHttpClientConfiguration = configuration.getMessejiHttpClientConfiguration();
-        final MessejiClient messejiClient = MessejiHttpClient.create(
-                new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
-                messejiHttpClientConfiguration.getEndpoint());
-        environment.jersey().register(SleepSoundsResource.create(
-                durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
-                configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
+
 
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
+
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient));
 
         if (configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
