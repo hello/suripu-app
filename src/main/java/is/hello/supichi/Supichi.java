@@ -234,7 +234,8 @@ public class Supichi
         final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
         final String kinesisStreamName = kinesisProducerConfiguration.streams().get(kinesisStream);
         final BlockingQueue<KinesisData> kinesisEvents = new ArrayBlockingQueue<>(kinesisProducerConfiguration.queueSize());
-        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor);
+        final Boolean showUUIDInLogs = configuration.getDebug();
+        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor, showUUIDInLogs);
 
         environment.lifecycle().manage(speechKinesisProducer);
 

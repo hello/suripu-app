@@ -36,14 +36,17 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     private final static Long KINESIS_MAX_RECORDS_IN_QUEUE = 10000L;
 
     private final String streamName;
+    private final Boolean logUUID;
 
     public SpeechKinesisProducer(final String streamName,
                                  final BlockingQueue<KinesisData> inputQueue,
                                  final KinesisProducer kinesisProducer,
                                  final ExecutorService executor,
-                                 final ScheduledExecutorService metricsScheduledExecutor) {
+                                 final ScheduledExecutorService metricsScheduledExecutor,
+                                 final Boolean logUUID) {
         super(streamName, inputQueue, executor, metricsScheduledExecutor, kinesisProducer);
         this.streamName = streamName;
+        this.logUUID = logUUID;
     }
 
     public Boolean addResult(final SpeechResult result, final SpeechResultsKinesis.SpeechResultsData.Action action, final byte[] audioBytes) {
@@ -148,10 +151,10 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     }
 
     private SpeechResultsKinesis.SpeechResultsData getSpeechResultsData(final KinesisData data) {
-        // TODO: remove uuid after debug
+        final String uuid = (logUUID) ? data.speechResult.audioIdentifier : "UUID";
         LOGGER.debug("action=adding-to-kpl sense_id={} uuid={} created={} audio_size={}",
                 data.speechResult.senseId,
-                data.speechResult.audioIdentifier,
+                uuid,
                 data.speechResult.dateTimeUTC,
                 data.audioData.length);
 
