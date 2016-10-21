@@ -210,7 +210,12 @@ public class DeviceResource extends BaseResource {
             switch (type) {
                 case MUTED:
                     boolean shouldMute = (boolean) properties.get(type);
-                    messejiClient.mute(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), shouldMute);
+                    final Optional<Long> id = messejiClient.mute(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), shouldMute);
+                    if(id.isPresent()) {
+                        LOGGER.info("mute={} sense_id={} account_id={}", shouldMute, senseId, accessToken.accountId);
+                    } else {
+                        LOGGER.warn("no response from messji");
+                    }
                     break;
                 case IS_PRIMARY_USER:
                     if((boolean) properties.get(type)) {
