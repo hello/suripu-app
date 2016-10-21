@@ -214,7 +214,7 @@ public class DeviceResource extends BaseResource {
                     if(id.isPresent()) {
                         LOGGER.info("mute={} sense_id={} account_id={}", shouldMute, senseId, accessToken.accountId);
                     } else {
-                        LOGGER.warn("no response from messji");
+                        LOGGER.warn("error=no-response-from-messeji should_mute={} account_id={} sense_id={}", shouldMute, accessToken.accountId, senseId);
                     }
                     break;
                 case IS_PRIMARY_USER:
@@ -224,7 +224,12 @@ public class DeviceResource extends BaseResource {
                     break;
                 case VOLUME:
                     int volume = (int) properties.get(VoiceMetadata.UpdateType.VOLUME);
-                    messejiClient.setSystemVolume(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), volume);
+                    final Optional<Long> volumeId = messejiClient.setSystemVolume(senseId, Sender.fromAccountId(accessToken.accountId), System.currentTimeMillis(), volume);
+                    if(volumeId.isPresent()) {
+                        LOGGER.info("volume={} sense_id={} account_id={}", volume, senseId, accessToken.accountId);
+                    } else {
+                        LOGGER.warn("error=no-response-from-messeji volume={} account_id={} sense_id={}", volume, accessToken.accountId, senseId);
+                    }
                     break;
             }
         }
