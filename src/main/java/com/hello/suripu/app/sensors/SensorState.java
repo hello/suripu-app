@@ -3,6 +3,9 @@ package com.hello.suripu.app.sensors;
 import com.hello.suripu.core.roomstate.Condition;
 
 public class SensorState {
+
+    private static String UNKNOWN_MESSAGE = "";
+
     public final Float value;
     public final String message;
     public final Condition condition;
@@ -11,5 +14,9 @@ public class SensorState {
         this.value = value;
         this.message = message;
         this.condition = condition;
+    }
+
+    public static SensorState unknown() {
+        return new SensorState(null, UNKNOWN_MESSAGE, Condition.UNKNOWN);
     }
 }

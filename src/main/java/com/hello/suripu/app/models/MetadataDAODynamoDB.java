@@ -7,30 +7,41 @@ import com.hello.suripu.core.models.DeviceKeyStoreRecord;
 import com.hello.suripu.core.models.device.v2.Sense;
 import com.hello.suripu.core.sense.metadata.SenseMetadata;
 import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * This is a wrapper around the keystore to extract some metadata without exposing keys
+ */
 public class MetadataDAODynamoDB implements SenseMetadataDAO {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(MetadataDAODynamoDB.class);
 
     private final KeyStore keyStore;
 
-    public MetadataDAODynamoDB(final KeyStore keyStore) {
+    private MetadataDAODynamoDB(final KeyStore keyStore) {
         this.keyStore = keyStore;
     }
 
-    @Override
-    public SenseMetadata get(String s) {
+    public static MetadataDAODynamoDB create(final KeyStore keyStore) {
+        return new MetadataDAODynamoDB(keyStore);
 
-        final Optional<DeviceKeyStoreRecord> recordFromDDB = keyStore.getKeyStoreRecord(s);
+    }
+    @Override
+    public SenseMetadata get(String senseId) {
+
+        final Optional<DeviceKeyStoreRecord> recordFromDDB = keyStore.getKeyStoreRecord(senseId);
         if(!recordFromDDB.isPresent()) {
-            return SenseMetadata.unknown(s);
+            return SenseMetadata.unknown(senseId);
         }
 
         final DeviceKeyStoreRecord record = recordFromDDB.get();
         final Optional<Sense.Color> colorOptional = SerialNumberUtils.extractColorFrom(record.metadata);
-        return SenseMetadata.create(s, colorOptional.or(Sense.Color.BLACK), record.hardwareVersion, null);
+        return SenseMetadata.create(senseId, colorOptional.or(Sense.Color.BLACK), record.hardwareVersion);
     }
 
     @Override
-    public Integer put(SenseMetadata senseMetadata) {
-        return null;
+    public Integer put(final SenseMetadata senseMetadata) {
+        return 0;
     }
 }

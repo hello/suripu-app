@@ -1,22 +1,54 @@
 package com.hello.suripu.app.sensors;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.CalibratedDeviceData;
 import com.hello.suripu.core.models.Sensor;
-import com.hello.suripu.core.roomstate.Condition;
-import com.hello.suripu.core.roomstate.CurrentRoomState;
 import org.joda.time.DateTime;
 import org.joda.time.Minutes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 public class SensorViewFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SensorViewFactory.class);
-    private static String UNKNOWN_MESSAGE = "";
     private static Integer DEFAULT_FRESHNESS_TRESHOLD = 15;
     private final ScaleFactory scaleFactory;
     private final Integer minutesBeforeDataTooOld;
+
+
+    private static final Map<Sensor, String> titles;
+    static {
+        final Map<Sensor, String> temp = Maps.newHashMap();
+        temp.put(Sensor.TEMPERATURE, "Temperature");
+        temp.put(Sensor.HUMIDITY, "Humidity");
+        temp.put(Sensor.LIGHT, "Light");
+        temp.put(Sensor.SOUND, "Noise");
+        temp.put(Sensor.PARTICULATES, "Air Quality");
+        temp.put(Sensor.CO2, "CO2");
+        temp.put(Sensor.TVOC, "VOC");
+        temp.put(Sensor.UV, "UV Light");
+        temp.put(Sensor.PRESSURE, "Barometric pressure");
+        titles = ImmutableMap.copyOf(temp);
+    }
+
+    private static final Map<Sensor, SensorUnit> units;
+    static {
+        final Map<Sensor, SensorUnit> temp = Maps.newHashMap();
+        temp.put(Sensor.TEMPERATURE, SensorUnit.CELSIUS);
+        temp.put(Sensor.HUMIDITY, SensorUnit.PERCENT);
+        temp.put(Sensor.LIGHT, SensorUnit.LUX);
+        temp.put(Sensor.SOUND, SensorUnit.DB);
+        temp.put(Sensor.PARTICULATES, SensorUnit.MG_CM);
+        temp.put(Sensor.CO2, SensorUnit.PPM);
+        temp.put(Sensor.TVOC, SensorUnit.MG_CM);
+        temp.put(Sensor.UV, SensorUnit.COUNT);
+        temp.put(Sensor.PRESSURE, SensorUnit.MILLIBAR);
+        units = ImmutableMap.copyOf(temp);
+    }
 
     public SensorViewFactory(final ScaleFactory scaleFactory, final Integer minutesBeforeDataTooOld) {
         this.scaleFactory = scaleFactory;
@@ -27,37 +59,6 @@ public class SensorViewFactory {
         return new SensorViewFactory(scaleFactory, DEFAULT_FRESHNESS_TRESHOLD);
     }
 
-    public Optional<SensorView> from(Sensor sensor, CurrentRoomState roomState) {
-        final Scale scale = scaleFactory.forSensor(sensor);
-
-        switch (sensor) {
-            case TEMPERATURE:
-                final SensorState tempState = fromScale(roomState.temperature().value, scale);
-                final SensorView temperature = SensorView.from("Temperature", Sensor.TEMPERATURE, SensorUnit.CELSIUS, scale, tempState);
-                return Optional.of(temperature);
-            case HUMIDITY:
-                final SensorState humidityState = fromScale(roomState.humidity().value, scale);
-                final SensorView humidity = SensorView.from("Humidity", Sensor.HUMIDITY, SensorUnit.PERCENT, scale, humidityState);
-                return Optional.of(humidity);
-            case LIGHT:
-                final SensorState lightState = fromScale(roomState.light().value, scale);
-                final SensorView light = SensorView.from("Light", Sensor.LIGHT, SensorUnit.LUX, scale, lightState);
-                return Optional.of(light);
-            case SOUND:
-                final SensorState soundState = fromScale(roomState.sound().value, scale);
-                final SensorView sound = SensorView.from("Noise", Sensor.SOUND, SensorUnit.DB, scale, soundState);
-                return Optional.of(sound);
-            case PARTICULATES:
-                if(roomState.particulates() != null) {
-                    final SensorState particulatesState = fromScale(roomState.particulates().value, scale);
-                    final SensorView airQuality = SensorView.from("Particulates", Sensor.PARTICULATES, SensorUnit.MG_CM, scale, particulatesState);
-                    return Optional.of(airQuality);
-                }
-        }
-        return Optional.absent();
-    }
-
-
     public Optional<SensorView> adjustFreshness(final SensorView sensorView, final DateTime sampleTime, final DateTime now) {
         final boolean tooOld = Minutes.minutesBetween(sampleTime, now).isGreaterThan(Minutes.minutes(minutesBeforeDataTooOld));
         if(tooOld) {
@@ -66,48 +67,85 @@ public class SensorViewFactory {
         return Optional.of(sensorView);
     }
 
+    public SensorView renderSensor(final Sensor sensor, final SensorState sensorState)  {
+        final Scale scale = scaleFactory.forSensor(sensor);
+        final String title = titles.getOrDefault(sensor, "");
+        return SensorView.from(title, sensor, units.get(sensor), scale, sensorState);
+    }
+
+    public Optional<SensorView> tooOld(final Sensor sensor)  {
+        return Optional.of(renderSensor(sensor, SensorState.unknown()));
+    }
+
     public Optional<SensorView> from(final SensorViewQuery query) {
+        final Scale scale = scaleFactory.forSensor(query.sensor);
+        final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, Optional.absent());
 
-        if (query.deviceData.hasExtra()) {
-            final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, Optional.absent());
-            final Scale scale = scaleFactory.forSensor(query.sensor);
-            switch (query.sensor) {
-                case CO2:
-                    final SensorState co2State = fromScale(calibratedDeviceData.co2(), scale);
-                    final SensorView co2 = SensorView.from("CO2", Sensor.CO2, SensorUnit.PPM, scale, co2State);
-                    return adjustFreshness(co2, query.deviceData.dateTimeUTC, query.now);
-                case TVOC:
-                    final SensorState tvocState = fromScale(calibratedDeviceData.tvoc(), scale);
-                    final SensorView tvoc = SensorView.from("VOC", Sensor.TVOC, SensorUnit.MG_CM, scale, tvocState);
-                    return adjustFreshness(tvoc, query.deviceData.dateTimeUTC, query.now);
-                case UV:
-                    final SensorState uvState = fromScale(new Float(query.deviceData.extra().uvCount()), scale);
-                    final SensorView uv = SensorView.from("UV Light", Sensor.UV, SensorUnit.COUNT, scale, uvState);
-                    return adjustFreshness(uv, query.deviceData.dateTimeUTC, query.now);
-                case PRESSURE:
-                    final SensorState pressureState = fromScale(calibratedDeviceData.pressure(), scale);
-                    final SensorView pressure = SensorView.from("Barometric Pressure", Sensor.PRESSURE, SensorUnit.MILLIBAR, scale, pressureState);
-                    return adjustFreshness(pressure, query.deviceData.dateTimeUTC, query.now);
-            }
-        }
+        SensorState state;
 
-        final Optional<SensorView> view = from(query.sensor, query.roomState);
-        if(!view.isPresent()) {
-            LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", query.sensor, query.deviceData.accountId);
+        switch (query.sensor) {
+            case TEMPERATURE:
+                state = fromScale(calibratedDeviceData.temperature(), scale);
+                break;
+            case HUMIDITY:
+                state = fromScale(calibratedDeviceData.humidity(), scale);
+                break;
+            case LIGHT:
+                state = fromScale(calibratedDeviceData.lux(), scale);
+                break;
+            case SOUND:
+                state = fromScale(calibratedDeviceData.sound(true), scale);
+                break;
+            case PARTICULATES:
+                if(query.roomState.particulates() == null) {
+                    return Optional.absent();
+                }
+                state = fromScale(calibratedDeviceData.particulates(), scale);
+                break;
+            case CO2:
+                if(!query.deviceData.hasExtra()) {
+                    return Optional.absent();
+                }
+                state = fromScale(calibratedDeviceData.co2(), scale);
+                break;
+            case TVOC:
+                if(!query.deviceData.hasExtra()) {
+                    return Optional.absent();
+                }
+                state = fromScale(calibratedDeviceData.tvoc(), scale);
+                break;
+            case UV:
+                if(!query.deviceData.hasExtra()) {
+                    return Optional.absent();
+                }
+                state = fromScale(new Float(query.deviceData.extra().uvCount()), scale);
+                break;
+            case PRESSURE:
+                if(!query.deviceData.hasExtra()) {
+                    return Optional.absent();
+                }
+                state = fromScale(calibratedDeviceData.pressure(), scale);
+                break;
+            default:
+                LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", query.sensor, query.deviceData.accountId);
+                return Optional.absent();
         }
-        return view;
+        final SensorView view = renderSensor(query.sensor, state);
+        return adjustFreshness(view, query.deviceData.dateTimeUTC, query.now);
     }
 
     public static SensorState fromScale(final Float value, final Scale scale) {
-        if(value != null) {
-            for(final ScaleInterval interval : scale.intervals()) {
-                if(inRange(value, interval)) {
-                    return new SensorState(value, interval.message(), interval.condition());
-                }
+        if(value == null) {
+            return SensorState.unknown();
+        }
+
+        for(final ScaleInterval interval : scale.intervals()) {
+            if(inRange(value, interval)) {
+                return new SensorState(value, interval.message(), interval.condition());
             }
         }
         LOGGER.warn("msg=not-in-range value={} scale={}", value, scale);
-        return new SensorState(value, UNKNOWN_MESSAGE, Condition.UNKNOWN);
+        return SensorState.unknown();
     }
 
     public static boolean inRange(Float value, ScaleInterval interval) {
@@ -123,6 +161,4 @@ public class SensorViewFactory {
         }
         return false;
     }
-
-
 }

@@ -6,7 +6,7 @@ sudo: false
 env:
   global:
   - APP_NAME=suripu-app
-  - BUILD_NUMBER=0.8.$TRAVIS_BUILD_NUMBER
+  - BUILD_NUMBER=0.9.$TRAVIS_BUILD_NUMBER
   - secure: fhabdJbcnLUnZcpTZVfFSqW7CC0oUKsR8EXpbvB+3YIz9PvV64KzatDxU6nHbNy9+ZOEw8ho8ViRih2KlhzCvEEDVfiXJ83N8bq+pkLJ19sramQDiN3iDpUUCo86Wmt9kYVC5EDOT129pPoiZs4R3c4jngfmeuA8Dw/sKGzWQzJ7gnLTF2pI2CuFJkS/PbfaEf5XOEN2rgPostrRAjNGlOcI9k5ILNIzCvR/BGedX1HOWxPuwQzXfbZnLIDDyQT+WdrkfGv75yE7nxSp9ZPwz/apqngOR4ynT8929Hq2PxBm4z9Sc6SxREbVDXfHY0p0wJjcLGcay18hb+3fvFi/Bx55/JLXGXmBMJy7LXuMc7JDRarQP1BVaxy6PPfH7KfHLnqM4sBHALRmAA8mNIHNJnzA1aiJVAA/7AGz0erUAAKW4YtOE/Sl+7ijWHsxPm5KNUWwj8y6s//N2PFDs+cNbTldAzMrftumqsl5rEd2XowozozjE4JaKBl9oqDrhmg9I2HbuM4lZy5Q/MpEopd5jq9FbjPpDlytETJAL+32CWeFheIkG5k5clzVWyzgQbSDGWPKMmI6smcuQOfmgnJOegA7SL8uM+uwyO43K8BpO5tecgmCwj6qJBcdDgF0MrIF4msEV93pWyQGBlyazu37+PzIbWjwAWr/ogfsux63mFY=
   - secure: Pyd5fX7XdrVYBiUWWzL1FG4pqZ1j3bjNukI4WabQfBiJUWidD+by8t8vF/On7Yn1ft8TwSr2rLxvzKyNGjfi/e5MrHnoa972A+USKQ/E2Q04ykxUlUHRYb7wqwdTqMmwBIU0kEevq30nPphzdQKfvigcktQF38fl23anL7OGiHYLg8eYFC8vRdDPx6vHt3Qc24RgktNjhGKicRSu3agEAFY4W9YnK1rzjLghBt3VQYFfWIcfkmhlWvnXjGfUR3y++6aETv/De3FrCLcwB3qN/jKKgQO6BwyzfObRG9+zJJo0Smnlzgt5HbjAJnqb6nTmlNceRmjYuaXU/kaDIP66mvIOxHXiQAeY4urTrO2BcbulOwpdIbs0IlREpfYcwkJ/hkvaN0VE0pKqtAkJdStPEMmIRJnTnN9WchVrnnKrF3IDU1PhBqvzPzjw8FBAMKr2WqIW88DNOLIM9sy/X13Lc7ETI49xmCxynUWojp/axZfTQUqzYuCxp5koYwF0ey0fpu5JaHWs8vSWN88rfr6hrj3/kV/jAE3+4njW9qzttlOiVRkMxN88dhG+emZBAvT/4YkUNQgRcO2LJoWqbMGXLGBWo6cbtYE4iVvhfqskGClBl2w4pNAXY8fVifxBThIMqcc7sEK+PXIdKpo6ldTBD8WtU2pKT2jj7fT9fscuBMM=
 script:
@@ -17,6 +17,7 @@ script:
 - mkdir -p $TEMP_DIR/etc/init/
 - mkdir deb-pkg
 - cp configs/$APP_NAME.prod.yml $TEMP_DIR/etc/hello/$APP_NAME.yml
+- cp configs/google-api-key.prod.json $TEMP_DIR/etc/hello/google-api-key.json
 - cp init/$APP_NAME.conf $TEMP_DIR/etc/init/
 - mvn --settings settings.xml clean test
 before_deploy:
@@ -54,6 +55,6 @@ branches:
   - PRODUCTION
 notifications:
   email:
-  - josef+travis-suripu@sayhello.com
+  - infra@sayhello.com
   slack:
     secure: kGoJNnwi7JrCTFQjYP9jfcYCNADbrmRAmlKYzQ8Lb8rmm5FW5y+N9QW9AuezClIMtGuq4HAcy8Cqe7IfNEfDlIBUadpQGC9c9tDulFJfn4e3VI9Shzrh62Hdz+yLDytTZrd35LuSHFdzH9wRvB+BgMWyLq1bzGblSaEvt9m1DB48vYiXk0SMAif8JFAjdrBz7flKf39XyBt7KCeAlY3nGRo0nYiWz8tUscPYvDaADRQf+63tV4bXdYd5FFmSqvTID4WjoOcJPX6w0qYy2LaqLb084cmzHGVwIQ3iUzS51JMBG/8MFXS/0SgqqLOdTXMeS4193lB1kAIZZapGen622Te8SyhgxibhzkofAR2AdFU49dXuhOd46dgz/0Q0/zFDYXaIHdPtB8uKGqrw39QKJBdlbwix0dwyLRPBORFDA1TjRvvOqPY0XC1gQmJzaPzD1jI5KXVCV5ask7lR7hqKifmGn15k8IEbfJVpw6cZUD20EX3H46HOWUxrhffRT9Nvh0toTxEDsRJZP+qauiW0jehQ3GMbVV9HRj1tLA7Wnu1z7K3Q/l9shDtcSP7hmD8sL56eS/ki0Rxp5SK39HAzx7TK9QB/Twn8fLhVNR4e59qI+2Cev8QxbqwUYh2BaU7x371JhpCqyVn4z2HnRI7N6j242MZCuVh/08pkI6JRuiY=
