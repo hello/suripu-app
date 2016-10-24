@@ -8,6 +8,9 @@ graphite:
     - org.skife
     - xx-responses
     - com.hello
+    - is.hello
+    - jvm.gc
+
 
 common_db:
   # the name of your JDBC driver
@@ -151,6 +154,7 @@ keys_management_service:
   keys:
     uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845 # audio_uuid_dev
     token: arn:aws:kms:us-east-1:053216739513:key/9ab23bc3-1b49-4f02-a951-a9d97ca906bc # external app tokens
+    audio: arn:aws:kms:us-east-1:053216739513:key/65d9a27f-e6cc-4456-a2ac-31739ea6da22 # audio_upload_dev
 
 dynamodb:
   region: us-east-1
@@ -191,6 +195,7 @@ dynamodb:
     sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
+    speech_commands: speech_commands
     speech_results: speech_results
     speech_timeline: speech_timeline
     swap_intents: swap_intents
@@ -235,6 +240,7 @@ dynamodb:
     sleep_score_parameters: http://localhost:7777
     sleep_stats: http://localhost:7777
     smart_alarm_log: http://localhost:7777
+    speech_commands: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://localhost:7777
     speech_timeline: http://localhost:7777
     swap_intents: http://localhost:7777
@@ -251,3 +257,41 @@ alexa_app_ids:
 
 expansions:
   hue_app_name: sense-dev
+
+s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
+
+speech:
+  google_api_host: speech.googleapis.com
+  google_api_port: 443
+
+  audio_parameters:
+    interim_results_preference: false
+    encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
+    buffer_size: 6400 # play around with this (100ms of audio at 16K SR)
+
+  watson:
+    username: ce487881-c6f6-45cf-8aa5-585554de4941
+    password: 8riFzRbKOd4c
+    voice: en-US_AllisonVoice
+    #voice: en-US_MichaelVoice
+
+  watson_save_audio:
+    s3_bucket_name: hello-audio
+    s3_audio_prefix_raw: voice/watson-text2speech/raw
+    s3_audio_prefix: voice/watson-text2speech/16keq # bucket with responses sent back to Sense
+
+  forecastio: 69ae5412a3a9bfc16a07ce05f6c7c5a5
+
+  kinesis_producer:
+    endpoint: https://kinesis.us-east-1.amazonaws.com
+    region: us-east-1
+    max_connections: 1
+    request_timeout: 5000 # 1 sec
+    record_max_buffered_time: 2000
+    queue_size: 65536
+    streams:
+     speech_result: dev_speech_results
+
+  sense_upload_audio:  # bucket to save audio uploaded from Sense
+    s3_bucket_name: hello-voice-upload-dev
+    s3_audio_prefix: sense_1_5
