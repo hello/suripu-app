@@ -18,6 +18,12 @@ public class KMSConfiguration {
 
         @Valid
         @NotNull
+        @JsonProperty("audio")
+        private String audioKey;
+        public String audio() { return this.audioKey; }
+
+        @Valid
+        @NotNull
         @JsonProperty("token")
         private String tokenKey;
         public String token() { return this.tokenKey; }
