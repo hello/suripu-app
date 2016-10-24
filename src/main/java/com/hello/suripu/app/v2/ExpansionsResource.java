@@ -1023,8 +1023,9 @@ public class ExpansionsResource {
             LOGGER.warn("warning=expansion-not-found expansion_id={} device_id={}", appId, deviceId);
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
+        final Expansion expansion = expansionOptional.get();
 
-        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
+        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
 
         if(!expansionDeviceDataOptional.isPresent()){
             LOGGER.error("error=bad-expansion-data expansion_id={} device_id={}", appId, deviceId);
