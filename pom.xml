@@ -16,8 +16,8 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gaibu.version>0.1.59</gaibu.version>
-        <suripu.version>0.8.5744</suripu.version>
+        <gaibu.version>0.1.72</gaibu.version>
+        <suripu.version>0.8.5752</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -86,16 +86,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <version>1.7.21</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.1.7</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.1.7</version>
         </dependency>
         <dependency>
             <groupId>com.amazon.alexa</groupId>
@@ -365,16 +355,21 @@
             <groupId>is.hello.gaibu</groupId>
             <artifactId>home-automation</artifactId>
             <version>${gaibu.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>is.hello.gaibu</groupId>
-            <artifactId>gaibu-core</artifactId>
-            <version>${gaibu.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.hello.suripu</groupId>
+                    <artifactId>suripu-coredropwizard</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.hello.suripu</groupId>
+                    <artifactId>suripu-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.segment.analytics.java</groupId>
             <artifactId>analytics</artifactId>
-            <version>LATEST</version>
+            <version>2.0.0-RC7</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.squareup.okhttp3</groupId>

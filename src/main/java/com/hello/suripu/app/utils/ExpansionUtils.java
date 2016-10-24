@@ -40,6 +40,7 @@ public class ExpansionUtils {
 
         //Update the service name
         alarmExpansion.serviceName = expansion.serviceName.toString();
+        alarmExpansion.category = expansion.category.toString();
 
         //Sanity check the target values
         if(!expansionValueRange.isEmpty() && alarmExpansion.targetValue.isEmpty()) {

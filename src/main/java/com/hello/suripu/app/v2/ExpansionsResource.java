@@ -767,7 +767,7 @@ public class ExpansionsResource {
         final Optional<Expansion> expansionInfoOptional = expansionStore.getApplicationById(appId);
         if(!expansionInfoOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
         final Expansion expansionInfo = expansionInfoOptional.get();
@@ -843,7 +843,7 @@ public class ExpansionsResource {
         final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
         if(!expansionOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
         final Expansion expansion = expansionOptional.get();
