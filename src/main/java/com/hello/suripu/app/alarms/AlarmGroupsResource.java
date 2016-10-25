@@ -1,9 +1,11 @@
 package com.hello.suripu.app.alarms;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.codahale.metrics.annotation.Timed;
+import com.hello.suripu.app.utils.ExpansionUtils;
 import com.hello.suripu.core.alarm.AlarmConflictException;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alarm.DuplicateSmartAlarmException;
@@ -23,9 +25,14 @@ import com.hello.suripu.core.util.JsonError;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -36,9 +43,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.stores.ExpansionStore;
 
 @Path("/v2/alarms")
 public class AlarmGroupsResource {
@@ -47,13 +54,16 @@ public class AlarmGroupsResource {
     private final DeviceDAO deviceDAO;
     private final AmazonS3 amazonS3;
     private final AlarmProcessor alarmProcessor;
+    private final ExpansionStore<Expansion> expansionStore;
 
     public AlarmGroupsResource(final DeviceDAO deviceDAO,
                                final AmazonS3 amazonS3,
-                               final AlarmProcessor alarmProcessor){
+                               final AlarmProcessor alarmProcessor,
+                               final ExpansionStore<Expansion> expansionStore){
         this.deviceDAO = deviceDAO;
         this.amazonS3 = amazonS3;
         this.alarmProcessor = alarmProcessor;
+        this.expansionStore = expansionStore;
     }
 
     @ScopesAllowed({OAuthScope.ALARM_READ})
@@ -126,6 +136,7 @@ public class AlarmGroupsResource {
         final List<Alarm> alarms = new ArrayList<>();
         alarms.addAll(group.classic());
         alarms.addAll(group.voice());
+        alarms.addAll(ExpansionUtils.updateExpansionAlarms(expansionStore, group.expansions(), token.accountId));
 
         try {
             alarmProcessor.setAlarms(token.accountId, senseId, alarms);
@@ -153,7 +164,7 @@ public class AlarmGroupsResource {
         return group;
     }
 
-    // TODO: extract this logic to not have to repeat it accross API versions;
+    // TODO: extract this logic to not have to repeat it across API versions;
     @ScopesAllowed({OAuthScope.ALARM_READ})
     @Timed
     @GET
