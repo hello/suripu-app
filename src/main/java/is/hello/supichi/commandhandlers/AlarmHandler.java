@@ -194,24 +194,35 @@ public class AlarmHandler extends BaseHandler {
                 .withSource(AlarmSource.VOICE_SERVICE)
                 .build();
 
-        final List<Alarm> alarms = Lists.newArrayList();
-        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+        final List<Alarm> currentAlarms = alarmProcessor.getAlarms(accountId, senseId);
+        final List<Alarm> newAlarms = Lists.newArrayList();
 
-        // check that alarm is not a duplicate
-        for (final Alarm alarm : alarms) {
+
+        // check that alarm is not a duplicate and also remove old voice-alarms
+        for (final Alarm alarm : currentAlarms) {
             if (alarm.equals(newAlarm)) {
                 // duplicate alarm
                 LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
                 return GenericResult.failWithResponse(DUPLICATE_ERROR, String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
             }
+
+            // delete old voice alarm
+            if (alarm.alarmSource.equals(AlarmSource.VOICE_SERVICE)) {
+                final DateTime ringTime = new DateTime(alarm.year, alarm.month, alarm.day, alarm.hourOfDay, alarm.minuteOfHour, 0, timezoneId);
+                if (ringTime.isBefore(localNow)) {
+                    continue;
+                }
+            }
+            newAlarms.add(alarm);
         }
 
-        // TODO: remove voice alarms in the past to avoid filling up DDB item buffer
+        final int alarmsRemoved = currentAlarms.size() - newAlarms.size();
+        LOGGER.debug("alarms_removed={}", alarmsRemoved);
 
         // okay to set alarm
         try {
-            alarms.add(newAlarm);
-            alarmProcessor.setAlarms(accountId, senseId, alarms);
+            newAlarms.add(newAlarm);
+            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
 
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
