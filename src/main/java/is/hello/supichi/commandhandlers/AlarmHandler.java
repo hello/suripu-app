@@ -115,7 +115,6 @@ public class AlarmHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
 
         final Long accountId = request.accountId;
@@ -163,7 +162,7 @@ public class AlarmHandler extends BaseHandler {
         LOGGER.debug("action=create-alarm-time account_id={} annotation_time_utc={} now_utc={} local_alarm_time={} local_now={}",
                 accountId, annotatedTimeUTC.toString(), now, alarmTimeLocal.toString(), localNow.toString());
 
-        // check alarm time is more than 5 minutes from localNow TODO: set minutes to 0 or something??
+        // check alarm time is more than 5 minutes from localNow
         if (alarmTimeLocal.withSecondOfMinute(0).withMillisOfSecond(0).isBefore(localNow.plusMinutes(MIN_ALARM_MINUTES_FROM_NOW))) {
             LOGGER.error("error=alarm-time-too-soon local_now={} alarm_now={}", localNow, alarmTimeLocal);
             return GenericResult.failWithResponse(TOO_SOON_ERROR, SET_ALARM_ERROR_TOO_SOON_RESPONSE);

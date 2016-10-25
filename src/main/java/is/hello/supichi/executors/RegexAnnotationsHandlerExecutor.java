@@ -45,7 +45,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
         final Long accountId = request.accountId;
         final String transcript = request.transcript;
 
-        // TODO: get user timezone
+        // get user TimeZone
         final Optional<TimeZoneHistory> timeZoneHistoryOptional = timeZoneHistoryDAODynamoDB.getCurrentTimeZone(accountId);
         final Optional<TimeZone> timeZone;// = DateTimeZone.forID("America/Los_Angeles").toTimeZone();
         if (timeZoneHistoryOptional.isPresent()) {

@@ -35,14 +35,12 @@ public class TriviaHandler extends BaseHandler {
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("the president", SpeechCommand.TRIVIA);
         tempMap.put("hello ceo", SpeechCommand.TRIVIA);
         tempMap.put("hello co", SpeechCommand.TRIVIA);
         tempMap.put("next president", SpeechCommand.TRIVIA);
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
-//        tempMap.put("how was", SpeechCommand.TRIVIA);
         tempMap.put("favorite retailer", SpeechCommand.TRIVIA);
         return tempMap;
     }
@@ -52,7 +50,7 @@ public class TriviaHandler extends BaseHandler {
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final String text = annotatedTranscript.transcript.toLowerCase();
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
+        final Optional<SpeechCommand> optionalCommand = getCommand(text);
         String command = HandlerResult.EMPTY_COMMAND;
 
         String fileMarker = "";

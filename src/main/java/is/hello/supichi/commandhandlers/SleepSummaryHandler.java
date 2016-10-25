@@ -50,7 +50,6 @@ public class SleepSummaryHandler extends BaseHandler {
 
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("sleep score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("sleep summary", SLEEP_SUMMARY);
@@ -60,7 +59,6 @@ public class SleepSummaryHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
         final Map<String, String> response = Maps.newHashMap();
 

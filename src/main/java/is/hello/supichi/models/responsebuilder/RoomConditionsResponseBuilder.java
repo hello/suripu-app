@@ -95,13 +95,13 @@ public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
         if (sensorName.equalsIgnoreCase(SpeechCommand.ROOM_CONDITION.getValue())) {
             final String condition;
             if (roomResult.condition.equals(Condition.IDEAL)) {
-                responseText = "Your room is ready for a good night's sleep.";
+                responseText = "Room conditions are just right.";
                 condition = "ideal";
             } else if (roomResult.condition.equals(Condition.WARNING)) {
-                responseText = "Your room conditions are not ideal.";
+                responseText = "Room conditions are less than ideal.";
                 condition = "warn";
             } else {
-                responseText = "Your room is in poor condition for sleep.";
+                responseText = "Room conditions might prevent restful sleep.";
                 condition = "alert";
             }
             filename = String.format("ROOM_CONDITION-%s-%s-%s-16k.wav", condition, voiceService, voiceName);

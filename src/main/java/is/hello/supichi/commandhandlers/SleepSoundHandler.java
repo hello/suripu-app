@@ -96,7 +96,6 @@ public class SleepSoundHandler extends BaseHandler {
 
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("okay play", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("play sound", SpeechCommand.SLEEP_SOUND_PLAY);

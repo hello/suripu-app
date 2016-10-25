@@ -66,7 +66,6 @@ public class RoomConditionsHandler extends BaseHandler {
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("the temperature", SpeechCommand.ROOM_TEMPERATURE);
         tempMap.put("the humidity", SpeechCommand.ROOM_HUMIDITY);
