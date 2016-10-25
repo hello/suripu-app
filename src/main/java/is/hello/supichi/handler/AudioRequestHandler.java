@@ -96,7 +96,7 @@ public class AudioRequestHandler {
     }
 
     public WrappedResponse handle(final RawRequest rawRequest) {
-        LOGGER.debug("action=received-bytes size={}", rawRequest.signedBody().length);
+        LOGGER.debug("action=received-bytes size={} sense_id={}", rawRequest.signedBody().length, rawRequest.senseId());
 
         // parse audio and protobuf
         final UploadData uploadData;
@@ -118,7 +118,6 @@ public class AudioRequestHandler {
         if(body.length == 0) {
             return WrappedResponse.error(RequestError.EMPTY_BODY);
         }
-
 
         HandlerResult executeResult = HandlerResult.emptyResult();
 
