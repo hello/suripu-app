@@ -30,6 +30,7 @@ import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
+import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
@@ -96,7 +97,8 @@ public class Supichi
             final DBI commonDB,
             final InstrumentedTimelineProcessor timelineProcessor,
             final MessejiClient messejiClient,
-            final Vault tokenKMSVault) {
+            final Vault tokenKMSVault,
+            final DeviceProcessor deviceProcessor) {
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -273,6 +275,7 @@ public class Supichi
         this.audioRequestHandler = new AudioRequestHandler(
                 client, signedBodyHandler, handlerExecutor, deviceDAO,
                 speechKinesisProducer, responseBuilders, handlersToBuilders,
+                deviceProcessor,
                 environment.metrics());
 
     }

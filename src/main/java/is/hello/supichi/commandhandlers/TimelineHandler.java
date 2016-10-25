@@ -25,7 +25,6 @@ public class TimelineHandler extends BaseHandler {
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
 //        tempMap.put("sleep last", SpeechCommand.TIMELINE);
         tempMap.put("my timeline", SpeechCommand.TIMELINE);
@@ -34,7 +33,6 @@ public class TimelineHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        // TODO
         final String text = annotatedTranscript.transcript;
 
         String command = HandlerResult.EMPTY_COMMAND;

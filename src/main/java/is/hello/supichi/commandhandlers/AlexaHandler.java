@@ -36,7 +36,6 @@ public class AlexaHandler extends BaseHandler {
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
-        // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("ask Alexa", SpeechCommand.ALEXA);
         return tempMap;

@@ -22,9 +22,9 @@ public class CurrentTimeResponseBuilder implements ResponseBuilderInterface{
     // Builder-related
     private static final String TIMEZONE_ERROR_TEXT = "Sorry, we're not able to get the time. Please set your timezone in the app";
     private static final String TIME_ERROR_TEXT = "Sorry, I'm not able to determine the time right now. Please try again later.";
+
     private static final String TIME_ERROR_FILENAME_TEMPLATE = "-no_data-%s-%s-16k.wav";
-    // TODO: create new file with no timezone message
-    private static final String TIMEZONE_ERROR_FILENAME_TEMPLATE = "-no_data-%s-%s-16k.wav";
+    private static final String TIMEZONE_ERROR_FILENAME_TEMPLATE = "-no_timezone-%s-%s-16k.wav";
 
     private static final String RESPONSE_TEXT_FORMATTER = "The time is %s.";
 

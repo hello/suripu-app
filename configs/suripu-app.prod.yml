@@ -119,6 +119,7 @@ logging:
   loggers:
     com.hello.suripu: DEBUG
     com.amazonaws: WARN
+    is.hello: DEBUG
   appenders:
     - type: file
       threshold: DEBUG
@@ -198,14 +199,6 @@ photo_upload:
   bucket_name: hello-accounts
   profile_prefix: photos/profile/
   max_upload_size_bytes: 5120000 # 5MB
-
-keys_management_service:
-  endpoint: https://kms.us-east-1.amazonaws.com
-  keys:
-    uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
-    token: arn:aws:kms:us-east-1:053216739513:key/2b67cc06-2780-4d11-9533-d98f6bc74033 # external app tokens
-    audio: arn:aws:kms:us-east-1:053216739513:key/e9e9640b-9c47-4f17-916b-bb50f809b430 # audio_upload_prod
-
 
 dynamodb:
   region: us-east-1
@@ -352,9 +345,9 @@ speech:
     s3_bucket_name: hello-voice-upload-prod
     s3_audio_prefix: sense_1_5
 
-  keys_management_service:
-    endpoint: https://kms.us-east-1.amazonaws.com
-    keys:
-      uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
-      audio: arn:aws:kms:us-east-1:053216739513:key/e9e9640b-9c47-4f17-916b-bb50f809b430 # audio_upload_prod
-      token: arn:aws:kms:us-east-1:053216739513:key/2b67cc06-2780-4d11-9533-d98f6bc74033 # external app tokens prod
+keys_management_service:
+  endpoint: https://kms.us-east-1.amazonaws.com
+  keys:
+    uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
+    audio: arn:aws:kms:us-east-1:053216739513:key/e9e9640b-9c47-4f17-916b-bb50f809b430 # audio_upload_prod
+    token: arn:aws:kms:us-east-1:053216739513:key/2b67cc06-2780-4d11-9533-d98f6bc74033 # external app tokens prod

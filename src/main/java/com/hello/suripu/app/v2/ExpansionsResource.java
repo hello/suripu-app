@@ -66,6 +66,7 @@ import is.hello.gaibu.core.models.StateRequest;
 import is.hello.gaibu.core.stores.ExpansionStore;
 import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.utils.TokenUtils;
 import is.hello.gaibu.homeauto.clients.HueLight;
 import is.hello.gaibu.homeauto.clients.NestThermostat;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
@@ -404,8 +405,17 @@ public class ExpansionsResource {
         }
         final ExternalToken externalToken = externalTokenOptional.get();
 
-        final String decryptedAccessToken = getDecryptedExternalToken(deviceId, expansion, false);
-        final String decryptedRefreshToken = getDecryptedExternalToken(deviceId, expansion, true);
+        final Optional<String> decryptedAccessTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedAccessTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String decryptedAccessToken = decryptedAccessTokenOptional.get();
+
+        final Optional<String> decryptedRefreshTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, true);
+        if(!decryptedRefreshTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+        final String decryptedRefreshToken = decryptedRefreshTokenOptional.get();
 
         //Make request to TOKEN_URL for access_token
         Client client = ClientBuilder.newClient();
@@ -527,7 +537,12 @@ public class ExpansionsResource {
         }
 
         final ExternalToken externalToken = externalTokenOptional.get();
-        final String decryptedToken = getDecryptedExternalToken(deviceId, expansion, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
         final HueLight hueLight = HueLight.create(expansionConfig.hueAppName(),decryptedToken);
         final String bridgeId = hueLight.getBridge();
 
@@ -679,12 +694,12 @@ public class ExpansionsResource {
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
     @GET
     @Timed
-    @Path("/{app_id}/configurations")
+    @Path("/{app_id}/configuration")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Configuration> getConfigurations(@Auth final AccessToken accessToken,
-                             @PathParam("app_id") Long appId) {
+    public Optional<Configuration> getConfiguration(@Auth final AccessToken accessToken,
+                                                 @PathParam("app_id") Long appId) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
-        if(sensePairedWithAccount.size() == 0){
+        if (sensePairedWithAccount.size() == 0) {
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
@@ -692,7 +707,7 @@ public class ExpansionsResource {
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
 
         final Optional<Expansion> expansionInfoOptional = expansionStore.getApplicationById(appId);
-        if(!expansionInfoOptional.isPresent()) {
+        if (!expansionInfoOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
@@ -708,7 +723,70 @@ public class ExpansionsResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final String decryptedToken = getDecryptedExternalToken(deviceId, expansionInfo, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            return Optional.absent();
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
+        Optional<ExpansionDeviceData> appDataOptional;
+        appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansionInfo.serviceName);
+        if(!appDataOptional.isPresent()){
+            LOGGER.warn("warning=empty-expansion-data expansion_name={} device_id={}", expansionInfo.serviceName, deviceId);
+            appDataOptional = HomeAutomationExpansionDataFactory.getEmptyAppData(expansionInfo.serviceName);
+        }
+
+        final ExpansionDeviceData appData = appDataOptional.get();
+
+        final Optional<HomeAutomationExpansion> expansionOptional = HomeAutomationExpansionFactory.getEmptyExpansion(expansionConfig.hueAppName(), expansionInfo.serviceName, appData, decryptedToken);
+        if(!expansionOptional.isPresent()){
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+        }
+
+        final HomeAutomationExpansion expansion = expansionOptional.get();
+        final Optional<Configuration> config = expansion.getSelectedConfiguration(extData);
+        return config;
+
+    }
+
+    @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
+    @GET
+    @Timed
+    @Path("/{app_id}/configurations")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Configuration> getConfigurations(@Auth final AccessToken accessToken,
+                             @PathParam("app_id") Long appId) {
+        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
+        if(sensePairedWithAccount.size() == 0){
+            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
+
+        final Optional<Expansion> expansionInfoOptional = expansionStore.getApplicationById(appId);
+        if(!expansionInfoOptional.isPresent()) {
+            LOGGER.warn("warning=application-not-found");
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+        }
+
+        final Expansion expansionInfo = expansionInfoOptional.get();
+
+        final Optional<ExpansionData> expDataOptional = expansionDataStore.getAppData(expansionInfo.id, deviceId);
+
+        ExpansionData extData = new ExpansionData.Builder().withData("").build();
+
+        if(expDataOptional.isPresent()) {
+            extData = expDataOptional.get();
+        }
+
+        //Enumerate devices on a service-specific basis
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
         Optional<ExpansionDeviceData> appDataOptional;
         appDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, extData.data, expansionInfo.serviceName);
         if(!appDataOptional.isPresent()){
@@ -765,7 +843,7 @@ public class ExpansionsResource {
         final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
         if(!expansionOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
 
         final Expansion expansion = expansionOptional.get();
@@ -792,6 +870,8 @@ public class ExpansionsResource {
             final ExpansionDeviceData appData = appDataOptional.get();
 
             appData.setId(configuration.getId());
+            appData.setName(configuration.getName());
+
             final ExpansionData newData = new ExpansionData.Builder()
                 .withAppId(expansion.id)
                 .withDeviceId(deviceId)
@@ -803,6 +883,8 @@ public class ExpansionsResource {
             } else {
                 expansionDataStore.insertAppData(newData);
             }
+            configuration.setSelected(true);
+            return configuration;
         } catch (IOException io) {
             LOGGER.warn("warn=bad-json-data");
         }
@@ -810,45 +892,6 @@ public class ExpansionsResource {
         return configuration;
 
     }
-
-    private String getDecryptedExternalToken(final String deviceId, final Expansion expansion, final Boolean isRefreshToken) {
-        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(deviceId, expansion.id);
-        if(!externalTokenOptional.isPresent()) {
-            LOGGER.warn("warning=token-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-        }
-
-        ExternalToken externalToken = externalTokenOptional.get();
-
-        //check for expired token and attempt refresh
-        if(externalToken.hasExpired(DateTime.now(DateTimeZone.UTC))) {
-            LOGGER.error("error=token-expired device_id={}", deviceId);
-            final Optional<ExternalToken> refreshedTokenOptional = refreshToken(deviceId, expansion, externalToken);
-            if(!refreshedTokenOptional.isPresent()){
-                LOGGER.error("error=token-refresh-failed device_id={}", deviceId);
-                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-            }
-
-            externalToken = refreshedTokenOptional.get();
-        }
-
-        final Map<String, String> encryptionContext = Maps.newHashMap();
-        encryptionContext.put("application_id", externalToken.appId.toString());
-        final Optional<String> decryptedTokenOptional;
-        if(isRefreshToken) {
-            decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.refreshToken, encryptionContext);
-        } else {
-            decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
-        }
-
-
-        if(!decryptedTokenOptional.isPresent()) {
-            LOGGER.error("error=token-decryption-failure device_id={}", deviceId);
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-        return decryptedTokenOptional.get();
-    }
-
 
     private Optional<HueLight> getHueFromToken(final AccessToken accessToken) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
@@ -885,7 +928,13 @@ public class ExpansionsResource {
 
         final HueExpansionDeviceData hueData = (HueExpansionDeviceData) expansionDeviceDataOptional.get();
 
-        final String decryptedToken = getDecryptedExternalToken(deviceId, expansion, false);
+        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        if(!decryptedTokenOptional.isPresent()) {
+            return Optional.absent();
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
+
         if(hueData.groupId == null || hueData.groupId < 1) {
             LOGGER.warn("warn=no-hue-group-defined message='Defaulting to single light control'");
             return Optional.of(HueLight.create(expansionConfig.hueAppName(), HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, HueLight.DEFAULT_GROUP_ID));
@@ -922,7 +971,13 @@ public class ExpansionsResource {
 
         try {
             final NestExpansionDeviceData nestData = mapper.readValue(extData.data, NestExpansionDeviceData.class);
-            final String decryptedToken = getDecryptedExternalToken(deviceId, expansion, false);
+            final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+            if(!decryptedTokenOptional.isPresent()) {
+                return Optional.absent();
+            }
+
+            final String decryptedToken = decryptedTokenOptional.get();
+
             if(nestData.thermostatId == null) {
                 LOGGER.warn("warn=no-thermostat-defined");
                 return Optional.absent();
@@ -968,8 +1023,9 @@ public class ExpansionsResource {
             LOGGER.warn("warning=expansion-not-found expansion_id={} device_id={}", appId, deviceId);
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
+        final Expansion expansion = expansionOptional.get();
 
-        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, Expansion.ServiceName.HUE);
+        final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
 
         if(!expansionDeviceDataOptional.isPresent()){
             LOGGER.error("error=bad-expansion-data expansion_id={} device_id={}", appId, deviceId);
@@ -994,7 +1050,7 @@ public class ExpansionsResource {
         return getExpansions(accessToken, 0L, uriInfo);
     }
 
-        private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
+    private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
@@ -1032,100 +1088,11 @@ public class ExpansionsResource {
                 .withCompletionURI(baseURI + "/redirect")
                 .withAuthURI(String.format("%s/%s/auth", baseURI, exp.id.toString()))
                 .withApiURI(exp.apiURI)
+                .withValueRange(HomeAutomationExpansionFactory.getValueRangeByServiceName(exp.serviceName))
                 .build();
             updatedExpansions.add(newExpansion);
         }
 
         return updatedExpansions;
-    }
-
-    private Optional<ExternalToken> refreshToken(final String deviceId, final Expansion expansion, final ExternalToken externalToken) {
-        LOGGER.debug("action=token-refresh device_id={}", deviceId);
-
-        final Map<String, String> encryptionContext = Maps.newHashMap();
-        encryptionContext.put("application_id", externalToken.appId.toString());
-
-        final Optional<String> decryptedRefreshTokenOptional = tokenKMSVault.decrypt(externalToken.refreshToken, encryptionContext);
-        if(!decryptedRefreshTokenOptional.isPresent()) {
-            LOGGER.error("error=refresh-decrypt-failed device_id={}", deviceId);
-            return Optional.absent();
-        }
-        final String decryptedRefreshToken = decryptedRefreshTokenOptional.get();
-
-        //Make request to TOKEN_URL for access_token
-        Client client = ClientBuilder.newClient();
-        WebTarget resourceTarget = client.target(UriBuilder.fromUri(expansion.refreshURI).build());
-        Invocation.Builder builder = resourceTarget.request();
-
-        final Form form = new Form();
-        form.param("refresh_token", decryptedRefreshToken);
-        form.param("client_id", expansion.clientId);
-        form.param("client_secret", expansion.clientSecret);
-
-        //Hue documentation does NOT mention that this needs to be done for token refresh, but it does
-        final String clientCreds = expansion.clientId + ":" + expansion.clientSecret;
-        final byte[] encodedBytes = Base64.encodeBase64(clientCreds.getBytes());
-        final String encodedClientCreds = new String(encodedBytes);
-
-        Response response = builder.accept(MediaType.APPLICATION_JSON)
-            .header("Authorization", "Basic " + encodedClientCreds)
-            .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED));
-        final String responseValue = response.readEntity(String.class);
-
-        final Gson gson = new Gson();
-        final Type collectionType = new TypeToken<Map<String, String>>(){}.getType();
-        final Map<String, String> responseJson = gson.fromJson(responseValue, collectionType);
-
-        if(!responseJson.containsKey("access_token")) {
-            LOGGER.error("error=no-access-token-returned");
-            return Optional.absent();
-        }
-
-        //Invalidate current token
-        externalTokenStore.disableByRefreshToken(externalToken.refreshToken);
-
-        final Optional<String> encryptedTokenOptional = tokenKMSVault.encrypt(responseJson.get("access_token"), encryptionContext);
-        if (!encryptedTokenOptional.isPresent()) {
-            LOGGER.error("error=access-token-encryption-failure");
-            return Optional.absent();
-        }
-
-        //Store the access_token & refresh_token (if exists)
-        final ExternalToken.Builder tokenBuilder = new ExternalToken.Builder()
-            .withAccessToken(encryptedTokenOptional.get())
-            .withAppId(expansion.id)
-            .withDeviceId(deviceId);
-
-        if(responseJson.containsKey("expires_in")) {
-            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseJson.get("expires_in")));
-        }
-
-        if(responseJson.containsKey("access_token_expires_in")) {
-            tokenBuilder.withAccessExpiresIn(Long.parseLong(responseJson.get("access_token_expires_in")));
-        }
-
-        if(responseJson.containsKey("refresh_token")) {
-            final Optional<String> encryptedRefreshTokenOptional = tokenKMSVault.encrypt(responseJson.get("refresh_token"), encryptionContext);
-            if (!encryptedRefreshTokenOptional.isPresent()) {
-                LOGGER.error("error=refresh-token-encryption-failure");
-                return Optional.absent();
-            }
-            tokenBuilder.withRefreshToken(encryptedRefreshTokenOptional.get());
-        }
-
-        if(responseJson.containsKey("refresh_token_expires_in")) {
-            tokenBuilder.withRefreshExpiresIn(Long.parseLong(responseJson.get("refresh_token_expires_in")));
-        }
-
-        final ExternalToken newExternalToken = tokenBuilder.build();
-
-        //Store the externalToken
-        try {
-            externalTokenStore.storeToken(newExternalToken);
-            return Optional.of(newExternalToken);
-        } catch (InvalidExternalTokenException ie) {
-            LOGGER.error("error=token-not-saved");
-            return Optional.absent();
-        }
     }
 }
