@@ -33,7 +33,12 @@ public class AlarmGroups {
 
     @JsonProperty("expansions")
     public List<Alarm> expansions() {
-        return expansions;
+        final List<Alarm> filtered = classic.stream()
+            .filter(a -> !a.expansions.isEmpty())
+            .collect(Collectors.toList());
+
+        filtered.addAll(expansions);
+        return filtered;
     }
 
     @JsonProperty("voice")
@@ -49,7 +54,7 @@ public class AlarmGroups {
     @JsonProperty("classic")
     public List<Alarm> classic() {
         return classic.stream()
-                .filter(a -> !AlarmSource.VOICE_SERVICE.equals(a.alarmSource))
+                .filter(a -> !AlarmSource.VOICE_SERVICE.equals(a.alarmSource) && (a.expansions.isEmpty()) )
                 .collect(Collectors.toList());
     }
 }
