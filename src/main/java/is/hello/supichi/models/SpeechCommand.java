@@ -23,6 +23,7 @@ public enum SpeechCommand {
     LIGHT_SET_BRIGHTNESS("light_set_brightness", HueHandler.class),
     LIGHT_SET_COLOR("light_set_color", HueHandler.class),
     LIGHT_TOGGLE("light_toggle", HueHandler.class),
+    ROOM_CONDITION("room_condition", RoomConditionsHandler.class),
     ROOM_TEMPERATURE("room_temperature", RoomConditionsHandler.class),
     ROOM_HUMIDITY("room_humidity", RoomConditionsHandler.class),
     ROOM_LIGHT("room_light", RoomConditionsHandler.class),

@@ -2,11 +2,13 @@ package is.hello.supichi.models.responsebuilder;
 
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.Condition;
 import is.hello.supichi.commandhandlers.ErrorText;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.commandhandlers.results.RoomConditionResult;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.api.Response;
+import is.hello.supichi.models.SpeechCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,7 @@ public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
         }
 
         final RoomConditionResult roomResult = handlerResult.optionalRoomResult.get();
-        sensorName = roomResult.sensorName.toUpperCase();;
+        sensorName = roomResult.sensorName.toUpperCase();
         filename += "-" + sensorName;
         s3Bucket += String.format("/%s", sensorName);
 
@@ -87,6 +89,23 @@ public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
         final String unit = roomResult.sensorUnit;
         if (sensorName.equalsIgnoreCase(Sensor.TEMPERATURE.toString()) && unit.equals("ºF")) {
             params += "_F";
+        }
+
+        // general room condition command
+        if (sensorName.equalsIgnoreCase(SpeechCommand.ROOM_CONDITION.getValue())) {
+            final String condition;
+            if (roomResult.condition.equals(Condition.IDEAL)) {
+                responseText = "Your room is ready for a good night's sleep.";
+                condition = "ideal";
+            } else if (roomResult.condition.equals(Condition.WARNING)) {
+                responseText = "Your room conditions are not ideal.";
+                condition = "warn";
+            } else {
+                responseText = "Your room is in poor condition for sleep.";
+                condition = "alert";
+            }
+            filename = String.format("ROOM_CONDITION-%s-%s-%s-16k.wav", condition, voiceService, voiceName);
+            return new BuilderResponse(s3Bucket, filename, responseText);
         }
 
         // randomly pick one of the responses

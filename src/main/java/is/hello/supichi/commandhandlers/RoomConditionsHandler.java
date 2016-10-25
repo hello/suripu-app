@@ -13,6 +13,7 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
+import com.hello.suripu.core.util.RoomConditionUtil;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.commandhandlers.results.Outcome;
@@ -42,6 +43,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
     private static final String DEFAULT_SENSOR_UNIT = "f";
     private static final Float NO_SOUND_FILL_VALUE_DB = (float) 35; // Replace with this value when Sense isn't capturing audio
+    private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
 
 
     private final SpeechCommandDAO speechCommandDAO;
@@ -74,6 +76,7 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put("noise level", SpeechCommand.ROOM_SOUND);
         tempMap.put("how noisy", SpeechCommand.ROOM_SOUND);
         tempMap.put("air quality", SpeechCommand.PARTICULATES);
+        tempMap.put(ROOM_CONDITION_PATTERN, SpeechCommand.ROOM_CONDITION);
         return tempMap;
     }
 
@@ -137,9 +140,14 @@ public class RoomConditionsHandler extends BaseHandler {
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_DATA_TOO_OLD));
         }
 
+        final Condition condition = RoomConditionUtil.getGeneralRoomCondition(roomState);
         final String sensorValue;
         final String sensorUnit;
         switch (command) {
+            case ROOM_CONDITION:
+                sensorUnit = "";
+                sensorValue = condition.toString();
+                break;
             case ROOM_TEMPERATURE:
                 if (unit.equalsIgnoreCase("f")) {
                     sensorUnit = "ºF";
@@ -174,7 +182,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         LOGGER.debug("action=get-room-condition command={} value={}", command.toString(), sensorValue);
 
-        final RoomConditionResult roomResult = new RoomConditionResult(sensorName, sensorValue, sensorUnit);
+        final RoomConditionResult roomResult = new RoomConditionResult(sensorName, sensorValue, sensorUnit, condition);
         final String responseText = String.format("The %s in your room is %s %s", sensorName, sensorValue, sensorUnit);
 
         return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
@@ -196,6 +204,8 @@ public class RoomConditionsHandler extends BaseHandler {
                 return Sensor.SOUND.toString();
             case PARTICULATES:
                 return Sensor.PARTICULATES.toString();
+            case ROOM_CONDITION:
+                return SpeechCommand.ROOM_CONDITION.getValue();
         }
         return "";
     }
