@@ -1,9 +1,19 @@
 package is.hello.supichi.commandhandlers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -12,22 +22,15 @@ import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.homeauto.clients.NestThermostat;
 import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
-import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.commandhandlers.results.NestResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.response.SupichiResponseType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.supichi.commandhandlers.ErrorText.EXPANSION_NOT_FOUND;
@@ -72,7 +75,7 @@ public class NestHandler extends BaseHandler {
     }
 
     private void init() {
-        final Optional<Expansion> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
+        final Optional<Expansion> externalApplicationOptional = externalApplicationStore.getApplicationByName(Expansion.ServiceName.NEST.toString());
         if(!externalApplicationOptional.isPresent()) {
             LOGGER.error("error=application-not-found app_name=Nest");
         }
