@@ -127,7 +127,6 @@ public class HueHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final Map<String, String> response = Maps.newHashMap();
 
         final String senseId = request.senseId;
         final Long accountId = request.accountId;

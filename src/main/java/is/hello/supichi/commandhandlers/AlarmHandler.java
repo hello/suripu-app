@@ -115,7 +115,6 @@ public class AlarmHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
 
         final Long accountId = request.accountId;
@@ -163,7 +162,7 @@ public class AlarmHandler extends BaseHandler {
         LOGGER.debug("action=create-alarm-time account_id={} annotation_time_utc={} now_utc={} local_alarm_time={} local_now={}",
                 accountId, annotatedTimeUTC.toString(), now, alarmTimeLocal.toString(), localNow.toString());
 
-        // check alarm time is more than 5 minutes from localNow TODO: set minutes to 0 or something??
+        // check alarm time is more than 5 minutes from localNow
         if (alarmTimeLocal.withSecondOfMinute(0).withMillisOfSecond(0).isBefore(localNow.plusMinutes(MIN_ALARM_MINUTES_FROM_NOW))) {
             LOGGER.error("error=alarm-time-too-soon local_now={} alarm_now={}", localNow, alarmTimeLocal);
             return GenericResult.failWithResponse(TOO_SOON_ERROR, SET_ALARM_ERROR_TOO_SOON_RESPONSE);
@@ -194,24 +193,35 @@ public class AlarmHandler extends BaseHandler {
                 .withSource(AlarmSource.VOICE_SERVICE)
                 .build();
 
-        final List<Alarm> alarms = Lists.newArrayList();
-        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+        final List<Alarm> currentAlarms = alarmProcessor.getAlarms(accountId, senseId);
+        final List<Alarm> newAlarms = Lists.newArrayList();
 
-        // check that alarm is not a duplicate
-        for (final Alarm alarm : alarms) {
+
+        // check that alarm is not a duplicate and also remove old voice-alarms
+        for (final Alarm alarm : currentAlarms) {
             if (alarm.equals(newAlarm)) {
                 // duplicate alarm
                 LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
                 return GenericResult.failWithResponse(DUPLICATE_ERROR, String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
             }
+
+            // delete old voice alarm
+            if (alarm.alarmSource.equals(AlarmSource.VOICE_SERVICE)) {
+                final DateTime ringTime = new DateTime(alarm.year, alarm.month, alarm.day, alarm.hourOfDay, alarm.minuteOfHour, 0, timezoneId);
+                if (ringTime.isBefore(localNow)) {
+                    continue;
+                }
+            }
+            newAlarms.add(alarm);
         }
 
-        // TODO: remove voice alarms in the past to avoid filling up DDB item buffer
+        final int alarmsRemoved = currentAlarms.size() - newAlarms.size();
+        LOGGER.debug("alarms_removed={} account_id={}", alarmsRemoved, accountId);
 
         // okay to set alarm
         try {
-            alarms.add(newAlarm);
-            alarmProcessor.setAlarms(accountId, senseId, alarms);
+            newAlarms.add(newAlarm);
+            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
 
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);

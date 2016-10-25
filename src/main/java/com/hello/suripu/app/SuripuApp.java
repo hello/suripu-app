@@ -739,7 +739,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
 
         // speech resources
-        final Supichi supichi = new Supichi(environment, configuration, dynamoDBClientFactory, tableNames, commonDB, timelineProcessor, messejiClient, tokenKMSVault);
+        final Supichi supichi = new Supichi(environment, configuration, dynamoDBClientFactory, tableNames, commonDB, timelineProcessor, messejiClient, tokenKMSVault, deviceProcessor);
 
         environment.jersey().register(supichi.demoUploadResource());
         environment.jersey().register(supichi.uploadResource());
