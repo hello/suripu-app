@@ -118,8 +118,8 @@ public class RegexAnnotationsHandlerExecutorTest {
         final Map<String, String> encryptionContext = Maps.newHashMap();
         encryptionContext.put("application_id", fakeToken.appId.toString());
 
-        Mockito.when(externalApplicationStore.getApplicationByName("Hue")).thenReturn(Optional.of(fakeHueApplication));
-        Mockito.when(externalApplicationStore.getApplicationByName("Nest")).thenReturn(Optional.of(fakeNestApplication));
+        Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.HUE.toString())).thenReturn(Optional.of(fakeHueApplication));
+        Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.NEST.toString())).thenReturn(Optional.of(fakeNestApplication));
         Mockito.when(externalTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.of(fakeToken));
         Mockito.when(badTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.absent());
         Mockito.when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
