@@ -216,7 +216,7 @@ public class AlarmHandler extends BaseHandler {
         }
 
         final int alarmsRemoved = currentAlarms.size() - newAlarms.size();
-        LOGGER.debug("alarms_removed={}", alarmsRemoved);
+        LOGGER.debug("alarms_removed={} account_id={}", alarmsRemoved, accountId);
 
         // okay to set alarm
         try {
