@@ -120,7 +120,7 @@ logging:
     com.hello.suripu: DEBUG
     com.amazonaws: WARN
     org.whispersystems: DEBUG
-    is.hello.gaibu: DEBUG
+    is.hello: DEBUG
   appenders:
     - type: file
       threshold: DEBUG

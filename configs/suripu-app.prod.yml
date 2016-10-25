@@ -119,7 +119,7 @@ logging:
   loggers:
     com.hello.suripu: DEBUG
     com.amazonaws: WARN
-    is.hello.gaibu: DEBUG
+    is.hello: DEBUG
   appenders:
     - type: file
       threshold: DEBUG
