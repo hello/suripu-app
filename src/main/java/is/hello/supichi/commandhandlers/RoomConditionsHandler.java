@@ -71,6 +71,7 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put("light level", SpeechCommand.ROOM_LIGHT);
         tempMap.put("how bright", SpeechCommand.ROOM_LIGHT);
         tempMap.put("sound level", SpeechCommand.ROOM_SOUND);
+        tempMap.put("noise level", SpeechCommand.ROOM_SOUND);
         tempMap.put("how noisy", SpeechCommand.ROOM_SOUND);
         tempMap.put("air quality", SpeechCommand.PARTICULATES);
         return tempMap;

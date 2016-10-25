@@ -50,7 +50,7 @@ public class TriviaHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.transcript.toLowerCase();
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         String command = HandlerResult.EMPTY_COMMAND;
@@ -59,23 +59,23 @@ public class TriviaHandler extends BaseHandler {
         GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-            if (text.equalsIgnoreCase("the president")) {
+            if (text.contains("the president")) {
                 fileMarker = "president_obama";
                 result = GenericResult.ok("The current president of the United States is Barack Obama.");
 
-            } else if (text.equalsIgnoreCase("hello ceo") || text.equalsIgnoreCase("hello co")) {
+            } else if (text.contains("hello ceo") || text.contains("hello co")) {
                 fileMarker = "hello_ceo_james";
                 result = GenericResult.ok("The current CEO of Hello Inc. is James Proud.");
 
-            } else if (text.equalsIgnoreCase("next president")) {
+            } else if (text.contains("next president")) {
                 fileMarker = "next_president";
                 result = GenericResult.ok("The next president of the United States will either be Hillary Clinton, or Donald Trump.");
 
-            } else if (text.equalsIgnoreCase("best basketball")) {
+            } else if (text.contains("best basketball")) {
                 fileMarker = "best_basketball";
                 result = GenericResult.ok("The best basketball team in the NBA is the Golden State Warriors.");
 
-            } else if (text.equals("favorite retailer")) {
+            } else if (text.contains("favorite retailer")) {
                 fileMarker = "retailer_best_buy";
                 result = GenericResult.ok("Hello's favorite retailer is best buy.");
             }
