@@ -41,7 +41,6 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
     public HandlerResult handle(final VoiceRequest request) {
         // TODO: command-parser
 
-        final String senseId = request.senseId;
         final Long accountId = request.accountId;
         final String transcript = request.transcript;
 
@@ -68,7 +67,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             return executeResult;
         }
 
-        LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", accountId, senseId, transcript);
+        LOGGER.debug("action=fail-to-find-command transcript={} sense_id={} transcript={}", accountId, request.senseId, transcript);
         return HandlerResult.emptyResult();
     }
 

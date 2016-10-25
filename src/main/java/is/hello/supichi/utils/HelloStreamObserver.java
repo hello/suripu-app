@@ -33,7 +33,7 @@ public class HelloStreamObserver implements StreamObserver<StreamingRecognizeRes
         logger.debug("action=check-results size={}", response.getResultsCount());
 
         for(final StreamingRecognitionResult result : response.getResultsList()) {
-            logger.info("action=received-api-result result={}", TextFormat.printToString(result));
+            logger.debug("action=received-api-result result={}", TextFormat.printToString(result));
             speechServiceResult.setStability(result.getStability());
             speechServiceResult.setConfidence(result.getAlternatives(0).getConfidence());
             speechServiceResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
@@ -41,7 +41,7 @@ public class HelloStreamObserver implements StreamObserver<StreamingRecognizeRes
 
             if(result.getIsFinal()) {
                 speechServiceResult.setFinal(true);
-                logger.info("action=get-final-result result={}", speechServiceResult);
+                logger.debug("action=get-final-result result={}", speechServiceResult);
                 finishLatch.countDown();
             }
 
