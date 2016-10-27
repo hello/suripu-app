@@ -127,21 +127,26 @@ public class RoomConditionsHandler extends BaseHandler {
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("invalid sensor"));
         }
 
-        final SensorResponse sensorResponse = sensorViewLogic.list(accountId, DateTime.now(DateTimeZone.UTC));
+        final DateTime asOfUTC = DateTime.now(DateTimeZone.UTC);
+        final SensorResponse sensorResponse = sensorViewLogic.list(accountId, asOfUTC);
+
         switch (sensorResponse.status()) {
             case NO_SENSE:
+                LOGGER.error("error=no-sensor-data reason=no-paired-sense account_id={}", accountId);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("no paired sense"));
             case WAITING_FOR_DATA:
+                LOGGER.error("error=no-sensor-data reason=data-too-old account_id={} as_of_utc_now={}", accountId, asOfUTC);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_DATA_TOO_OLD));
             case OK:
-                return okSensorResult(command, sensorResponse, unit);
+                return okSensorResult(accountId, command, sensorResponse, unit);
         }
 
-        // something wrong
+        // uh-oh, something wrong
+        LOGGER.error("error=fail-to-get-sensor-data account_id={} as_of_utc_now={}", accountId, asOfUTC);
         return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_NO_DATA));
     }
 
-    private HandlerResult okSensorResult(final SpeechCommand command, final SensorResponse sensorResponse, final String unit) {
+    private HandlerResult okSensorResult(final Long accountId, final SpeechCommand command, final SensorResponse sensorResponse, final String unit) {
 
         final Map<Sensor, SensorView> sensorViewMap = sensorResponse.sensors().stream()
                 .collect(Collectors.toMap(SensorView::sensor, item -> item));
@@ -157,9 +162,11 @@ public class RoomConditionsHandler extends BaseHandler {
             return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
         }
 
-        // all other sensors query
+        // all other sensors command
         final Sensor sensor = commandSensorMap.get(command);
         if (!sensorViewMap.containsKey(sensor)) {
+            // most likely due to missing dust calibration
+            LOGGER.error("error=missing-sensor-data sensor={} account_id={}", sensor.toString(), accountId);
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_NO_DATA));
         }
 
@@ -167,12 +174,13 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final String sensorValue;
         final String sensorUnit;
+
         if (command.equals(SpeechCommand.ROOM_TEMPERATURE)) {
             final float temperatureValue = Math.round(sensorView.value());
             if (unit.equalsIgnoreCase("f")) {
+                // cause we're special
                 sensorUnit = SensorUnit.FAHRENHEIT.value();
                 sensorValue = String.valueOf(celsiusToFahrenheit(temperatureValue));
-
             } else {
                 sensorUnit = SensorUnit.CELSIUS.value();
                 sensorValue = String.valueOf(Math.round(temperatureValue));
@@ -181,6 +189,8 @@ public class RoomConditionsHandler extends BaseHandler {
             sensorValue = String.valueOf(Math.round(sensorView.value()));
             sensorUnit = sensorView.unit().value();
         }
+
+        LOGGER.debug("action=get-room-condition-ok command={} value={}, unit={}", command.toString(), sensorValue, sensorUnit);
 
         final RoomConditionResult roomResult = new RoomConditionResult(sensorName, sensorValue, sensorUnit, Condition.UNKNOWN);
         final String responseText = String.format("The %s in your room is %s %s", sensorName, sensorValue, sensorUnit);
