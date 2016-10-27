@@ -1081,6 +1081,7 @@ public class ExpansionsResource {
                 .withId(exp.id)
                 .withServiceName(exp.serviceName)
                 .withDeviceName(exp.deviceName)
+                .withCompanyName(exp.companyName)
                 .withDescription(exp.description)
                 .withCategory(exp.category)
                 .withIcon(exp.icon)
