@@ -4,14 +4,14 @@ public enum  SensorUnit {
     CELSIUS("ºC"),
     FAHRENHEIT("ºF"),
     MG_CM("micro grams per cubic meter"),
-    PERCENT("precent"),
+    PERCENT("percent"),
     LUX("lux"),
     DB("decibels"),
     VOC("micro grams per cubic meter"),
     PPM("ppm"),
     RATIO("ratio"),
     KELVIN("kelvin"),
-    KPA("kilopascal"),
+    KPA("kilo pascal"),
     COUNT("count"),
     MILLIBAR("milli bar");
 

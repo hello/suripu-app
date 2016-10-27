@@ -127,6 +127,7 @@ public class RoomConditionsHandler extends BaseHandler {
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("invalid sensor"));
         }
 
+        // get current sensor data
         final DateTime asOfUTC = DateTime.now(DateTimeZone.UTC);
         final SensorResponse sensorResponse = sensorViewLogic.list(accountId, asOfUTC);
 

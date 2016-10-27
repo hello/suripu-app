@@ -104,7 +104,6 @@ public class SensorViewLogic {
         final Optional<Calibration> calibrationOptional = calibrationDAO.get(senseId);
 
         if(!data.isPresent()) {
-            final CurrentRoomState roomState = CurrentRoomState.empty(calibrationOptional.isPresent());
             final List<SensorView> views = availableSensors.get(hardwareVersion)
                     .stream()
                     .flatMap(s -> streamopt(sensorViewFactory.tooOld(s))) // remove optional responses
