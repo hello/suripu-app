@@ -1,12 +1,20 @@
 package is.hello.supichi.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Lists;
 import io.dropwizard.Configuration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 public class SpeechConfiguration extends Configuration {
+
+    @JsonProperty("enabled")
+    private Boolean enabled = true;
+    public Boolean enabled() {
+        return enabled;
+    }
 
     @JsonProperty("s3_bucket")
     private S3Configuration s3Configuration;
@@ -51,4 +59,16 @@ public class SpeechConfiguration extends Configuration {
     @JsonProperty("kinesis_producer")
     private KinesisProducerConfiguration kinesisProducerConfiguration;
     public KinesisProducerConfiguration kinesisProducerConfiguration() { return kinesisProducerConfiguration; }
+
+    @JsonProperty("memcache_hosts")
+    private List<String> memcacheHosts = Lists.newArrayList();
+    public List<String> memcacheHosts() {
+        return memcacheHosts;
+    }
+
+    @JsonProperty("cache_prefix")
+    private String cachePrefix = "";
+    public String cachePrefix() {
+        return cachePrefix;
+    }
 }
