@@ -1,7 +1,12 @@
 package is.hello.supichi.commandhandlers;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.app.sensors.SensorResponse;
+import com.hello.suripu.app.sensors.SensorUnit;
+import com.hello.suripu.app.sensors.SensorView;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
@@ -14,10 +19,9 @@ import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
 import com.hello.suripu.core.util.RoomConditionUtil;
-import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.commandhandlers.results.GenericResult;
-import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.commandhandlers.results.RoomConditionResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
@@ -29,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_DATA_TOO_OLD;
@@ -45,24 +50,40 @@ public class RoomConditionsHandler extends BaseHandler {
     private static final Float NO_SOUND_FILL_VALUE_DB = (float) 35; // Replace with this value when Sense isn't capturing audio
     private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
 
+    private static final Integer THRESHOLD_IN_MINUTES = 15;
+
 
     private final SpeechCommandDAO speechCommandDAO;
     private final DeviceDataDAODynamoDB deviceDataDAODynamoDB;
     private final DeviceDAO deviceDAO;
     private final SenseColorDAO senseColorDAO;
     private final CalibrationDAO calibrationDAO;
+    private final SensorViewLogic sensorViewLogic;
+
+    private static ImmutableMap<SpeechCommand, Sensor> commandSensorMap;
+    static {
+        final Map<SpeechCommand, Sensor> temp = Maps.newHashMap();
+        temp.put(SpeechCommand.ROOM_TEMPERATURE, Sensor.TEMPERATURE);
+        temp.put(SpeechCommand.ROOM_HUMIDITY, Sensor.HUMIDITY);
+        temp.put(SpeechCommand.ROOM_LIGHT, Sensor.LIGHT);
+        temp.put(SpeechCommand.ROOM_SOUND, Sensor.SOUND);
+        temp.put(SpeechCommand.PARTICULATES, Sensor.PARTICULATES);
+        commandSensorMap = ImmutableMap.copyOf(temp);
+    }
 
     public RoomConditionsHandler(final SpeechCommandDAO speechCommandDAO,
                                  final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
                                  final DeviceDAO deviceDAO,
                                  final SenseColorDAO senseColorDAO,
-                                 final CalibrationDAO calibrationDAO) {
+                                 final CalibrationDAO calibrationDAO,
+                                 final SensorViewLogic sensorViewLogic) {
         super("room_condition", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
         this.deviceDataDAODynamoDB = deviceDataDAODynamoDB;
         this.deviceDAO = deviceDAO;
         this.senseColorDAO = senseColorDAO;
         this.calibrationDAO = calibrationDAO;
+        this.sensorViewLogic = sensorViewLogic;
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
@@ -88,7 +109,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
             // TODO: get units preference
-            return getCurrentRoomConditions(request.accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT);
+            return getCurrentRoomConditionsV15(request.accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT);
         }
         return new HandlerResult(HandlerType.ROOM_CONDITIONS, HandlerResult.EMPTY_COMMAND, GenericResult.fail(COMMAND_NOT_FOUND));
     }
@@ -99,9 +120,78 @@ public class RoomConditionsHandler extends BaseHandler {
         return NO_ANNOTATION_SCORE;
     }
 
+    private HandlerResult getCurrentRoomConditionsV15(final Long accountId, final SpeechCommand command, final String unit) {
 
+        final String sensorName = getSensorName(command);
+        if (sensorName.isEmpty()) {
+            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("invalid sensor"));
+        }
+
+        final SensorResponse sensorResponse = sensorViewLogic.list(accountId, DateTime.now(DateTimeZone.UTC));
+        switch (sensorResponse.status()) {
+            case NO_SENSE:
+                return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("no paired sense"));
+            case WAITING_FOR_DATA:
+                return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_DATA_TOO_OLD));
+            case OK:
+                return okSensorResult(command, sensorResponse, unit);
+        }
+
+        // something wrong
+        return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_NO_DATA));
+    }
+
+    private HandlerResult okSensorResult(final SpeechCommand command, final SensorResponse sensorResponse, final String unit) {
+
+        final Map<Sensor, SensorView> sensorViewMap = sensorResponse.sensors().stream()
+                .collect(Collectors.toMap(SensorView::sensor, item -> item));
+
+        final String sensorName = getSensorName(command);
+
+        // current room state command
+        if (command.equals(SpeechCommand.ROOM_CONDITION)) {
+            final Condition condition = sensorResponse.condition();
+
+            final RoomConditionResult roomResult = new RoomConditionResult(sensorName, condition.toString(), "", condition );
+            final String responseText = String.format("Your room condition is in the %s state", condition.toString());
+            return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
+        }
+
+        // all other sensors query
+        final Sensor sensor = commandSensorMap.get(command);
+        if (!sensorViewMap.containsKey(sensor)) {
+            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_NO_DATA));
+        }
+
+        final SensorView sensorView = sensorViewMap.get(commandSensorMap.get(command));
+
+        final String sensorValue;
+        final String sensorUnit;
+        if (command.equals(SpeechCommand.ROOM_TEMPERATURE)) {
+            final float temperatureValue = Math.round(sensorView.value());
+            if (unit.equalsIgnoreCase("f")) {
+                sensorUnit = SensorUnit.FAHRENHEIT.value();
+                sensorValue = String.valueOf(celsiusToFahrenheit(temperatureValue));
+
+            } else {
+                sensorUnit = SensorUnit.CELSIUS.value();
+                sensorValue = String.valueOf(Math.round(temperatureValue));
+            }
+        } else {
+            sensorValue = String.valueOf(Math.round(sensorView.value()));
+            sensorUnit = sensorView.unit().value();
+        }
+
+        final RoomConditionResult roomResult = new RoomConditionResult(sensorName, sensorValue, sensorUnit, Condition.UNKNOWN);
+        final String responseText = String.format("The %s in your room is %s %s", sensorName, sensorValue, sensorUnit);
+
+        return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
+    }
+
+
+    // sense 1.0
+    @Deprecated
     private HandlerResult getCurrentRoomConditions(final Long accountId, final SpeechCommand command, final String unit) {
-        final Map<String, String> response = Maps.newHashMap();
 
         final Optional<DeviceAccountPair> optionalDeviceAccountPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if (!optionalDeviceAccountPair.isPresent()) {
@@ -113,7 +203,6 @@ public class RoomConditionsHandler extends BaseHandler {
         // TODO: check sensor view available? Or just return no data response
 
         // look back last 30 minutes
-        Integer thresholdInMinutes = 15;
         Integer mostRecentLookBackMinutes = 30;
         final DateTime maxDT = DateTime.now(DateTimeZone.UTC).plusMinutes(2);
         final DateTime minDT = DateTime.now(DateTimeZone.UTC).minusMinutes(mostRecentLookBackMinutes);
@@ -125,8 +214,6 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final String sensorName = getSensorName(command);
         if (sensorName.isEmpty()) {
-            response.put("result", Outcome.FAIL.getValue());
-            response.put("error", "invalid sensor");
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("invalid sensor"));
         }
 
@@ -134,7 +221,7 @@ public class RoomConditionsHandler extends BaseHandler {
         final DeviceData deviceData = optionalData.get().withCalibratedLight(color); // with light calibration
         final Optional<Calibration> calibrationOptional = calibrationDAO.getStrict(senseId);
 
-        final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), thresholdInMinutes, unit, calibrationOptional, NO_SOUND_FILL_VALUE_DB);
+        final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), THRESHOLD_IN_MINUTES, unit, calibrationOptional, NO_SOUND_FILL_VALUE_DB);
         if (roomState.temperature().condition().equals(Condition.UNKNOWN)) {
             return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_DATA_TOO_OLD));
         }
@@ -153,7 +240,7 @@ public class RoomConditionsHandler extends BaseHandler {
                     sensorValue = String.valueOf(celsiusToFahrenheit(roomState.temperature().value));
 
                 } else {
-                    sensorUnit = "ºF";
+                    sensorUnit = "ºC";
                     sensorValue = String.valueOf(Math.round(roomState.temperature().value));
                 }
                 break;

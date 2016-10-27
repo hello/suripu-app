@@ -1,6 +1,7 @@
 package is.hello.supichi.commandhandlers;
 
 import com.google.common.base.Optional;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -48,6 +49,7 @@ public class HandlerFactory {
 
     private final InstrumentedTimelineProcessor timelineProcessor;
     private final Optional<DatabaseReader> geoIpDatabase;
+    private final SensorViewLogic sensorViewLogic;
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
@@ -67,7 +69,8 @@ public class HandlerFactory {
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                            final SleepStatsDAODynamoDB sleepStatsDAO,
                            final InstrumentedTimelineProcessor timelineProcessor,
-                           final Optional<DatabaseReader> geoIpDatabase) {
+                           final Optional<DatabaseReader> geoIpDatabase,
+                           final SensorViewLogic sensorViewLogic) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -87,6 +90,7 @@ public class HandlerFactory {
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
         this.geoIpDatabase = geoIpDatabase;
+        this.sensorViewLogic = sensorViewLogic;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -107,14 +111,14 @@ public class HandlerFactory {
                                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                                         final SleepStatsDAODynamoDB sleepStatsDAO,
                                         final InstrumentedTimelineProcessor timelineProcessor,
-                                        final Optional<DatabaseReader> geoIPDatabase
-                                        ) {
+                                        final Optional<DatabaseReader> geoIPDatabase,
+                                        final SensorViewLogic sensorViewLogic) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
                 deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
-            externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
+                externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
-                timelineProcessor, geoIPDatabase);
+                timelineProcessor, geoIPDatabase, sensorViewLogic);
     }
 
     public WeatherHandler weatherHandler() {
@@ -143,7 +147,7 @@ public class HandlerFactory {
     }
 
     public RoomConditionsHandler roomConditionsHandler() {
-        return new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB,deviceDAO,senseColorDAO,calibrationDAO);
+        return new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO, sensorViewLogic);
     }
 
     public SleepSoundHandler sleepSoundHandler() {

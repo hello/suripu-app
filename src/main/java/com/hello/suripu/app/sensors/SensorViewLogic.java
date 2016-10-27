@@ -19,7 +19,9 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.DeviceKeyStoreRecord;
 import com.hello.suripu.core.models.Sample;
 import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
+import com.hello.suripu.core.util.RoomConditionUtil;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -85,7 +87,7 @@ public class SensorViewLogic {
     public SensorResponse list(final Long accountId, final DateTime asOfUTC) {
         final Optional<DeviceAccountPair> deviceIdPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if(!deviceIdPair.isPresent()) {
-            return new SensorResponse(SensorStatus.NO_SENSE, Lists.newArrayList());
+            return new SensorResponse(SensorStatus.NO_SENSE, Lists.newArrayList(), Condition.UNKNOWN);
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
@@ -128,7 +130,8 @@ public class SensorViewLogic {
                 new DateTime(DateTimeZone.UTC),
                 color
         );
-        return new SensorResponse(SensorStatus.OK, views);
+        final Condition condition = RoomConditionUtil.getGeneralRoomConditionV2(roomStateWithDust, calibrationOptional.isPresent());
+        return new SensorResponse(SensorStatus.OK, views, condition);
     }
 
     public static List<SensorView> toView(

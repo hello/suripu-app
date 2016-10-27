@@ -13,6 +13,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.app.sensors.ScaleFactory;
+import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -160,6 +163,9 @@ public class Supichi
 
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
 
+        final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+
         // set up speech client
         final InstrumentedSpeechClient client;
         try {
@@ -198,7 +204,8 @@ public class Supichi
                 mergedUserInfoDynamoDB,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
-                geoIPDatabase
+                geoIPDatabase,
+                sensorViewLogic
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
