@@ -1,5 +1,6 @@
 package is.hello.supichi.commandhandlers;
 
+import com.google.api.client.util.Sets;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -186,6 +187,7 @@ public class AlarmHandler extends BaseHandler {
                 .withDay(alarmTimeLocal.getDayOfMonth())
                 .withHour(alarmTimeLocal.getHourOfDay())
                 .withMinute(alarmTimeLocal.getMinuteOfHour())
+                .withDayOfWeek(Sets.newHashSet()) // only required for repeated alarms
                 .withIsRepeated(false)
                 .withAlarmSound(DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -274,7 +276,7 @@ public class AlarmHandler extends BaseHandler {
             newAlarms.add(alarm);
         }
 
-        if (newAlarms.isEmpty()) {
+        if (newAlarms.isEmpty() || newAlarms.size() == userInfo.alarmList.size()) {
             LOGGER.warn("action=no-alarm-to-cancel sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_ALARM_RESPONSE);
         }
