@@ -18,6 +18,7 @@ import java.util.Random;
 /**
  * Created by ksg on 7/26/16
  */
+@Deprecated
 public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomConditionsResponseBuilder.class);
 

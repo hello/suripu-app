@@ -1,8 +1,8 @@
 package com.hello.suripu.app.sensors;
 
 public enum  SensorUnit {
-    CELSIUS("ºC"),
-    FAHRENHEIT("ºF"),
+    CELSIUS("degrees Celsius"),
+    FAHRENHEIT("degrees Fahrenheit"),
     MG_CM("micro grams per cubic meter"),
     PERCENT("percent"),
     LUX("lux"),

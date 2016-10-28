@@ -5,13 +5,10 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
-import com.hello.suripu.core.db.CalibrationDAO;
-import com.hello.suripu.core.db.DeviceDAO;
-import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
-import com.hello.suripu.core.db.colors.SenseColorDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
@@ -32,10 +29,6 @@ public class HandlerFactory {
     private final SpeechCommandDAO speechCommandDAO;
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
-    private final DeviceDataDAODynamoDB deviceDataDAODynamoDB;
-    private final DeviceDAO deviceDAO;
-    private final SenseColorDAO senseColorDAO;
-    private final CalibrationDAO calibrationDAO;
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
     private final String forecastio;
     private final AccountLocationDAO accountLocationDAO;
@@ -46,6 +39,7 @@ public class HandlerFactory {
     private final AlarmDAODynamoDB alarmDAODynamoDB;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
     private final SleepStatsDAODynamoDB sleepStatsDAO;
+    private final AccountPreferencesDAO accountPreferencesDAO;
 
     private final InstrumentedTimelineProcessor timelineProcessor;
     private final Optional<DatabaseReader> geoIpDatabase;
@@ -54,10 +48,6 @@ public class HandlerFactory {
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
                            final SleepSoundsProcessor sleepSoundsProcessor,
-                           final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
-                           final DeviceDAO deviceDAO,
-                           final SenseColorDAO senseColorDAO,
-                           final CalibrationDAO calibrationDAO,
                            final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                            final String forecastio,
                            final AccountLocationDAO accountLocationDAO,
@@ -70,14 +60,11 @@ public class HandlerFactory {
                            final SleepStatsDAODynamoDB sleepStatsDAO,
                            final InstrumentedTimelineProcessor timelineProcessor,
                            final Optional<DatabaseReader> geoIpDatabase,
-                           final SensorViewLogic sensorViewLogic) {
+                           final SensorViewLogic sensorViewLogic,
+                           final AccountPreferencesDAO accountPreferencesDAO) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
-        this.deviceDataDAODynamoDB = deviceDataDAODynamoDB;
-        this.deviceDAO = deviceDAO;
-        this.senseColorDAO = senseColorDAO;
-        this.calibrationDAO = calibrationDAO;
         this.timeZoneHistoryDAODynamoDB = timeZoneHistoryDAODynamoDB;
         this.forecastio = forecastio;
         this.accountLocationDAO = accountLocationDAO;
@@ -91,15 +78,12 @@ public class HandlerFactory {
         this.timelineProcessor = timelineProcessor;
         this.geoIpDatabase = geoIpDatabase;
         this.sensorViewLogic = sensorViewLogic;
+        this.accountPreferencesDAO = accountPreferencesDAO;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
                                         final MessejiClient messejiClient,
                                         final SleepSoundsProcessor sleepSoundsProcessor,
-                                        final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
-                                        final DeviceDAO deviceDAO,
-                                        final SenseColorDAO senseColorDAO,
-                                        final CalibrationDAO calibrationDAO,
                                         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                                         final String forecastio,
                                         final AccountLocationDAO accountLocationDAO,
@@ -112,13 +96,14 @@ public class HandlerFactory {
                                         final SleepStatsDAODynamoDB sleepStatsDAO,
                                         final InstrumentedTimelineProcessor timelineProcessor,
                                         final Optional<DatabaseReader> geoIPDatabase,
-                                        final SensorViewLogic sensorViewLogic) {
+                                        final SensorViewLogic sensorViewLogic,
+                                        final AccountPreferencesDAO accountPreferencesDAO) {
 
-        return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
-                deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
+        return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor,
+                timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
                 externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
-                timelineProcessor, geoIPDatabase, sensorViewLogic);
+                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO);
     }
 
     public WeatherHandler weatherHandler() {
@@ -147,7 +132,7 @@ public class HandlerFactory {
     }
 
     public RoomConditionsHandler roomConditionsHandler() {
-        return new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO, sensorViewLogic);
+        return new RoomConditionsHandler(speechCommandDAO, accountPreferencesDAO, sensorViewLogic);
     }
 
     public SleepSoundHandler sleepSoundHandler() {

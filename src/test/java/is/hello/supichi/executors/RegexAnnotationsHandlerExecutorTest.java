@@ -14,6 +14,7 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
+import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
@@ -68,6 +69,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final CalibrationDAO calibrationDAO = mock(CalibrationDAO.class);
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
+    private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
 
 
     private final String SENSE_ID = "123456789";
@@ -138,10 +140,6 @@ public class RegexAnnotationsHandlerExecutorTest {
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 "BLAH", // forecastio
                 accountLocationDAO,
@@ -154,7 +152,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
                 Optional.absent(), // geoip DatabaseReader
-                sensorViewLogic
+                sensorViewLogic,
+                accountPreferenceDAO
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)

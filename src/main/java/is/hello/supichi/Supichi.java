@@ -34,6 +34,8 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
@@ -147,6 +149,9 @@ public class Supichi
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
+        final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
+        final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
+
         final ExpansionsDAO expansionsDAO = commonDB.onDemand(ExpansionsDAO.class);
         final PersistentExpansionStore expansionStore = new PersistentExpansionStore(expansionsDAO);
 
@@ -189,10 +194,6 @@ public class Supichi
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 speechConfiguration.forecastio(),
                 accountLocationDAO,
@@ -205,7 +206,8 @@ public class Supichi
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
                 geoIPDatabase,
-                sensorViewLogic
+                sensorViewLogic,
+                accountPreferencesDAO
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
