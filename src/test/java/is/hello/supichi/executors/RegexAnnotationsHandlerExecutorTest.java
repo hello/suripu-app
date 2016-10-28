@@ -98,12 +98,12 @@ public class RegexAnnotationsHandlerExecutorTest {
         final MultiDensityImage icon = new MultiDensityImage("icon@1x.png", "icon@2x.png", "icon@3x.png");
 
         final Expansion fakeHueApplication = new Expansion(1L, Expansion.ServiceName.HUE,
-            "Hue Light", "Fake Hue Application", icon, CLIENT_ID, "client_secret",
+            "Hue Light", "Phillips", "Fake Hue Application", icon, CLIENT_ID, "client_secret",
             "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.LIGHT,
             DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED, ValueRange.createEmpty());
 
         final Expansion fakeNestApplication = new Expansion(2L, Expansion.ServiceName.NEST,
-            "Nest Thermostat", "Fake Nest Application", icon, CLIENT_ID, "client_secret",
+            "Nest Thermostat", "Nest", "Fake Nest Application", icon, CLIENT_ID, "client_secret",
             "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.TEMPERATURE,
             DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED, ValueRange.createEmpty());
 
