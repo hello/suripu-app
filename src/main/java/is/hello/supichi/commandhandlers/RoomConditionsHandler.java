@@ -63,6 +63,15 @@ public class RoomConditionsHandler extends BaseHandler {
         commandSensorMap = ImmutableMap.copyOf(temp);
     }
 
+    private static ImmutableMap<Condition, String> roomConditionResponseText;
+    static {
+        final Map<Condition, String> text = Maps.newHashMap();
+        text.put(Condition.IDEAL, "Room conditions are just right.");
+        text.put(Condition.WARNING, "Room conditions are less than ideal.");
+        text.put(Condition.ALERT, "Room conditions might prevent restful sleep.");
+        roomConditionResponseText = ImmutableMap.copyOf(text);
+    }
+
     public RoomConditionsHandler(final SpeechCommandDAO speechCommandDAO,
                                  final AccountPreferencesDAO accountPreferencesDAO,
                                  final SensorViewLogic sensorViewLogic) {
@@ -121,10 +130,12 @@ public class RoomConditionsHandler extends BaseHandler {
                 LOGGER.error("error=no-sensor-data reason=no-paired-sense account_id={}", accountId);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
                         GenericResult.failWithResponse(ERROR_NO_DATA, NO_DATA_ERROR_RESPONSE_TEXT));
+
             case WAITING_FOR_DATA:
                 LOGGER.error("error=no-sensor-data reason=data-too-old account_id={} as_of_utc_now={}", accountId, asOfUTC);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
                         GenericResult.failWithResponse(ERROR_DATA_TOO_OLD, NO_DATA_ERROR_RESPONSE_TEXT));
+
             case OK:
                 return okSensorResult(accountId, command, sensorResponse);
         }
@@ -150,17 +161,8 @@ public class RoomConditionsHandler extends BaseHandler {
             final Condition condition = sensorResponse.condition();
 
             final RoomConditionResult roomResult = new RoomConditionResult(sensorName, condition.toString(), "", condition);
-            final String responseText;
-            switch (condition) {
-                case WARNING:
-                    responseText = "Room conditions are less than ideal.";
-                    break;
-                case ALERT:
-                    responseText = "Room conditions might prevent restful sleep.";
-                    break;
-                default:
-                    responseText = "Room conditions are just right.";
-            }
+            final String responseText = roomConditionResponseText.getOrDefault(condition,
+                    "Room conditions are currently unavailable. Please try again later.");
             return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
         }
 
