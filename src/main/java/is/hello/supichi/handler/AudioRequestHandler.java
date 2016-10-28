@@ -2,10 +2,10 @@ package is.hello.supichi.handler;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.DeviceDAO;
-import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.speech.models.Result;
 import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
@@ -47,6 +47,7 @@ public class AudioRequestHandler {
     private final HandlerExecutor handlerExecutor;
 
     private final DeviceDAO deviceDAO;
+    private final DeviceProcessor deviceProcessor;
 
     private final SpeechKinesisProducer speechKinesisProducer;
     private final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders;
@@ -71,6 +72,7 @@ public class AudioRequestHandler {
                                final SpeechKinesisProducer speechKinesisProducer,
                                final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
                                final Map<HandlerType, SupichiResponseType> handlerMap,
+                               final DeviceProcessor deviceProcessor,
                                final MetricRegistry metricRegistry
                                ) {
         this.speechClient = speechClient;
@@ -80,6 +82,8 @@ public class AudioRequestHandler {
         this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilders = responseBuilders;
         this.handlerMap = handlerMap;
+        this.deviceProcessor = deviceProcessor;
+
         this.metrics = metricRegistry;
         this.commandOK = metrics.meter(name(AudioRequestHandler.class, "command-ok"));
         this.commandFail = metrics.meter(name(AudioRequestHandler.class, "command-fail"));
@@ -92,7 +96,7 @@ public class AudioRequestHandler {
     }
 
     public WrappedResponse handle(final RawRequest rawRequest) {
-        LOGGER.debug("action=received-bytes size={}", rawRequest.signedBody().length);
+        LOGGER.debug("action=received-bytes size={} sense_id={}", rawRequest.signedBody().length, rawRequest.senseId());
 
         // parse audio and protobuf
         final UploadData uploadData;
@@ -115,25 +119,18 @@ public class AudioRequestHandler {
             return WrappedResponse.error(RequestError.EMPTY_BODY);
         }
 
-        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(rawRequest.senseId());
-        LOGGER.debug("info=sense-id id={}", rawRequest.senseId());
         HandlerResult executeResult = HandlerResult.emptyResult();
 
-        if (accounts.isEmpty()) {
+        // check for primary user account-id
+        final Optional<Long> optionalPrimaryAccount = deviceProcessor.primaryAccount(rawRequest.senseId());
+        if (!optionalPrimaryAccount.isPresent()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", rawRequest.senseId());
             final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.UNPAIRED_SENSE, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
         }
 
-        // TODO: for now, pick the smallest account-id as the primary id
-        Long accountId = accounts.get(0).accountId;
-        for (final DeviceAccountPair accountPair : accounts) {
-            if (accountPair.accountId < accountId) {
-                accountId = accountPair.accountId;
-            }
-        }
-
-        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", rawRequest.senseId(), accountId, uploadData.request.getResponse());
+        final Long accountId = optionalPrimaryAccount.get();
+        LOGGER.debug("action=get-speech-audio sense_id={} primary_account_id={} response_type={}", rawRequest.senseId(), accountId, uploadData.request.getResponse());
 
         // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();

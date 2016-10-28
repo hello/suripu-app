@@ -116,8 +116,6 @@ public class NestHandler extends BaseHandler {
         final String senseId = request.senseId;
         final Long accountId = request.accountId;
 
-        final Map<String, String> response = Maps.newHashMap();
-
         GenericResult nestResult;
 
         if(!expansionOptional.isPresent()) {

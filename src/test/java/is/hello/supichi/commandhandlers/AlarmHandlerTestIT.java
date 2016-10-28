@@ -97,7 +97,8 @@ public class AlarmHandlerTestIT {
 
         // the next day from now, 9am. smart alarm
         final DateTime existingAlarm = DateTime.now(TIME_ZONE).plusDays(1).withHourOfDay(9);
-        final Alarm newAlarm = new Alarm.Builder()
+        final List<Alarm> returnedAlarms = Lists.newArrayList();
+        returnedAlarms.add(new Alarm.Builder()
                 .withYear(existingAlarm.getYear())
                 .withMonth(existingAlarm.getMonthOfYear())
                 .withDay(existingAlarm.getDayOfMonth())
@@ -110,10 +111,22 @@ public class AlarmHandlerTestIT {
                 .withIsEditable(true)
                 .withIsSmart(true)
                 .withSource(AlarmSource.MOBILE_APP)
-                .build();
+                .build());
 
-        final List<Alarm> returnedAlarms = Lists.newArrayList();
-        returnedAlarms.add(newAlarm);
+        returnedAlarms.add(new Alarm.Builder()
+                .withYear(existingAlarm.getYear())
+                .withMonth(existingAlarm.getMonthOfYear())
+                .withDay(existingAlarm.minusDays(2).getDayOfMonth())
+                .withHour(existingAlarm.getHourOfDay())
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarm.getDayOfWeek()))
+                .withIsRepeated(false)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(true)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.VOICE_SERVICE)
+                .build());
 
         mergedUserInfoDynamoDB.setTimeZone(SENSE_ID, ACCOUNT_ID, TIME_ZONE);
         final Optional<UserInfo> userInfoOptional = mergedUserInfoDynamoDB.getInfo(SENSE_ID, ACCOUNT_ID);
@@ -402,6 +415,23 @@ public class AlarmHandlerTestIT {
             assertEquals(errorText, NO_ALARM_RESPONSE);
         }
 
+    }
+
+    @Test
+    public void oldAlarmsRemoved() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        final List<Alarm> currentAlarms = alarmProcessor.getAlarms(ACCOUNT_ID, SENSE_ID);
+        assertEquals(currentAlarms.size(), 2);
+
+        final String transcript = "set my alarm for 7 am";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+        final List<Alarm> newAlarms = alarmProcessor.getAlarms(ACCOUNT_ID, SENSE_ID);
+        assertEquals(newAlarms.size(), 2);
     }
 
 }
