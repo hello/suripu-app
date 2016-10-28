@@ -274,8 +274,8 @@ public class AlarmHandler extends BaseHandler {
             newAlarms.add(alarm);
         }
 
-
-        if (newAlarms.size() == userInfo.alarmList.size()) {
+        if (newAlarms.isEmpty()) {
+            LOGGER.warn("action=no-alarm-to-cancel sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_ALARM_RESPONSE);
         }
 
