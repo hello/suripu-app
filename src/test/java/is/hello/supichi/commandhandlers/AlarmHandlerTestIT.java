@@ -42,6 +42,7 @@ import static is.hello.supichi.commandhandlers.AlarmHandler.NO_ALARM_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
+import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_LATE_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_SOON_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
@@ -329,6 +330,27 @@ public class AlarmHandlerTestIT {
             assertEquals(result.optionalResult.isPresent(), true);
         }
 
+    }
+
+    @Test
+    public void testSetAlarmTooLate() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        final String transcript = "wake me up in 24 hours and 1 minute";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        // apparently, only setting pill color is not enough
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+
+        if (result.optionalResult.isPresent()) {
+            assertEquals(result.optionalResult.get().outcome, Outcome.FAIL);
+            assertEquals(result.optionalResult.get().errorText.isPresent(), true);
+            assertEquals(result.optionalResult.get().errorText.get(), TOO_LATE_ERROR);
+        } else {
+            assertEquals(result.optionalResult.isPresent(), true);
+        }
     }
 
     @Test
