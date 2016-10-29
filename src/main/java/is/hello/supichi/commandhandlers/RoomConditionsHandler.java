@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_DATA_TOO_OLD;
+import static is.hello.supichi.commandhandlers.ErrorText.ERROR_INVALID_SENSOR;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_DATA;
 
 
@@ -39,14 +40,24 @@ import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_DATA;
 public class RoomConditionsHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomConditionsHandler.class);
 
-    private static final String DEFAULT_SENSOR_UNIT = "f";
-    private static final Float NO_SOUND_FILL_VALUE_DB = (float) 35; // Replace with this value when Sense isn't capturing audio
+    private static final boolean DEFAULT_USE_FAHRENHEIT = false; // check is for use-Celsius
     private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
 
     private static final String NO_DATA_ERROR_RESPONSE_TEXT = "Sorry, I wasn't able to access your %s data right now. Please try again later";
+    private static final String ROOM_CONDITION_UNAVAILABLE_RESPONSE_TEXT = "Room conditions are currently unavailable. Please try again later.";
 
-    private static final Integer THRESHOLD_IN_MINUTES = 15;
-
+    // response text formatting
+    private static final String RESPONSE_FORMAT_SECOND_CHOICE = "It's currently %s %s.";
+    private static ImmutableMap<SpeechCommand, String> sensorResponseFormat;
+    static {
+        final Map<SpeechCommand, String> temp = Maps.newHashMap();
+        temp.put(SpeechCommand.ROOM_TEMPERATURE, "The temperature in your room is %s %s.");
+        temp.put(SpeechCommand.ROOM_HUMIDITY, "The humidity in your room is %s %s.");
+        temp.put(SpeechCommand.ROOM_LIGHT,"The light level in your room is %s %s.");
+        temp.put(SpeechCommand.ROOM_SOUND,"The sound in your room is %s %s");
+        temp.put(SpeechCommand.PARTICULATES,"The air quality in your room is %s %s");
+        sensorResponseFormat = ImmutableMap.copyOf(temp);
+    }
 
     private final SpeechCommandDAO speechCommandDAO;
     private final AccountPreferencesDAO accountPreferencesDAO;
@@ -118,7 +129,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final String sensorName = getSensorName(command);
         if (sensorName.isEmpty()) {
-            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("invalid sensor"));
+            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_INVALID_SENSOR));
         }
 
         // get current sensor data
@@ -161,8 +172,7 @@ public class RoomConditionsHandler extends BaseHandler {
             final Condition condition = sensorResponse.condition();
 
             final RoomConditionResult roomResult = new RoomConditionResult(sensorName, condition.toString(), "", condition);
-            final String responseText = roomConditionResponseText.getOrDefault(condition,
-                    "Room conditions are currently unavailable. Please try again later.");
+            final String responseText = roomConditionResponseText.getOrDefault(condition, ROOM_CONDITION_UNAVAILABLE_RESPONSE_TEXT);
             return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
         }
 
@@ -184,7 +194,7 @@ public class RoomConditionsHandler extends BaseHandler {
             final float temperatureValue = Math.round(sensorView.value());
 
             final Map<PreferenceName, Boolean> preferences = accountPreferencesDAO.get(accountId);
-            final Boolean useCelsius = preferences.getOrDefault(PreferenceName.TEMP_CELSIUS, false);
+            final Boolean useCelsius = preferences.getOrDefault(PreferenceName.TEMP_CELSIUS, DEFAULT_USE_FAHRENHEIT);
 
             if (useCelsius) {
                 sensorUnit = SensorUnit.CELSIUS.value();
@@ -210,21 +220,11 @@ public class RoomConditionsHandler extends BaseHandler {
     private String responseText(final SpeechCommand command, final String sensorValue, final String sensorUnit) {
         final boolean chooseOne = (DateTime.now(DateTimeZone.UTC).getMillis() % 2) == 0;
         if (chooseOne) {
-            switch (command) {
-                case ROOM_TEMPERATURE:
-                    return String.format("The temperature in your room is %s %s", sensorValue, sensorUnit);
-                case ROOM_HUMIDITY:
-                    return String.format("The humidity in your room is %s %s", sensorValue, sensorUnit);
-                case ROOM_LIGHT:
-                    return String.format("The light level in your room is %s %s", sensorValue, sensorUnit);
-                case ROOM_SOUND:
-                    return String.format("The sound in your room is %s %s", sensorValue, sensorUnit);
-                case PARTICULATES:
-                    return String.format("The air quality in your room is %s %s", sensorValue, sensorUnit);
-            }
+            final String responseTextFormat = sensorResponseFormat.getOrDefault(command, RESPONSE_FORMAT_SECOND_CHOICE);
+            return String.format(responseTextFormat, sensorValue, sensorUnit);
         }
 
-        return String.format("It's currently %s %s.", sensorValue, sensorUnit);
+        return String.format(RESPONSE_FORMAT_SECOND_CHOICE, sensorValue, sensorUnit);
     }
 
 
