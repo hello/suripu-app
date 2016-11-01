@@ -158,7 +158,7 @@ public class AudioRequestHandler {
             builder.withResult(Result.OK);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            return WrappedResponse.empty();
+            return WrappedResponse.silence();
         }
 
         try {
@@ -178,7 +178,7 @@ public class AudioRequestHandler {
                         .withResult(Result.TRY_AGAIN);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-                return WrappedResponse.empty();
+                return WrappedResponse.silence();
             }
 
             // save transcript results to Kinesis
@@ -199,7 +199,7 @@ public class AudioRequestHandler {
                             .withResult(Result.REJECTED);
                     speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-                    return WrappedResponse.empty();
+                    return WrappedResponse.silence();
                 }
             }
 
