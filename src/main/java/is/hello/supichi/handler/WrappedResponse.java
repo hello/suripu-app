@@ -6,6 +6,7 @@ public class WrappedResponse {
 
     private final byte[] content;
     private final Optional<RequestError> error;
+    private static final byte[] SILENCE = new byte[]{0,0,0,0};
 
     private WrappedResponse(final byte[] content, final RequestError error) {
         this.content = content;
@@ -13,7 +14,7 @@ public class WrappedResponse {
     }
 
     public static WrappedResponse error(final RequestError error) {
-        return new WrappedResponse(new byte[]{}, error);
+        return new WrappedResponse(SILENCE, error);
     }
 
     public static WrappedResponse ok(final byte[] content) {
@@ -22,6 +23,10 @@ public class WrappedResponse {
 
     public static WrappedResponse empty() {
         return new WrappedResponse(new byte[]{}, null);
+    }
+
+    public static WrappedResponse silence() {
+        return new WrappedResponse(SILENCE, null);
     }
 
     public boolean hasError() {
