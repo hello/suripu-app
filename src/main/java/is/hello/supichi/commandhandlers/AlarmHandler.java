@@ -1,5 +1,6 @@
 package is.hello.supichi.commandhandlers;
 
+import com.google.api.client.util.Sets;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -10,8 +11,8 @@ import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
 import com.hello.suripu.core.models.RingTime;
 import com.hello.suripu.core.models.UserInfo;
-import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
@@ -19,7 +20,6 @@ import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.models.annotations.TimeAnnotation;
 import is.hello.supichi.response.SupichiResponseType;
-import jersey.repackaged.com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -177,6 +177,9 @@ public class AlarmHandler extends BaseHandler {
             newAlarmString = timeAnnotation.matchingText();
         }
 
+        //WARNING: mobile app does NOT display the full date
+        // so setting an alarm for more than 24h in the future
+        // will look weird in the app.
 
         final Alarm newAlarm = new Alarm.Builder()
                 .withYear(alarmTimeLocal.getYear())
@@ -184,7 +187,7 @@ public class AlarmHandler extends BaseHandler {
                 .withDay(alarmTimeLocal.getDayOfMonth())
                 .withHour(alarmTimeLocal.getHourOfDay())
                 .withMinute(alarmTimeLocal.getMinuteOfHour())
-                .withDayOfWeek(Sets.newHashSet(alarmTimeLocal.getDayOfWeek()))
+                .withDayOfWeek(Sets.newHashSet()) // only required for repeated alarms
                 .withIsRepeated(false)
                 .withAlarmSound(DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -273,14 +276,15 @@ public class AlarmHandler extends BaseHandler {
             newAlarms.add(alarm);
         }
 
-
-        if (newAlarms.size() == userInfo.alarmList.size()) {
+        if (newAlarms.isEmpty() || newAlarms.size() == userInfo.alarmList.size()) {
+            LOGGER.warn("action=no-alarm-to-cancel sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_ALARM_RESPONSE);
         }
 
         try {
             alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
+            LOGGER.error("error=cancel-alarm sense_id={} account_id={} message={}", senseId, accountId, exception.getMessage());
             return GenericResult.failWithResponse(exception.getMessage(), CANCEL_ALARM_ERROR_RESPONSE);
         }
 
