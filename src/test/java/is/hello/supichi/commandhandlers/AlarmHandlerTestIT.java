@@ -97,7 +97,8 @@ public class AlarmHandlerTestIT {
         when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(optionalTimeZoneHistory);
 
         // the next day from now, 9am. smart alarm
-        final DateTime existingAlarm = DateTime.now(TIME_ZONE).plusDays(1).withHourOfDay(9);
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarm = now.plusDays(1).withHourOfDay(9);
         final List<Alarm> returnedAlarms = Lists.newArrayList();
         returnedAlarms.add(new Alarm.Builder()
                 .withYear(existingAlarm.getYear())
@@ -115,10 +116,10 @@ public class AlarmHandlerTestIT {
                 .build());
 
         returnedAlarms.add(new Alarm.Builder()
-                .withYear(existingAlarm.getYear())
-                .withMonth(existingAlarm.getMonthOfYear())
-                .withDay(existingAlarm.minusDays(2).getDayOfMonth())
-                .withHour(existingAlarm.getHourOfDay())
+                .withYear(now.getYear())
+                .withMonth(now.getMonthOfYear())
+                .withDay(now.minusDays(2).getDayOfMonth())
+                .withHour(9)
                 .withMinute(0)
                 .withDayOfWeek(Sets.newHashSet(existingAlarm.getDayOfWeek()))
                 .withIsRepeated(false)

@@ -291,6 +291,7 @@ public class AlarmHandler extends BaseHandler {
         try {
             alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
+            LOGGER.error("error=set-alarm-fail error_msg={}", exception.getMessage());
             return GenericResult.failWithResponse(exception.getMessage(), CANCEL_ALARM_ERROR_RESPONSE);
         }
 
