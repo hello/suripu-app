@@ -2,16 +2,15 @@ package is.hello.supichi.response;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.util.Maps;
+import is.hello.supichi.api.Response;
+import is.hello.supichi.api.Speech;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.responsebuilder.BuilderResponse;
 import is.hello.supichi.models.responsebuilder.CurrentTimeResponseBuilder;
 import is.hello.supichi.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.supichi.models.responsebuilder.ResponseUtils;
-import is.hello.supichi.models.responsebuilder.RoomConditionsResponseBuilder;
 import is.hello.supichi.models.responsebuilder.TriviaResponseBuilder;
 import is.hello.supichi.utils.AudioUtils;
-import is.hello.supichi.api.Response;
-import is.hello.supichi.api.Speech;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +57,6 @@ public class S3ResponseBuilder implements SupichiResponseBuilder {
         // get custom response text and audio
         BuilderResponse builderResponse; // ¡uh-oh! MUTATION
         switch(handlerResult.handlerType) {
-            case ROOM_CONDITIONS:
-                builderResponse = RoomConditionsResponseBuilder.response(handlerResult, voiceService, voiceName);
-                break;
             case TIME_REPORT:
                 builderResponse = CurrentTimeResponseBuilder.response(handlerResult, voiceService, voiceName);
                 break;

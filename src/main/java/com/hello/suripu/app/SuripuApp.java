@@ -734,7 +734,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
 
-
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
             // speech resources
