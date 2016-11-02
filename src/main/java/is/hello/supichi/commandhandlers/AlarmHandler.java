@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.models.HandlerResult.EMPTY_COMMAND;
 
@@ -249,14 +250,14 @@ public class AlarmHandler extends BaseHandler {
         final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(senseId, accountId);
         if (!alarmInfoOptional.isPresent()) {
             LOGGER.warn("warning=no-user-info sense_id={} account_id={}", senseId, accountId);
-            return GenericResult.fail(NO_USER_INFO);
+            return GenericResult.failWithResponse(NO_USER_INFO, CANCEL_ALARM_ERROR_RESPONSE);
         }
 
         final UserInfo userInfo = alarmInfoOptional.get();
 
         if (userInfo.alarmList.isEmpty()) {
             LOGGER.warn("action=no-alarm-to-cancel reason=empty-alarm-list sense_id={} account_id={}", senseId, accountId);
-            return GenericResult.fail(NO_ALARM_RESPONSE);
+            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, NO_ALARM_RESPONSE);
         }
 
         if (!userInfo.timeZone.isPresent()) {
@@ -294,7 +295,7 @@ public class AlarmHandler extends BaseHandler {
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
             LOGGER.warn("action=no-alarm-to-cancel reason=no-eligible-alarms sense_id={} account_id={}", senseId, accountId);
-            return GenericResult.fail(NO_ALARM_RESPONSE);
+            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, NO_ALARM_RESPONSE);
         }
 
         try {
