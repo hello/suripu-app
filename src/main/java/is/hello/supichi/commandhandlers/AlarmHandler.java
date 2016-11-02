@@ -248,6 +248,7 @@ public class AlarmHandler extends BaseHandler {
 
         final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(senseId, accountId);
         if (!alarmInfoOptional.isPresent()) {
+            LOGGER.warn("warning=no-user-info sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_USER_INFO);
         }
 
@@ -259,6 +260,7 @@ public class AlarmHandler extends BaseHandler {
         }
 
         if (!userInfo.timeZone.isPresent()) {
+            LOGGER.warn("action=no-alarm-cancel reason=missing-timezone sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_TIMEZONE);
         }
 
