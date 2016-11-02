@@ -13,6 +13,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.app.sensors.ScaleFactory;
+import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -31,6 +34,8 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
@@ -64,16 +69,21 @@ import is.hello.supichi.kinesis.SpeechKinesisProducer;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.resources.demo.DemoUploadResource;
 import is.hello.supichi.resources.v2.UploadResource;
+import is.hello.supichi.response.CachedResponseBuilder;
 import is.hello.supichi.response.S3ResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.response.WatsonResponseBuilder;
 import is.hello.supichi.utils.GeoUtils;
+import net.spy.memcached.AddrUtil;
+import net.spy.memcached.ConnectionFactoryBuilder;
+import net.spy.memcached.MemcachedClient;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -144,6 +154,9 @@ public class Supichi
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
+        final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
+        final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
+
         final ExpansionsDAO expansionsDAO = commonDB.onDemand(ExpansionsDAO.class);
         final PersistentExpansionStore expansionStore = new PersistentExpansionStore(expansionsDAO);
 
@@ -159,6 +172,9 @@ public class Supichi
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
 
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
+
+        final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
 
         // set up speech client
         final InstrumentedSpeechClient client;
@@ -183,10 +199,6 @@ public class Supichi
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 speechConfiguration.forecastio(),
                 accountLocationDAO,
@@ -198,7 +210,9 @@ public class Supichi
                 mergedUserInfoDynamoDB,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
-                geoIPDatabase
+                geoIPDatabase,
+                sensorViewLogic,
+                accountPreferencesDAO
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
@@ -259,12 +273,35 @@ public class Supichi
 
         // set up response-builders
         final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, eqMap, "WATSON", watsonConfiguration.getVoiceName());
+
+        // get from config
+
+
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName(), environment.metrics());
-
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
-
         responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+
+        final List<String> memcacheHosts = configuration.speechConfiguration().memcacheHosts();
+        if (!memcacheHosts.isEmpty()) {
+            MemcachedClient mc;
+            try {
+                mc = new MemcachedClient(
+                        new ConnectionFactoryBuilder()
+                                .setOpTimeout(500) // 500ms
+                                .setProtocol(ConnectionFactoryBuilder.Protocol.BINARY)
+                                .build(),
+                        AddrUtil.getAddresses(memcacheHosts));
+            } catch (IOException io) {
+                LOGGER.error("error=memcache-connection-failed message={}", io.getMessage());
+                throw new RuntimeException(io.getMessage());
+            }
+
+            final String cachePrefix = configuration.speechConfiguration().cachePrefix();
+            final CachedResponseBuilder cachedResponseBuilder = new CachedResponseBuilder(watsonConfiguration.getVoiceName(), watsonResponseBuilder, mc, cachePrefix);
+            // Override watson
+            responseBuilders.put(SupichiResponseType.WATSON, cachedResponseBuilder);
+        }
 
         // map command-handlers to response-builders
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();

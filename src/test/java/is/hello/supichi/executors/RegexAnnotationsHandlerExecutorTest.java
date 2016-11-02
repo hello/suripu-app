@@ -2,7 +2,7 @@ package is.hello.supichi.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -14,19 +14,11 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
+import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Map;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -42,6 +34,13 @@ import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.VoiceRequest;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Map;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -69,6 +68,8 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final SenseColorDAO senseColorDAO = mock(SenseColorDAO.class);
     private final CalibrationDAO calibrationDAO = mock(CalibrationDAO.class);
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
+    private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
+    private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
 
 
     private final String SENSE_ID = "123456789";
@@ -98,12 +99,12 @@ public class RegexAnnotationsHandlerExecutorTest {
         final MultiDensityImage icon = new MultiDensityImage("icon@1x.png", "icon@2x.png", "icon@3x.png");
 
         final Expansion fakeHueApplication = new Expansion(1L, Expansion.ServiceName.HUE,
-            "Hue Light", "Fake Hue Application", icon, CLIENT_ID, "client_secret",
+            "Hue Light", "Phillips", "Fake Hue Application", icon, CLIENT_ID, "client_secret",
             "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.LIGHT,
             DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED, ValueRange.createEmpty());
 
         final Expansion fakeNestApplication = new Expansion(2L, Expansion.ServiceName.NEST,
-            "Nest Thermostat", "Fake Nest Application", icon, CLIENT_ID, "client_secret",
+            "Nest Thermostat", "Nest", "Fake Nest Application", icon, CLIENT_ID, "client_secret",
             "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.TEMPERATURE,
             DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED, ValueRange.createEmpty());
 
@@ -139,10 +140,6 @@ public class RegexAnnotationsHandlerExecutorTest {
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 "BLAH", // forecastio
                 accountLocationDAO,
@@ -154,7 +151,9 @@ public class RegexAnnotationsHandlerExecutorTest {
                 mergedUserDAO,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
-                Optional.absent() // geoip DatabaseReader
+                Optional.absent(), // geoip DatabaseReader
+                sensorViewLogic,
+                accountPreferenceDAO
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
