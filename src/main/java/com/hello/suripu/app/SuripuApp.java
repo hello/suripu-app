@@ -556,6 +556,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 accountDAO,
                 sleepStatsDAODynamoDB,
                 senseDataDAO,
+                timeZoneHistoryDAODynamoDB,
                 onlineHmmModelsDAO,
                 featureExtractionDAO,
                 defaultModelEnsembleDAO,
