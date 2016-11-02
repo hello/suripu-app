@@ -252,6 +252,12 @@ public class AlarmHandler extends BaseHandler {
         }
 
         final UserInfo userInfo = alarmInfoOptional.get();
+
+        if (userInfo.alarmList.isEmpty()) {
+            LOGGER.warn("action=no-alarm-to-cancel reason=empty-alarm-list sense_id={} account_id={}", senseId, accountId);
+            return GenericResult.fail(NO_ALARM_RESPONSE);
+        }
+
         if (!userInfo.timeZone.isPresent()) {
             return GenericResult.fail(NO_TIMEZONE);
         }
@@ -285,6 +291,7 @@ public class AlarmHandler extends BaseHandler {
 
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
+            LOGGER.warn("action=no-alarm-to-cancel reason=no-eligible-alarms sense_id={} account_id={}", senseId, accountId);
             return GenericResult.fail(NO_ALARM_RESPONSE);
         }
 
