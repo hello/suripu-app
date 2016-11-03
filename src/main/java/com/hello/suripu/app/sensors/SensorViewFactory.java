@@ -81,7 +81,7 @@ public class SensorViewFactory {
 
     public Optional<SensorView> from(final SensorViewQuery query) {
         Scale scale = scaleFactory.forSensor(query.sensor);
-        final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, Optional.absent());
+        final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, query.calibration);
 
         SensorState state;
 
@@ -129,7 +129,7 @@ public class SensorViewFactory {
                 // Pressure sensor is basically one big exception
                 final PressureScale pressureScale = scaleFactory.pressure(calibratedDeviceData.pressure());
                 final DeviceData old = query.oldData.or(query.deviceData);
-                final CalibratedDeviceData oldCalibrated = new CalibratedDeviceData(old, query.color, Optional.absent());
+                final CalibratedDeviceData oldCalibrated = new CalibratedDeviceData(old, query.color, query.calibration);
                 final float pressureChange = calibratedDeviceData.pressure() - oldCalibrated.pressure();
                 state = pressureState(calibratedDeviceData.pressure(), pressureChange, pressureScale);
                 scale = pressureScale;
