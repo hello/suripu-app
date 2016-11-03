@@ -8,7 +8,6 @@ import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -35,15 +34,14 @@ import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 
-
 import static is.hello.supichi.commandhandlers.AlarmHandler.CANCEL_ALARM_OK_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.DUPLICATE_ERROR;
-import static is.hello.supichi.commandhandlers.AlarmHandler.NO_ALARM_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_LATE_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_SOON_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -112,7 +110,7 @@ public class AlarmHandlerTestIT {
                 .withDay(existingAlarm.getDayOfMonth())
                 .withHour(existingAlarm.getHourOfDay())
                 .withMinute(0)
-                .withDayOfWeek(Sets.newHashSet())
+                .withDayOfWeek(Collections.emptySet())
                 .withIsRepeated(false)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -128,7 +126,7 @@ public class AlarmHandlerTestIT {
                 .withDay(oldTime.getDayOfMonth())
                 .withHour(9)
                 .withMinute(0)
-                .withDayOfWeek(Sets.newHashSet())
+                .withDayOfWeek(Collections.emptySet())
                 .withIsRepeated(false)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -441,7 +439,7 @@ public class AlarmHandlerTestIT {
             assertEquals(cancelResult3.optionalResult.get().outcome, Outcome.FAIL);
             assertEquals(cancelResult3.optionalResult.get().errorText.isPresent(), true);
             final String errorText = cancelResult3.optionalResult.get().errorText.get();
-            assertEquals(errorText, NO_ALARM_RESPONSE);
+            assertEquals(errorText, ERROR_NO_ALARM_TO_CANCEL);
         }
 
     }
