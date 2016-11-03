@@ -36,7 +36,8 @@ public class SensorViewLogicTest {
                         .build(),
                 Optional.absent(),
                 DateTime.now(),
-                Device.Color.BLACK
+                Device.Color.BLACK,
+                Optional.absent()
         );
 
         assertTrue("empty view", views.isEmpty());

@@ -132,7 +132,8 @@ public class SensorViewLogic {
                 deviceData,
                 data4hAgo,
                 new DateTime(DateTimeZone.UTC),
-                color
+                color,
+                calibrationOptional
         );
         final Condition condition = RoomConditionUtil.getGeneralRoomConditionV2(roomStateWithDust, calibrationOptional.isPresent());
         return new SensorResponse(SensorStatus.OK, views, condition);
@@ -145,11 +146,12 @@ public class SensorViewLogic {
             final DeviceData deviceData,
             final Optional<DeviceData> data4hAgo,
             final DateTime now,
-            final Device.Color color) {
+            final Device.Color color,
+            final Optional<Calibration> calibration) {
 
         return sensors.stream()
                 .flatMap(s -> streamopt( // remove optional responses
-                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, data4hAgo, now,color))))
+                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, data4hAgo, now,color, calibration))))
                 .collect(Collectors.toList());
     }
 
