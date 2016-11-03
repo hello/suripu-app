@@ -60,7 +60,6 @@ public class SleepSummaryHandler extends BaseHandler {
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
-        final Map<String, String> response = Maps.newHashMap();
 
         final Long accountId = request.accountId;
 
