@@ -13,6 +13,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.app.sensors.ScaleFactory;
+import com.hello.suripu.app.sensors.SensorViewFactory;
+import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -31,6 +34,8 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
+import com.hello.suripu.core.preferences.AccountPreferencesDAO;
+import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
@@ -149,6 +154,9 @@ public class Supichi
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
+        final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
+        final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
+
         final ExpansionsDAO expansionsDAO = commonDB.onDemand(ExpansionsDAO.class);
         final PersistentExpansionStore expansionStore = new PersistentExpansionStore(expansionsDAO);
 
@@ -164,6 +172,9 @@ public class Supichi
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
 
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
+
+        final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
 
         // set up speech client
         final InstrumentedSpeechClient client;
@@ -188,10 +199,6 @@ public class Supichi
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
-                deviceDataDAODynamoDB,
-                deviceDAO,
-                senseColorDAO,
-                calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 speechConfiguration.forecastio(),
                 accountLocationDAO,
@@ -203,7 +210,9 @@ public class Supichi
                 mergedUserInfoDynamoDB,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
-                geoIPDatabase
+                geoIPDatabase,
+                sensorViewLogic,
+                accountPreferencesDAO
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()

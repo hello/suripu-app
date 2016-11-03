@@ -55,14 +55,15 @@ public class AlarmHandler extends BaseHandler {
 
     // TODO: these responses should be moved to a dedicated AlarmResponseBuilder
     public static final String DUPLICATE_ALARM_RESPONSE = "Sorry, no alarm was set, you already have an alarm set for %s";
-    public static final String SET_ALARM_ERROR_RESPONSE = "Sorry, we're unable to set your alarm. Please try again later";
+    public static final String SET_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be set. Please try again later";
     public static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
-    public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, we're unable to set your alarm. Please set a time greater than 5 minutes from now";
-    public static final String SET_ALARM_ERROR_TOO_LATE_RESPONSE = "Sorry, we're unable to set your alarm. Please set a time no more than one day ahead.";
-    public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, we're unable to set your alarm. Please specify an alarm time.";
-    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, we're unable to set your alarm. Please set your timezone in the app.";
 
-    public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
+    public static final String SET_ALARM_ERROR_TOO_LATE_RESPONSE = "Sorry, your alarm could not be set. Please set a time no more than one day ahead.";
+    public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, your alarm could not be set. Please set a time greater than 5 minutes from now";
+    public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, your alarm could not be set. Please specify an alarm time.";
+    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, your alarm could not be set. Please set your timezone in the app.";
+
+    public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be cancelled. Please try again later.";
     public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
 

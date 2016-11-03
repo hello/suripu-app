@@ -92,4 +92,5 @@ public class SensorView {
     public static SensorView tooOld(final SensorView sensorView) {
         return new SensorView(sensorView.name(), sensorView.sensor(), sensorView.unit(), null, "", Condition.UNKNOWN, sensorView.rawScale());
     }
+
 }
