@@ -43,8 +43,8 @@ public class PressureScale extends Scale {
     }
 
     private static ScaleInterval calibrate(final ScaleInterval interval, final float value) {
-        final Float min = interval.min() == null ? null : value - interval.min();
-        final Float max = interval.max() == null ? null : value - interval.max();
+        final Float min = interval.min() == null ? null : value + interval.min();
+        final Float max = interval.max() == null ? null : value + interval.max();
         return new ScaleInterval(interval.name(),interval.message(),min, max, interval.condition());
     }
 }

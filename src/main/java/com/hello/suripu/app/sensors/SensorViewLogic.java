@@ -113,7 +113,7 @@ public class SensorViewLogic {
 
         // Fetch 4h ago to compute barometric pressure change
         final Optional<DeviceData> data4hAgo = deviceDataDAODynamoDB.getMostRecent(
-                accountId, senseId, asOfUTC.minusHours(4), asOfUTC.minusHours(4).plusMinutes(5));
+                accountId, senseId, asOfUTC.minusHours(4).plusMinutes(5), asOfUTC.minusHours(4));
 
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
         final Device.Color color = colorOptional.or(Device.Color.BLACK);
