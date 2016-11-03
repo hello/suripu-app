@@ -175,7 +175,7 @@ public class SleepSoundHandler extends BaseHandler {
         }, 2, TimeUnit.SECONDS);
 
         // returns true regardless of whether message was properly delivered
-        return GenericResult.ok("Goodnight");
+        return GenericResult.ok("");
     }
 
     private GenericResult stopSleepSound(final String senseId, final Long accountId) {
