@@ -42,6 +42,8 @@ public class RoomConditionsHandler extends BaseHandler {
 
     private static final boolean DEFAULT_USE_FAHRENHEIT = false; // check is for use-Celsius
     private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
+    private static final String TEMPERATURE_PATTERN = "what('s)?.+\\s(temperature)";
+    private static final String HUMIDITY_PATTERN = "what('s)?.+\\s(humidity)";
 
     private static final String NO_DATA_ERROR_RESPONSE_TEXT = "Sorry, I wasn't able to access your %s data right now. Please try again later";
     private static final String ROOM_CONDITION_UNAVAILABLE_RESPONSE_TEXT = "Room conditions are currently unavailable. Please try again later.";
@@ -94,8 +96,8 @@ public class RoomConditionsHandler extends BaseHandler {
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("the temperature", SpeechCommand.ROOM_TEMPERATURE);
-        tempMap.put("the humidity", SpeechCommand.ROOM_HUMIDITY);
+        tempMap.put(TEMPERATURE_PATTERN, SpeechCommand.ROOM_TEMPERATURE);
+        tempMap.put(HUMIDITY_PATTERN, SpeechCommand.ROOM_HUMIDITY);
         tempMap.put("light level", SpeechCommand.ROOM_LIGHT);
         tempMap.put("how bright", SpeechCommand.ROOM_LIGHT);
         tempMap.put("sound level", SpeechCommand.ROOM_SOUND);
@@ -140,12 +142,12 @@ public class RoomConditionsHandler extends BaseHandler {
             case NO_SENSE:
                 LOGGER.error("error=no-sensor-data reason=no-paired-sense account_id={}", accountId);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
-                        GenericResult.failWithResponse(ERROR_NO_DATA, NO_DATA_ERROR_RESPONSE_TEXT));
+                        GenericResult.failWithResponse(ERROR_NO_DATA, String.format(NO_DATA_ERROR_RESPONSE_TEXT, sensorName)));
 
             case WAITING_FOR_DATA:
                 LOGGER.error("error=no-sensor-data reason=data-too-old account_id={} as_of_utc_now={}", accountId, asOfUTC);
                 return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
-                        GenericResult.failWithResponse(ERROR_DATA_TOO_OLD, NO_DATA_ERROR_RESPONSE_TEXT));
+                        GenericResult.failWithResponse(ERROR_DATA_TOO_OLD, String.format(NO_DATA_ERROR_RESPONSE_TEXT, sensorName)));
 
             case OK:
                 return okSensorResult(accountId, command, sensorResponse);
@@ -154,7 +156,7 @@ public class RoomConditionsHandler extends BaseHandler {
         // uh-oh, something wrong
         LOGGER.error("error=fail-to-get-sensor-data account_id={} as_of_utc_now={}", accountId, asOfUTC);
         return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
-                GenericResult.failWithResponse(ERROR_NO_DATA, NO_DATA_ERROR_RESPONSE_TEXT));
+                GenericResult.failWithResponse(ERROR_NO_DATA, String.format(NO_DATA_ERROR_RESPONSE_TEXT, sensorName)));
     }
 
 
