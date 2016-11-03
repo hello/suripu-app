@@ -112,6 +112,10 @@ public class SensorViewLogic {
             return SensorResponse.noData(views);
         }
 
+        // Fetch 4h ago to compute barometric pressure change
+        final Optional<DeviceData> data4hAgo = deviceDataDAODynamoDB.getMostRecent(
+                accountId, senseId, asOfUTC.minusHours(4).plusMinutes(5), asOfUTC.minusHours(4));
+
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
         final Device.Color color = colorOptional.or(Device.Color.BLACK);
         //default -- return the usual
@@ -126,6 +130,7 @@ public class SensorViewLogic {
                 sensorViewFactory,
                 roomStateWithDust,
                 deviceData,
+                data4hAgo,
                 new DateTime(DateTimeZone.UTC),
                 color
         );
@@ -138,12 +143,13 @@ public class SensorViewLogic {
             final SensorViewFactory sensorViewFactory,
             final CurrentRoomState roomState,
             final DeviceData deviceData,
+            final Optional<DeviceData> data4hAgo,
             final DateTime now,
             final Device.Color color) {
 
         return sensors.stream()
                 .flatMap(s -> streamopt( // remove optional responses
-                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, now,color))))
+                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, data4hAgo, now,color))))
                 .collect(Collectors.toList());
     }
 

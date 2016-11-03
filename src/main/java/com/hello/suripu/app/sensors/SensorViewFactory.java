@@ -3,7 +3,9 @@ package com.hello.suripu.app.sensors;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.app.sensors.scales.PressureScale;
 import com.hello.suripu.core.models.CalibratedDeviceData;
+import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import org.joda.time.DateTime;
 import org.joda.time.Minutes;
@@ -67,18 +69,18 @@ public class SensorViewFactory {
         return Optional.of(sensorView);
     }
 
-    public SensorView renderSensor(final Sensor sensor, final SensorState sensorState)  {
-        final Scale scale = scaleFactory.forSensor(sensor);
+    public SensorView renderSensor(final Sensor sensor, final SensorState sensorState, final Optional<Scale> customScale)  {
+        final Scale scale = customScale.or(scaleFactory.forSensor(sensor));
         final String title = titles.getOrDefault(sensor, "");
         return SensorView.from(title, sensor, units.get(sensor), scale, sensorState);
     }
 
     public Optional<SensorView> tooOld(final Sensor sensor)  {
-        return Optional.of(renderSensor(sensor, SensorState.unknown()));
+        return Optional.of(renderSensor(sensor, SensorState.unknown(), Optional.absent()));
     }
 
     public Optional<SensorView> from(final SensorViewQuery query) {
-        final Scale scale = scaleFactory.forSensor(query.sensor);
+        Scale scale = scaleFactory.forSensor(query.sensor);
         final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, Optional.absent());
 
         SensorState state;
@@ -124,13 +126,19 @@ public class SensorViewFactory {
                 if(!query.deviceData.hasExtra()) {
                     return Optional.absent();
                 }
-                state = fromScale(calibratedDeviceData.pressure(), scale);
+                // Pressure sensor is basically one big exception
+                final PressureScale pressureScale = scaleFactory.pressure(calibratedDeviceData.pressure());
+                final DeviceData old = query.oldData.or(query.deviceData);
+                final CalibratedDeviceData oldCalibrated = new CalibratedDeviceData(old, query.color, Optional.absent());
+                final float pressureChange = calibratedDeviceData.pressure() - oldCalibrated.pressure();
+                state = pressureState(calibratedDeviceData.pressure(), pressureChange, pressureScale);
+                scale = pressureScale;
                 break;
             default:
                 LOGGER.warn("msg=missing-sensor-data sensor={} account_id={}", query.sensor, query.deviceData.accountId);
                 return Optional.absent();
         }
-        final SensorView view = renderSensor(query.sensor, state);
+        final SensorView view = renderSensor(query.sensor, state, Optional.of(scale));
         return adjustFreshness(view, query.deviceData.dateTimeUTC, query.now);
     }
 
@@ -160,5 +168,11 @@ public class SensorViewFactory {
             return value >= interval.min();
         }
         return false;
+    }
+
+    public static SensorState pressureState(float currentValue, float diffInPressure, final PressureScale pressureScale) {
+        final SensorState state = fromScale(diffInPressure, pressureScale.changeScale());
+        return new SensorState(currentValue, state.message, state.condition);
+
     }
 }
