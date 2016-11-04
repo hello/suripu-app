@@ -32,7 +32,7 @@ public class TriviaHandler extends BaseHandler {
     private final SpeechCommandDAO speechCommandDAO;
 
     public TriviaHandler(final SpeechCommandDAO speechCommandDAO) {
-        super("time_report", speechCommandDAO, getAvailableActions());
+        super("trivia", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
     }
 
@@ -58,7 +58,7 @@ public class TriviaHandler extends BaseHandler {
 
             }
         }
-        return new HandlerResult(HandlerType.TIME_REPORT, command, result);
+        return new HandlerResult(HandlerType.TRIVIA, command, result);
     }
 
     @Override

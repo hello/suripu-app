@@ -219,7 +219,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestHandleSingleHandler() {
         final HandlerExecutor executor = getExecutor();
 
-        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "the president", ""));
+        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "best basketball", ""));
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
 
         final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
