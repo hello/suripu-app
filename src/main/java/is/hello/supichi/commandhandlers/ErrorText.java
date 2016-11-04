@@ -10,6 +10,9 @@ public class ErrorText {
 
     public static final String ERROR_NO_PAIRED_SENSE = "no paired sense";
 
+    // AlarmHandler
+    public static final String ERROR_NO_ALARM_TO_CANCEL = "no alarm to cancel";
+
     public static final String ERROR_INVALID_SENSOR = "invalid sensor";
     public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_SLEEP_DATA = "no sleep data";
