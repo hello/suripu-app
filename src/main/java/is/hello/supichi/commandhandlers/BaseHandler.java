@@ -59,6 +59,6 @@ public abstract class BaseHandler {
     }
 
     public SupichiResponseType responseType() {
-        return SupichiResponseType.S3;
+        return SupichiResponseType.STATIC;
     };
 }

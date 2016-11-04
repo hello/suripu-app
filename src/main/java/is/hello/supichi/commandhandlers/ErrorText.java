@@ -8,6 +8,8 @@ public class ErrorText {
     public static final String ERROR_NO_DATA = "no data";
     public static final String ERROR_DATA_TOO_OLD = "data too old";
 
+    public static final String ERROR_NO_PAIRED_SENSE = "no paired sense";
+
     public static final String ERROR_INVALID_SENSOR = "invalid sensor";
     public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_SLEEP_DATA = "no sleep data";

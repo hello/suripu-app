@@ -14,14 +14,15 @@ import is.hello.supichi.api.Response;
 import is.hello.supichi.api.Speech;
 import is.hello.supichi.api.SpeechResultsKinesis;
 import is.hello.supichi.clients.InstrumentedSpeechClient;
+import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.executors.HandlerExecutor;
 import is.hello.supichi.kinesis.SpeechKinesisProducer;
+import is.hello.supichi.models.GenericResponseText;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechServiceResult;
 import is.hello.supichi.models.VoiceRequest;
-import is.hello.supichi.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.utils.AudioUtils;
@@ -35,6 +36,7 @@ import java.util.StringTokenizer;
 import java.util.UUID;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_PAIRED_SENSE;
 
 public class AudioRequestHandler {
 
@@ -125,7 +127,8 @@ public class AudioRequestHandler {
         final Optional<Long> optionalPrimaryAccount = deviceProcessor.primaryAccount(rawRequest.senseId());
         if (!optionalPrimaryAccount.isPresent()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", rawRequest.senseId());
-            final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.UNPAIRED_SENSE, executeResult, uploadData.request);
+            executeResult = new HandlerResult(HandlerType.NONE, "", GenericResult.failWithResponse(ERROR_NO_PAIRED_SENSE, GenericResponseText.NO_PAIRED_SENSE_TEXT));
+            final byte[] content = responseBuilders.get(SupichiResponseType.WATSON).response(Response.SpeechResponse.Result.UNPAIRED_SENSE, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
         }
 
@@ -174,7 +177,7 @@ public class AudioRequestHandler {
 
                 this.transcriptFail.mark(1);
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                        .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
+                        .withResponseText(GenericResponseText.TRY_AGAIN_TEXT)
                         .withResult(Result.TRY_AGAIN);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
@@ -195,7 +198,7 @@ public class AudioRequestHandler {
                 if (!singleWord.contains(SNOOZE_STRING) && !singleWord.contains(STOP_STRING)) {
                     this.commandRejectSingleWord.mark(1);
                     builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                            .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
+                            .withResponseText(GenericResponseText.COMMAND_REJECTED_TEXT)
                             .withResult(Result.REJECTED);
                     speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
@@ -207,7 +210,7 @@ public class AudioRequestHandler {
             final VoiceRequest voiceRequest = new VoiceRequest(rawRequest.senseId(), accountId, transcribedText, rawRequest.ipAddress());
             executeResult = handlerExecutor.handle(voiceRequest);
 
-            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
+            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.STATIC);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
             // TODO: response-builder
@@ -239,10 +242,11 @@ public class AudioRequestHandler {
             // save TRY_AGAIN speech result
             this.commandTryAgain.mark(1);
             builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                    .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
+                    .withResponseText(GenericResponseText.TRY_AGAIN_TEXT)
                     .withResult(Result.TRY_AGAIN);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
+            // executeResult = new HandlerResult(HandlerType.NONE, "", GenericResult.failWithResponse(COMMAND_NOT_FOUND, GenericResponseText.TRY_AGAIN_TEXT));
             final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
 
@@ -253,11 +257,11 @@ public class AudioRequestHandler {
         // no text or command found, save REJECT result
         this.commandRejected.mark(1);
         builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
+                .withResponseText(executeResult.responseText().isEmpty() ? GenericResponseText.UNKNOWN_TEXT : executeResult.responseText())
                 .withResult(Result.REJECTED);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-        final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
+        final byte[] content = responseBuilders.get(SupichiResponseType.STATIC).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
         return WrappedResponse.ok(content);
     }
 
