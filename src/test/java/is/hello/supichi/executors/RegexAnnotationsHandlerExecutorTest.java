@@ -2,16 +2,13 @@ package is.hello.supichi.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
-import com.hello.suripu.core.db.CalibrationDAO;
-import com.hello.suripu.core.db.DeviceDAO;
-import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
-import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
@@ -40,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
@@ -63,10 +61,6 @@ public class RegexAnnotationsHandlerExecutorTest {
 
     private final MessejiClient messejiClient = mock(MessejiClient.class);
     private final SleepSoundsProcessor sleepSoundsProcessor = mock(SleepSoundsProcessor.class);
-    private final DeviceDataDAODynamoDB deviceDataDAODynamoDB = mock(DeviceDataDAODynamoDB.class);
-    private final DeviceDAO deviceDAO = mock(DeviceDAO.class);
-    private final SenseColorDAO senseColorDAO = mock(SenseColorDAO.class);
-    private final CalibrationDAO calibrationDAO = mock(CalibrationDAO.class);
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
     private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
@@ -133,6 +127,8 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         Mockito.when(mergedUserDAO.getInfo(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
 
+        final SensorResponse sensorResponse = SensorResponse.noData(Collections.emptyList());
+        Mockito.when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
     }
 
     private HandlerExecutor getExecutor() {
@@ -223,7 +219,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestHandleSingleHandler() {
         final HandlerExecutor executor = getExecutor();
 
-        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "the president", ""));
+        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "best basketball", ""));
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
 
         final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
@@ -323,6 +319,53 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         correctResult = executor.handle(newVoiceRequest("Do something random for me"));
         assertNotEquals(HandlerType.NEST, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("set the temperature to 75 degrees"));
+        assertEquals(HandlerType.NEST, correctResult.handlerType);
+        assertEquals(correctResult.optionalNestResult.isPresent(), true);
+        assertEquals(correctResult.optionalNestResult.get().temperatureSet, "75");
+
+        // no match if "degrees" is not present in the command.
+        HandlerResult noResult = executor.handle(newVoiceRequest("set the temperature to 75"));
+        assertEquals(HandlerType.NONE, noResult.handlerType);
+    }
+
+    @Test
+    public void TestRoomConditionHandlerTemperature() {
+        final HandlerExecutor executor = getExecutor();
+
+        // testing command text only
+        HandlerResult correctResult = executor.handle(newVoiceRequest("what's the current temperature in my room"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("what is the temperature"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("what's the temperature"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        HandlerResult wrongResult = executor.handle(newVoiceRequest("set the temperature to 75"));
+        assertEquals(HandlerType.NONE, wrongResult.handlerType);
+    }
+
+    @Test
+    public void TestRoomConditionHandlerHumidity() {
+        final HandlerExecutor executor = getExecutor();
+
+        HandlerResult correctResult = executor.handle(newVoiceRequest("what is the humidity"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("what is the current humidity"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("what's the humidity"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        correctResult = executor.handle(newVoiceRequest("what's the humidity in the room"));
+        assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
+
+        HandlerResult wrongResult = executor.handle(newVoiceRequest("who is the humidity"));
+        assertEquals(HandlerType.NONE, wrongResult.handlerType);
     }
 
     @Test

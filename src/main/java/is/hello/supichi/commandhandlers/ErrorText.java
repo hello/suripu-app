@@ -8,6 +8,8 @@ public class ErrorText {
     public static final String ERROR_NO_DATA = "no data";
     public static final String ERROR_DATA_TOO_OLD = "data too old";
 
+    public static final String ERROR_NO_PAIRED_SENSE = "no paired sense";
+
     // AlarmHandler
     public static final String ERROR_NO_ALARM_TO_CANCEL = "no alarm to cancel";
 
