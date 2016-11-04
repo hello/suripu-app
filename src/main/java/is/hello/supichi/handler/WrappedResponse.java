@@ -36,4 +36,6 @@ public class WrappedResponse {
     public byte[] content() {
         return content;
     }
+
+    public static byte[] silentBytes() { return SILENCE; }
 }

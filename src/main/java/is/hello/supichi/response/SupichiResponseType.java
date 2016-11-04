@@ -3,5 +3,6 @@ package is.hello.supichi.response;
 public enum  SupichiResponseType {
     WATSON,
     WATSON_JP,
-    S3;
+    S3,
+    SILENT;
 }

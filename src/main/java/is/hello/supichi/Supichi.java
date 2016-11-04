@@ -71,6 +71,7 @@ import is.hello.supichi.resources.demo.DemoUploadResource;
 import is.hello.supichi.resources.v2.UploadResource;
 import is.hello.supichi.response.CachedResponseBuilder;
 import is.hello.supichi.response.S3ResponseBuilder;
+import is.hello.supichi.response.SilentResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.response.WatsonResponseBuilder;
@@ -281,6 +282,7 @@ public class Supichi
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
         responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+        responseBuilders.put(SupichiResponseType.SILENT, new SilentResponseBuilder());
 
         final List<String> memcacheHosts = configuration.speechConfiguration().memcacheHosts();
         if (!memcacheHosts.isEmpty()) {

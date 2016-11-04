@@ -41,6 +41,7 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
                            final HandlerResult handlerResult,
                            final Speech.SpeechRequest request) {
 
+
         final String text = (!handlerResult.responseText().isEmpty()) ? handlerResult.responseText() :
                 DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.UNKNOWN);
 

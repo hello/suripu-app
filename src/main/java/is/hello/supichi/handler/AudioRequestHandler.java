@@ -231,9 +231,6 @@ public class AudioRequestHandler {
                         .withResult(commandResult);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-                if (executeResult.handlerType.equals(HandlerType.SLEEP_SOUNDS) && commandResult.equals(Result.OK)) {
-                    return WrappedResponse.silence();
-                }
 
                 final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.OK, executeResult, uploadData.request);
                 return WrappedResponse.ok(content);

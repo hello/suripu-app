@@ -208,6 +208,6 @@ public class SleepSoundHandler extends BaseHandler {
 
     @Override
     public SupichiResponseType responseType() {
-        return SupichiResponseType.WATSON;
+        return SupichiResponseType.SILENT;
     }
 }
