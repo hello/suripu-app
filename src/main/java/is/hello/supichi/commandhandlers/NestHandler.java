@@ -1,19 +1,11 @@
 package is.hello.supichi.commandhandlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hello.suripu.core.models.ValueRange;
+import com.hello.suripu.core.preferences.TemperatureUnit;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -31,6 +23,13 @@ import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.response.SupichiResponseType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.supichi.commandhandlers.ErrorText.EXPANSION_NOT_FOUND;
@@ -40,8 +39,8 @@ import static is.hello.supichi.commandhandlers.ErrorText.TOKEN_NOT_FOUND;
 public class NestHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NestHandler.class);
 
-    private static final String TEMP_SET_PATTERN_WORDS = "(?i)^.*(?:nest|thermostat|temp)?\\sto\\s(\\w+)\\s(\\w+)\\sdegrees";
-    private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp)?\\sto\\s(\\d+)\\sdegrees";
+    private static final String TEMP_SET_PATTERN_WORDS = "(?i)^.*(?:nest|thermostat|temp|temperature)?\\sto\\s(\\w+)\\s(\\w+)\\sdegrees";
+    private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp|temperature)?\\sto\\s(\\d+)\\sdegrees";
     private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:nest|thermostat)?\\s(on|off).*(?:nest|thermostat)?";
 
     public static final String SET_TEMP_OK_RESPONSE = "Okay, done";
@@ -201,7 +200,14 @@ public class NestHandler extends BaseHandler {
                 if(numberWords.containsKey(m.group(2))) {
                     temperatureSum += numberWords.get(m.group(2));
                 }
-                final Boolean isSuccessful = nest.setTargetTemperature(temperatureSum);
+
+                //This will at least ensure units that make sense (C:9-32deg; F:50-90deg)
+                //We could query for the Nest's temp units, but it may not agree with the Sense account
+                //or there's the case where someone else tries to set the temperature and doesn't know the units of either
+                final TemperatureUnit units = (temperatureSum > 49) ? TemperatureUnit.FAHRENHEIT : TemperatureUnit.CELSIUS;
+                final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
+
+                final Boolean isSuccessful = nest.setTempFromValueRange(values, units);
                 if(isSuccessful) {
                     final NestResult actualNestResult = new NestResult(temperatureSum.toString());
                     nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
@@ -217,7 +223,10 @@ public class NestHandler extends BaseHandler {
             m = numeric.matcher(text);
             if (m.find( )) {
                 temperatureSum += Integer.parseInt(m.group(1));
-                nest.setTargetTemperature(temperatureSum);
+
+                final TemperatureUnit units = (temperatureSum > 49) ? TemperatureUnit.FAHRENHEIT : TemperatureUnit.CELSIUS;
+                final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
+                final Boolean isSuccessful = nest.setTempFromValueRange(values, units);
                 final NestResult actualNestResult = new NestResult(temperatureSum.toString());
                 nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
                 return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);

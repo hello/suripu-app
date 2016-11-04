@@ -70,7 +70,8 @@ import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.resources.demo.DemoUploadResource;
 import is.hello.supichi.resources.v2.UploadResource;
 import is.hello.supichi.response.CachedResponseBuilder;
-import is.hello.supichi.response.S3ResponseBuilder;
+import is.hello.supichi.response.SilentResponseBuilder;
+import is.hello.supichi.response.StaticResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.response.WatsonResponseBuilder;
@@ -108,7 +109,7 @@ public class Supichi
             final InstrumentedTimelineProcessor timelineProcessor,
             final MessejiClient messejiClient,
             final Vault tokenKMSVault,
-            final DeviceProcessor deviceProcessor) {
+            final DeviceProcessor deviceProcessor) throws IOException {
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -225,7 +226,6 @@ public class Supichi
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler(configuration.expansionConfiguration().hueAppName()))
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
-                .register(HandlerType.ALEXA, handlerFactory.alexaHandler())
                 .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
 
         // set up Kinesis Producer
@@ -271,16 +271,12 @@ public class Supichi
                 .put(Speech.Equalizer.NONE, s3ResponseBucketNoEq)
                 .build();
 
-        // set up response-builders
-        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, eqMap, "WATSON", watsonConfiguration.getVoiceName());
-
-        // get from config
-
-
+        final StaticResponseBuilder staticResponseBuilder = StaticResponseBuilder.create();
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName(), environment.metrics());
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
-        responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
+        responseBuilders.put(SupichiResponseType.STATIC, staticResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+        responseBuilders.put(SupichiResponseType.SILENT, new SilentResponseBuilder());
 
         final List<String> memcacheHosts = configuration.speechConfiguration().memcacheHosts();
         if (!memcacheHosts.isEmpty()) {
