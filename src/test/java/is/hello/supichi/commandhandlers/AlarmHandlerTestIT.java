@@ -8,7 +8,6 @@ import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -35,14 +34,14 @@ import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 
-
 import static is.hello.supichi.commandhandlers.AlarmHandler.CANCEL_ALARM_OK_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.DUPLICATE_ERROR;
-import static is.hello.supichi.commandhandlers.AlarmHandler.NO_ALARM_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
+import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_LATE_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_SOON_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -57,11 +56,11 @@ import static org.mockito.Mockito.when;
 public class AlarmHandlerTestIT {
 
     private final String tableName = "alarm_info_test";
+    private final String alarmTableName = "alarm_test";
     private static final String RACE_CONDITION_ERROR_MSG = "Cannot update alarm, please refresh and try again.";
 
     private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
-    private final AlarmDAODynamoDB alarmDAO = mock(AlarmDAODynamoDB.class);
 
     private final String SENSE_ID = "123456789";
     private final Long ACCOUNT_ID = 99L;
@@ -72,7 +71,7 @@ public class AlarmHandlerTestIT {
 
 
     private MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
-
+    private AlarmDAODynamoDB alarmDAO;
     private AmazonDynamoDBClient amazonDynamoDBClient;
 
     @Before
@@ -91,12 +90,19 @@ public class AlarmHandlerTestIT {
         } catch (ResourceInUseException ignored) {
         }
 
+        try {
+            AlarmDAODynamoDB.createTable(alarmTableName, this.amazonDynamoDBClient);
+            this.alarmDAO = new AlarmDAODynamoDB(this.amazonDynamoDBClient, alarmTableName);
+        } catch (ResourceInUseException ignored) {
+        }
+
         final int offsetMillis = TIME_ZONE.getOffset(DateTime.now(DateTimeZone.UTC).getMillis());
         final Optional<TimeZoneHistory> optionalTimeZoneHistory = Optional.of(new TimeZoneHistory(offsetMillis, "America/Los_Angeles"));
         when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(optionalTimeZoneHistory);
 
         // the next day from now, 9am. smart alarm
-        final DateTime existingAlarm = DateTime.now(TIME_ZONE).plusDays(1).withHourOfDay(9);
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarm = now.plusDays(1).withHourOfDay(9);
         final List<Alarm> returnedAlarms = Lists.newArrayList();
         returnedAlarms.add(new Alarm.Builder()
                 .withYear(existingAlarm.getYear())
@@ -104,7 +110,7 @@ public class AlarmHandlerTestIT {
                 .withDay(existingAlarm.getDayOfMonth())
                 .withHour(existingAlarm.getHourOfDay())
                 .withMinute(0)
-                .withDayOfWeek(Sets.newHashSet(existingAlarm.getDayOfWeek()))
+                .withDayOfWeek(Collections.emptySet())
                 .withIsRepeated(false)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -113,13 +119,14 @@ public class AlarmHandlerTestIT {
                 .withSource(AlarmSource.MOBILE_APP)
                 .build());
 
+        final DateTime oldTime = now.minusDays(2);
         returnedAlarms.add(new Alarm.Builder()
-                .withYear(existingAlarm.getYear())
-                .withMonth(existingAlarm.getMonthOfYear())
-                .withDay(existingAlarm.minusDays(2).getDayOfMonth())
-                .withHour(existingAlarm.getHourOfDay())
+                .withYear(oldTime.getYear())
+                .withMonth(oldTime.getMonthOfYear())
+                .withDay(oldTime.getDayOfMonth())
+                .withHour(9)
                 .withMinute(0)
-                .withDayOfWeek(Sets.newHashSet(existingAlarm.getDayOfWeek()))
+                .withDayOfWeek(Collections.emptySet())
                 .withIsRepeated(false)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -145,6 +152,13 @@ public class AlarmHandlerTestIT {
             this.amazonDynamoDBClient.deleteTable(deleteTableRequest);
         } catch (ResourceNotFoundException ignored) {
         }
+        final DeleteTableRequest deleteTableRequest2 = new DeleteTableRequest()
+                .withTableName(alarmTableName);
+        try {
+            this.amazonDynamoDBClient.deleteTable(deleteTableRequest2);
+        } catch (ResourceNotFoundException ignored) {
+        }
+
     }
 
 
@@ -179,6 +193,7 @@ public class AlarmHandlerTestIT {
         }
     }
 
+    @Test
     public void testSetAlarmTodayOK() {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
@@ -205,7 +220,7 @@ public class AlarmHandlerTestIT {
             }
 
             final String response = result.optionalResult.get().responseText.get();
-            assertEquals(response, dayString);
+            assertEquals(response.contains(dayString), true);
         } else {
             assertEquals(result.optionalResult.isPresent(), true);
         }
@@ -225,15 +240,6 @@ public class AlarmHandlerTestIT {
         if (result.optionalResult.isPresent()) {
             assertEquals(result.optionalResult.get().outcome, Outcome.FAIL);
             assertEquals(result.optionalResult.get().errorText.isPresent(), true);
-
-            final DateTime localNow = DateTime.now(TIME_ZONE);
-            final int currentHour = localNow.getHourOfDay();
-            final String dayString;
-            if (currentHour > 7) {
-                dayString = String.format(AlarmHandler.DUPLICATE_ALARM_RESPONSE, "09:00 AM tomorrow");
-            } else {
-                dayString = String.format(AlarmHandler.DUPLICATE_ALARM_RESPONSE, "09:00 AM today");
-            }
 
             final String errorText = result.optionalResult.get().errorText.get();
             assertEquals(errorText, DUPLICATE_ERROR);
@@ -332,6 +338,27 @@ public class AlarmHandlerTestIT {
     }
 
     @Test
+    public void testSetAlarmTooLate() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        final String transcript = "wake me up in 24 hours and 1 minute";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        // apparently, only setting pill color is not enough
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+
+        if (result.optionalResult.isPresent()) {
+            assertEquals(result.optionalResult.get().outcome, Outcome.FAIL);
+            assertEquals(result.optionalResult.get().errorText.isPresent(), true);
+            assertEquals(result.optionalResult.get().errorText.get(), TOO_LATE_ERROR);
+        } else {
+            assertEquals(result.optionalResult.isPresent(), true);
+        }
+    }
+
+    @Test
     public void testSetAlarmFailNoTime() {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
@@ -412,7 +439,7 @@ public class AlarmHandlerTestIT {
             assertEquals(cancelResult3.optionalResult.get().outcome, Outcome.FAIL);
             assertEquals(cancelResult3.optionalResult.get().errorText.isPresent(), true);
             final String errorText = cancelResult3.optionalResult.get().errorText.get();
-            assertEquals(errorText, NO_ALARM_RESPONSE);
+            assertEquals(errorText, ERROR_NO_ALARM_TO_CANCEL);
         }
 
     }
