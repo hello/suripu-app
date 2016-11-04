@@ -8,6 +8,8 @@ import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.messeji.MessejiApi;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.Account;
+import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.models.DeviceStatus;
 import com.hello.suripu.core.models.PairingInfo;
 import com.hello.suripu.core.models.WifiInfo;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
@@ -31,6 +33,7 @@ import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
 import io.dropwizard.jersey.PATCH;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,6 +249,15 @@ public class DeviceResource extends BaseResource {
         if(!legitPairing) {
             LOGGER.error("action=get-voice-metadata error=sense-not-paired-to-account account_id={} sense_id={}", accessToken.accountId, senseId);
             throw new WebApplicationException(404);
+        }
+
+        // Checking for min fw version
+        final DeviceAccountPair pair = new DeviceAccountPair(accessToken.accountId, 0L, senseId, DateTime.now());
+        final Optional<DeviceStatus> deviceStatus = deviceProcessor.retrieveSenseStatus(pair);
+        final int minFirmwareVersion = 6075; // rc3
+        if(!deviceStatus.isPresent() || Integer.parseInt(deviceStatus.get().firmwareVersion, 16) < minFirmwareVersion) {
+            LOGGER.warn("sense_id={} account_id={} action=voice-setting-not-available", senseId, accessToken.accountId);
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(new JsonError(400, "Requires firmware update")).build());
         }
 
         final SenseMetadata senseMetadata = senseMetadataDAO.get(senseId);
