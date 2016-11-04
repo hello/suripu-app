@@ -256,6 +256,7 @@ public class DeviceResource extends BaseResource {
         final Optional<DeviceStatus> deviceStatus = deviceProcessor.retrieveSenseStatus(pair);
         final int minFirmwareVersion = 6075; // rc3
         if(!deviceStatus.isPresent() || Integer.parseInt(deviceStatus.get().firmwareVersion, 16) < minFirmwareVersion) {
+            LOGGER.warn("sense_id={} account_id={} action=voice-setting-not-available", senseId, accessToken.accountId);
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(new JsonError(400, "Requires firmware update")).build());
         }
 
