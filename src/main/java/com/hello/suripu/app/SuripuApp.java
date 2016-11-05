@@ -66,6 +66,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
+import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
 import com.hello.suripu.app.v2.SensorsResource;
@@ -76,6 +77,7 @@ import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.alarm.AlarmProcessor;
+import com.hello.suripu.core.alerts.AlertsDAO;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
@@ -284,6 +286,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final AlertsDAO alertsDAO = commonDB.onDemand(AlertsDAO.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
@@ -734,7 +737,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
-
+        environment.jersey().register(new AlertsResource(alertsDAO));
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
             // speech resources
