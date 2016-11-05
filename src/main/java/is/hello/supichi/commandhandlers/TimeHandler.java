@@ -7,13 +7,14 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
-import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
+import is.hello.supichi.response.SupichiResponseType;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -33,6 +34,10 @@ import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 public class TimeHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeHandler.class);
 
+    private static final String TIMEZONE_ERROR_TEXT = "Sorry, I'm not able to get the time. Please set your timezone in the mobile app.";
+    private static final String TIME_ERROR_TEXT = "Sorry, I'm not able to determine the time right now. Please try again later.";
+
+    private static final String TIME_RESPONSE_TEXT_FORMATTER = "The time is %s.";
 
     private final SpeechCommandDAO speechCommandDAO;
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
@@ -67,20 +72,20 @@ public class TimeHandler extends BaseHandler {
             Optional<String> optionalTimeZoneId = getTimeZone(request.accountId, request.ipAddress);
 
             if (!optionalTimeZoneId.isPresent()) {
-                return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
+                return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.failWithResponse(NO_TIMEZONE, TIMEZONE_ERROR_TEXT));
             }
 
             final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
             final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
 
-            final String currentTime = localNow.toString("HH_mm");
+            final String currentTime = localNow.toString("h:mm a");
             LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
                     localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
 
-            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(currentTime));
+            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(String.format(TIME_RESPONSE_TEXT_FORMATTER, currentTime)));
         }
 
-        return new HandlerResult(HandlerType.TIME_REPORT, HandlerResult.EMPTY_COMMAND, GenericResult.fail(COMMAND_NOT_FOUND));
+        return new HandlerResult(HandlerType.TIME_REPORT, HandlerResult.EMPTY_COMMAND, GenericResult.failWithResponse(COMMAND_NOT_FOUND, TIME_ERROR_TEXT));
     }
 
     @Override
@@ -105,4 +110,10 @@ public class TimeHandler extends BaseHandler {
         }
         return Optional.absent();
     }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
+    }
+
 }

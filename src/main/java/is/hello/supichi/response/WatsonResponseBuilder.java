@@ -7,8 +7,8 @@ import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import is.hello.supichi.api.Response;
 import is.hello.supichi.api.Speech;
+import is.hello.supichi.models.GenericResponseText;
 import is.hello.supichi.models.HandlerResult;
-import is.hello.supichi.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.supichi.utils.AudioUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +42,7 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
                            final Speech.SpeechRequest request) {
 
 
-
-        final String text = (!handlerResult.responseText().isEmpty()) ? handlerResult.responseText() :
-                DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.UNKNOWN);
+        final String text = (!handlerResult.responseText().isEmpty()) ? handlerResult.responseText() : GenericResponseText.UNKNOWN_TEXT;
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 

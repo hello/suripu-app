@@ -24,7 +24,7 @@ public class ScaleFactory {
         }
     }
 
-    Scale forSensor(Sensor sensor) {
+    Scale forSensor(final Sensor sensor) {
         switch (sensor) {
             case TEMPERATURE:
                 return new TemperatureScale();
@@ -43,9 +43,14 @@ public class ScaleFactory {
             case UV:
                 return new UvScale();
             case PRESSURE:
-                return new PressureScale();
+                // Pressure in an exception
         }
 
         return new EmptyScale();
+    }
+
+
+    public PressureScale pressure(float value) {
+        return new PressureScale(value);
     }
 }

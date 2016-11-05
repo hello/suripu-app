@@ -28,7 +28,7 @@ public class UnigramHandlerExecutorTest {
         final HandlerExecutor executor = new UnigramHandlerExecutor()
                 .register(HandlerType.TRIVIA, handler);
 
-        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "the president", ""));
+        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "best basketball", ""));
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
 
         final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));

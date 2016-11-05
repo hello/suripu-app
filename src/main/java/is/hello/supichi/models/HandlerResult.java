@@ -1,13 +1,11 @@
 package is.hello.supichi.models;
 
 import com.google.common.base.Optional;
-import is.hello.supichi.api.Response;
 import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.commandhandlers.results.HueResult;
 import is.hello.supichi.commandhandlers.results.NestResult;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.commandhandlers.results.RoomConditionResult;
-import is.hello.supichi.models.responsebuilder.DefaultResponseBuilder;
 
 /**
  * Created by ksg on 7/25/16
@@ -68,7 +66,7 @@ public class HandlerResult {
         if (optionalResult.isPresent()) {
             responseText = optionalResult.get().responseText();
         }
-        return (!responseText.isEmpty()) ? responseText :  DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.UNKNOWN);
+        return (!responseText.isEmpty()) ? responseText : GenericResponseText.UNKNOWN_TEXT;
     }
 
     public Optional<String> optionalErrorText() {
