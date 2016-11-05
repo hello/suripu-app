@@ -1,26 +1,24 @@
 package com.hello.suripu.app.v2;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-
-import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimelineLogDAO;
 import com.hello.suripu.core.logging.DataLogger;
-import com.hello.suripu.core.models.timeline.v2.ScoreCondition;
-import com.hello.suripu.core.models.timeline.v2.TimelineLog;
 import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.models.Event;
 import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.models.TrackerMotion;
 import com.hello.suripu.core.models.timeline.v2.EventType;
+import com.hello.suripu.core.models.timeline.v2.ScoreCondition;
 import com.hello.suripu.core.models.timeline.v2.Timeline;
 import com.hello.suripu.core.models.timeline.v2.TimelineEvent;
+import com.hello.suripu.core.models.timeline.v2.TimelineLog;
 import com.hello.suripu.core.oauth.OAuthScope;
-
 import com.hello.suripu.core.translations.English;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.FeedbackUtils;
@@ -29,10 +27,10 @@ import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutClient;
-
+import io.dropwizard.jersey.PATCH;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -52,8 +50,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
-
-import io.dropwizard.jersey.PATCH;
 
 @Path("/v2/timeline")
 public class TimelineResource extends BaseResource {
@@ -225,11 +221,6 @@ public class TimelineResource extends BaseResource {
     }
 
     private void checkValidFeedbackOrThrow(final long accountId, final TimelineFeedback timelineFeedback, final int offsetMillis) {
-
-        
-        if (!this.hasTimelineOrderEnforcement(accountId)) {
-            return;
-        }
 
         //do not check validity of events that are not sleep events
         final boolean isSleepEvent = timelineFeedback.eventType.equals(Event.Type.IN_BED)
