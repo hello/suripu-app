@@ -78,7 +78,7 @@ public class TimeHandler extends BaseHandler {
             final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
             final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
 
-            final String currentTime = localNow.toString("h:m a");
+            final String currentTime = localNow.toString("h:mm a");
             LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
                     localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
 
