@@ -1,16 +1,16 @@
 package com.hello.suripu.app.v2;
 
 
+import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.hello.suripu.app.configuration.ExpansionConfiguration;
+import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.oauth.OAuthScope;
@@ -18,20 +18,33 @@ import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-
+import com.hello.suripu.coredropwizard.resources.BaseResource;
+import com.librato.rollout.RolloutClient;
+import io.dropwizard.jersey.PATCH;
+import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
+import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
+import is.hello.gaibu.core.models.Configuration;
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
+import is.hello.gaibu.core.models.ExpansionDeviceData;
+import is.hello.gaibu.core.models.ExternalAuthorizationState;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.models.StateRequest;
+import is.hello.gaibu.core.stores.ExpansionStore;
+import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.utils.TokenUtils;
+import is.hello.gaibu.homeauto.clients.HueLight;
+import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
+import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
+import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -51,28 +64,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
-import io.dropwizard.jersey.PATCH;
-import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
-import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
-import is.hello.gaibu.core.models.Configuration;
-import is.hello.gaibu.core.models.Expansion;
-import is.hello.gaibu.core.models.ExpansionData;
-import is.hello.gaibu.core.models.ExpansionDeviceData;
-import is.hello.gaibu.core.models.ExternalAuthorizationState;
-import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.models.StateRequest;
-import is.hello.gaibu.core.stores.ExpansionStore;
-import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
-import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
-import is.hello.gaibu.core.utils.TokenUtils;
-import is.hello.gaibu.homeauto.clients.HueLight;
-import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
-import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
-import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Path("/v2/expansions")
-public class ExpansionsResource {
+public class ExpansionsResource extends BaseResource {
+
+    @Inject
+    RolloutClient featureFlipper;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpansionsResource.class);
 
@@ -121,7 +125,7 @@ public class ExpansionsResource {
     public List<Expansion> getExpansionDetail(@Auth final AccessToken token,
                                               @PathParam("expansion_id") final Long appId,
                                               @Context UriInfo uriInfo) {
-        return getExpansions(token, appId, uriInfo);
+        return getExpansions(token.accountId, appId, uriInfo);
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
@@ -700,6 +704,19 @@ public class ExpansionsResource {
 
     private Expansion.State getStateFromExternalAppId(final Long appId, final String deviceId) {
 
+        final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
+        if(!expansionOptional.isPresent()) {
+            LOGGER.warn("warning=expansion-not-found expansion_id={} device_id={}", appId, deviceId);
+            throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
+        }
+
+        final Expansion expansion = expansionOptional.get();
+
+        if(!isEnabled(expansion, deviceId)) {
+            LOGGER.warn("warning=expansion_not_available expansion={} device_id={}", expansion.serviceName, deviceId);
+            return Expansion.State.NOT_AVAILABLE;
+        }
+
         final Integer externalTokenCount = externalTokenStore.getTokenCount(deviceId, appId);
         if(externalTokenCount < 1) {
             LOGGER.warn("warning=token-not-found expansion_id={} device_id={}", appId, deviceId);
@@ -725,13 +742,6 @@ public class ExpansionsResource {
             return Expansion.State.NOT_CONFIGURED;
         }
 
-        final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
-        if(!expansionOptional.isPresent()) {
-            LOGGER.warn("warning=expansion-not-found expansion_id={} device_id={}", appId, deviceId);
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-        final Expansion expansion = expansionOptional.get();
-
         final Optional<ExpansionDeviceData> expansionDeviceDataOptional = HomeAutomationExpansionDataFactory.getAppData(mapper, expData.data, expansion.serviceName);
 
         if(!expansionDeviceDataOptional.isPresent()){
@@ -754,24 +764,24 @@ public class ExpansionsResource {
     }
 
     private List<Expansion> getAllExpansions(final AccessToken accessToken, final UriInfo uriInfo) {
-        return getExpansions(accessToken, 0L, uriInfo);
+        return getExpansions(accessToken.accountId, 0L, uriInfo);
     }
 
-    private List<Expansion> getExpansions(final AccessToken accessToken, final Long appId, final UriInfo uriInfo) {
-        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
+    private List<Expansion> getExpansions(final Long accountId, final Long appId, final UriInfo uriInfo) {
+        final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accountId);
         if(sensePairedWithAccount.size() == 0){
-            LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
+            LOGGER.error("error=no-sense-paired account_id={}", accountId);
             throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
         }
 
-        final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
+        final String senseId = sensePairedWithAccount.get(0).externalDeviceId;
 
         final List<Expansion> expansions = Lists.newArrayList();
 
         if(appId > 0L) {
             final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
             if(!expansionOptional.isPresent()) {
-                LOGGER.warn("warning=application-not-found");
+                LOGGER.warn("warning=application-not-found app_id={} account_id={}", appId, accountId);
                 throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
             }
             expansions.add(expansionOptional.get());
@@ -792,7 +802,7 @@ public class ExpansionsResource {
                 .withDescription(exp.description)
                 .withCategory(exp.category)
                 .withIcon(exp.icon)
-                .withState(getStateFromExternalAppId(exp.id, deviceId))
+                .withState(getStateFromExternalAppId(exp.id, senseId))
                 .withCompletionURI(baseURI + "/redirect")
                 .withAuthURI(String.format("%s/%s/auth", baseURI, exp.id.toString()))
                 .withApiURI(exp.apiURI)
@@ -802,5 +812,17 @@ public class ExpansionsResource {
         }
 
         return updatedExpansions;
+    }
+
+    private Boolean isEnabled(final Expansion expansion, final String senseId) {
+        boolean isNest = expansion.serviceName.equals(Expansion.ServiceName.NEST);
+        if(isNest && !hasNest(senseId)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasNest(final String senseId) {
+        return featureFlipper.deviceFeatureActive(AppFeatureFlipper.NEST_ENABLED, senseId, Collections.emptyList());
     }
 }
