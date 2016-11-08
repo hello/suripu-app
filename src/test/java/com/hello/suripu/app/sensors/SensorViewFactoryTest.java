@@ -38,7 +38,7 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .withExtraSensorData(null)
                 .build();
-        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent());
+        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent(), DateTime.now(DateTimeZone.UTC));
         final Optional<SensorView> view = factory.from(query);
         assertFalse("view is present", view.isPresent());
     }
@@ -52,7 +52,7 @@ public class SensorViewFactoryTest {
                 .withOffsetMillis(0)
                 .build();
 
-        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra, Optional.absent(),DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent());
+        final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), dataNoExtra, Optional.absent(),DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent(), DateTime.now(DateTimeZone.UTC));
         final Optional<SensorView> view = factory.from(query);
         assertFalse("view is present", view.isPresent());
     }
@@ -71,7 +71,7 @@ public class SensorViewFactoryTest {
                 .build();
         final List<Sensor> sensors = Lists.newArrayList(Sensor.CO2, Sensor.TVOC, Sensor.UV);
         for(final Sensor sensor : sensors) {
-            final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent());
+            final SensorViewQuery query = new SensorViewQuery(Sensor.CO2, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent(), DateTime.now(DateTimeZone.UTC));
             final Optional<SensorView> view = factory.from(query);
             assertTrue(String.format("%s view is present", sensor.name()), view.isPresent());
             mapper.writeValueAsString(view.get());
@@ -111,7 +111,7 @@ public class SensorViewFactoryTest {
                 .withExtraSensorData(extra)
                 .build();
 
-        final SensorViewQuery query = new SensorViewQuery(Sensor.PRESSURE, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent());
+        final SensorViewQuery query = new SensorViewQuery(Sensor.PRESSURE, CurrentRoomState.empty(true), data, Optional.absent(), DateTime.now(DateTimeZone.UTC), Device.Color.BLACK, Optional.absent(), DateTime.now(DateTimeZone.UTC));
         final Optional<SensorView> view = factory.from(query);
 
         final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(data, Device.Color.BLACK, Optional.absent());
