@@ -712,11 +712,6 @@ public class ExpansionsResource extends BaseResource {
 
         final Expansion expansion = expansionOptional.get();
 
-        if(!isEnabled(expansion, deviceId)) {
-            LOGGER.warn("warning=expansion_not_available expansion={} device_id={}", expansion.serviceName, deviceId);
-            return Expansion.State.NOT_AVAILABLE;
-        }
-
         final Integer externalTokenCount = externalTokenStore.getTokenCount(deviceId, appId);
         if(externalTokenCount < 1) {
             LOGGER.warn("warning=token-not-found expansion_id={} device_id={}", appId, deviceId);
@@ -794,6 +789,12 @@ public class ExpansionsResource extends BaseResource {
         final String baseURI = uriInfo.getBaseUriBuilder().path(ExpansionsResource.class).build().toString();
         for(final Expansion exp : expansions) {
 
+            Expansion.State state =  getStateFromExternalAppId(exp.id, senseId);
+            if(!isEnabled(exp, senseId) && state.equals(Expansion.State.NOT_CONNECTED)) {
+                LOGGER.warn("warning=expansion_not_available expansion={} device_id={}", exp.serviceName, senseId);
+                state = Expansion.State.NOT_AVAILABLE;
+            }
+
             final Expansion newExpansion = new Expansion.Builder()
                 .withId(exp.id)
                 .withServiceName(exp.serviceName)
@@ -802,7 +803,7 @@ public class ExpansionsResource extends BaseResource {
                 .withDescription(exp.description)
                 .withCategory(exp.category)
                 .withIcon(exp.icon)
-                .withState(getStateFromExternalAppId(exp.id, senseId))
+                .withState(state)
                 .withCompletionURI(baseURI + "/redirect")
                 .withAuthURI(String.format("%s/%s/auth", baseURI, exp.id.toString()))
                 .withApiURI(exp.apiURI)
