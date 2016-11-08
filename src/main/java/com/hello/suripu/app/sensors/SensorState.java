@@ -19,4 +19,8 @@ public class SensorState {
     public static SensorState unknown() {
         return new SensorState(null, UNKNOWN_MESSAGE, Condition.UNKNOWN);
     }
+
+    public static SensorState calibrating() {
+        return new SensorState(null, "Sensor is calibrating. Check back soon.", Condition.CALIBRATING);
+    }
 }
