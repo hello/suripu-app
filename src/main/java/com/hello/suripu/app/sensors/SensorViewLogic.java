@@ -91,7 +91,6 @@ public class SensorViewLogic {
         }
 
         final String senseId = deviceIdPair.get().externalDeviceId;
-
         final DateTime maxDT = asOfUTC.plusMinutes(2);
         final DateTime minDT = asOfUTC.minusMinutes(30);
         final Optional<DeviceData> data = deviceDataDAODynamoDB.getMostRecent(
@@ -133,7 +132,8 @@ public class SensorViewLogic {
                 data4hAgo,
                 new DateTime(DateTimeZone.UTC),
                 color,
-                calibrationOptional
+                calibrationOptional,
+                deviceIdPair.get().created
         );
         final Condition condition = RoomConditionUtil.getGeneralRoomConditionV2(roomStateWithDust, calibrationOptional.isPresent());
         return new SensorResponse(SensorStatus.OK, views, condition);
@@ -147,11 +147,12 @@ public class SensorViewLogic {
             final Optional<DeviceData> data4hAgo,
             final DateTime now,
             final Device.Color color,
-            final Optional<Calibration> calibration) {
+            final Optional<Calibration> calibration,
+            final DateTime pairedAt) {
 
         return sensors.stream()
                 .flatMap(s -> streamopt( // remove optional responses
-                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, data4hAgo, now,color, calibration))))
+                        sensorViewFactory.from(new SensorViewQuery(s, roomState, deviceData, data4hAgo, now,color, calibration, pairedAt))))
                 .collect(Collectors.toList());
     }
 

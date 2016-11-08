@@ -8,6 +8,7 @@ import com.hello.suripu.core.models.CalibratedDeviceData;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import org.joda.time.DateTime;
+import org.joda.time.Hours;
 import org.joda.time.Minutes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +19,9 @@ public class SensorViewFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SensorViewFactory.class);
     private static Integer DEFAULT_FRESHNESS_TRESHOLD = 15;
+    private static Integer GAS_SENSOR_MIN_BURN_HOURS = 48;
     private final ScaleFactory scaleFactory;
     private final Integer minutesBeforeDataTooOld;
-
 
     private static final Map<Sensor, String> titles;
     static {
@@ -82,7 +83,7 @@ public class SensorViewFactory {
     public Optional<SensorView> from(final SensorViewQuery query) {
         Scale scale = scaleFactory.forSensor(query.sensor);
         final CalibratedDeviceData calibratedDeviceData = new CalibratedDeviceData(query.deviceData, query.color, query.calibration);
-
+        final int hoursSinceLastPaired = Hours.hoursBetween(query.pairedAt, query.now).getHours();
         SensorState state;
 
         switch (query.sensor) {
@@ -108,11 +109,19 @@ public class SensorViewFactory {
                 if(!query.deviceData.hasExtra()) {
                     return Optional.absent();
                 }
+                if(hoursSinceLastPaired <= GAS_SENSOR_MIN_BURN_HOURS) {
+                    state = SensorState.calibrating();
+                    break;
+                }
                 state = fromScale(calibratedDeviceData.co2(), scale);
                 break;
             case TVOC:
                 if(!query.deviceData.hasExtra()) {
                     return Optional.absent();
+                }
+                if(hoursSinceLastPaired <= GAS_SENSOR_MIN_BURN_HOURS) {
+                    state = SensorState.calibrating();
+                    break;
                 }
                 state = fromScale(calibratedDeviceData.tvoc(), scale);
                 break;
