@@ -32,8 +32,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.supichi.commandhandlers.ErrorText.DUPLICATE_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_TIME_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_USER_INFO;
+import static is.hello.supichi.commandhandlers.ErrorText.SMART_ALARM_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_LATE_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_SOON_ERROR;
 import static is.hello.supichi.models.HandlerResult.EMPTY_COMMAND;
 
 /**
@@ -61,18 +67,16 @@ public class AlarmHandler extends BaseHandler {
     public static final String SET_ALARM_ERROR_TOO_LATE_RESPONSE = "Sorry, your alarm could not be set. Please set a time no more than one day ahead.";
     public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, your alarm could not be set. Please set a time greater than 5 minutes from now";
     public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, your alarm could not be set. Please specify an alarm time.";
-    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, your alarm could not be set. Please set your timezone in the app.";
+    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, your alarm could not be set. Please set your timezone in the mobile app.";
 
     public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be cancelled. Please try again later.";
-    public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
-    public static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
+    public static final String CANCEL_ALARM_OK_RESPONSE_TEMPLATE = "OK, your alarm for %s is canceled.";
+    public static final String NO_ALARM_RESPONSE = "There is no non-repeating alarm to cancel.";
+    public static final String REPEATED_ALARM_CANCEL_INSTRUCTIONS = "You only have a repeating alarm set. Use the app to cancel.";
+    public static final String SMART_ALARM_ERROR_RESPONSE = "Sorry, your smart alarm could not be set. Please use the mobile app to set smart alarms.";
 
-    // error text
-    public static final String NO_TIME_ERROR = "no time given";
-    public static final String NO_USER_INFO = "no user info";
-    public static final String TOO_SOON_ERROR = "alarm time too soon";
-    public static final String DUPLICATE_ERROR = "duplicate alarm";
-    public static final String TOO_LATE_ERROR = "alarm time too late";
+    public static final String SMART_ALARM_CHECK_STRING = "smart alarm";
+
 
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
@@ -151,8 +155,13 @@ public class AlarmHandler extends BaseHandler {
         }
 
         if (annotatedTranscript.times.isEmpty()) {
-            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
+            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account_id={}", annotatedTranscript.transcript, accountId);
             return GenericResult.failWithResponse(NO_TIME_ERROR, SET_ALARM_ERROR_NO_TIME_RESPONSE);
+        }
+
+        if (annotatedTranscript.transcript.toLowerCase().contains(SMART_ALARM_CHECK_STRING)) {
+            LOGGER.error("error=tried-to-set-smart-alarm text={} account_id={}", annotatedTranscript.transcript, accountId);
+            return GenericResult.failWithResponse(SMART_ALARM_ERROR, SMART_ALARM_ERROR_RESPONSE);
         }
 
 
@@ -208,16 +217,25 @@ public class AlarmHandler extends BaseHandler {
         final List<Alarm> currentAlarms = alarmProcessor.getAlarms(accountId, senseId);
         final List<Alarm> newAlarms = Lists.newArrayList();
 
+        final RingTime newAlarmRingTime = Alarm.Utils.generateNextRingTimeFromAlarmTemplatesForUser(
+                Collections.singletonList(newAlarm), now.getMillis(), timezoneId);
 
-        // check that alarm is not a duplicate and also remove old voice-alarms
+
+        // check if we can add this alarm
         for (final Alarm alarm : currentAlarms) {
-            if (alarm.equals(newAlarm)) {
-                // duplicate alarm
-                LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
-                return GenericResult.failWithResponse(DUPLICATE_ERROR, String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
+
+            // check that alarm is not a duplicate
+            if (alarm.isEnabled) {
+                final RingTime alarmRingTime = Alarm.Utils.generateNextRingTimeFromAlarmTemplatesForUser(
+                        Collections.singletonList(alarm), now.getMillis(), timezoneId);
+                if (alarmRingTime.expectedRingTimeUTC == newAlarmRingTime.expectedRingTimeUTC) {
+                    // duplicate alarm
+                    LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
+                    return GenericResult.failWithResponse(DUPLICATE_ERROR, String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
+                }
             }
 
-            // delete old voice alarm
+            // remove old voice alarm
             if (alarm.alarmSource.equals(AlarmSource.VOICE_SERVICE)) {
                 final DateTime ringTime = new DateTime(alarm.year, alarm.month, alarm.day, alarm.hourOfDay, alarm.minuteOfHour, 0, timezoneId);
                 if (ringTime.isBefore(localNow)) {
@@ -269,25 +287,39 @@ public class AlarmHandler extends BaseHandler {
         final DateTimeZone timeZone = userInfo.timeZone.get();
         final DateTime now = DateTime.now(DateTimeZone.UTC);
         final Map<Long, Integer> ringTimeIndexMap = Maps.newTreeMap();
+        final List<Alarm> newAlarms = Lists.newArrayList();
 
         int index = 0;
         for (final Alarm alarm : userInfo.alarmList) {
+            if (!alarm.isEnabled) {
+                newAlarms.add(alarm);
+                continue;
+            }
+
             final List<Alarm> alarms = Collections.singletonList(alarm);
             final RingTime nextRingTime = Alarm.Utils.generateNextRingTimeFromAlarmTemplatesForUser(alarms, now.getMillis(), timeZone);
-            ringTimeIndexMap.put(nextRingTime.expectedRingTimeUTC, index++);
+            if (nextRingTime.expectedRingTimeUTC > 0) {
+                ringTimeIndexMap.put(nextRingTime.expectedRingTimeUTC, index++);
+            } else {
+                newAlarms.add(alarm);
+            }
         }
 
         // traverse map ordered by ring-time in chronological order
-        final List<Alarm> newAlarms = Lists.newArrayList();
         boolean foundAlarm = false;
+        Long canceledRingTime = 0L;
+        boolean repeatingAlarm = false;
         for (final Long ringtime : ringTimeIndexMap.keySet()) {
             final int alarmIndex = ringTimeIndexMap.get(ringtime);
             final Alarm alarm = userInfo.alarmList.get(alarmIndex);
 
             if (!foundAlarm && ringtime > now.getMillis()) {
-                foundAlarm = true;
-                if (!alarm.isRepeated && alarm.isEnabled) {
+                if (!alarm.isRepeated) {
+                    canceledRingTime = ringtime;
+                    foundAlarm = true;
                     continue;
+                } else {
+                    repeatingAlarm = true;
                 }
             }
             newAlarms.add(alarm);
@@ -296,7 +328,8 @@ public class AlarmHandler extends BaseHandler {
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
             LOGGER.warn("action=no-alarm-to-cancel reason=no-eligible-alarms sense_id={} account_id={}", senseId, accountId);
-            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, NO_ALARM_RESPONSE);
+            final String response = (repeatingAlarm) ? REPEATED_ALARM_CANCEL_INSTRUCTIONS : NO_ALARM_RESPONSE;
+            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, response);
         }
 
         try {
@@ -306,7 +339,15 @@ public class AlarmHandler extends BaseHandler {
             return GenericResult.failWithResponse(exception.getMessage(), CANCEL_ALARM_ERROR_RESPONSE);
         }
 
-        return GenericResult.ok(CANCEL_ALARM_OK_RESPONSE);
+        final DateTime localNow = now.withZone(timeZone);
+        final DateTime canceledDateTime = new DateTime(canceledRingTime, timeZone);
+        String tomorrow = "";
+        if (localNow.plusDays(1).getDayOfYear() == canceledDateTime.getDayOfYear()) {
+            tomorrow = " tomorrow";
+        }
+        final String response = String.format(CANCEL_ALARM_OK_RESPONSE_TEMPLATE,
+                canceledDateTime.toString("h:mm a") + tomorrow);
+        return GenericResult.ok(response);
     }
 
     @Override
