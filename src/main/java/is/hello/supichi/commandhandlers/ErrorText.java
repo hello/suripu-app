@@ -12,6 +12,12 @@ public class ErrorText {
 
     // AlarmHandler
     public static final String ERROR_NO_ALARM_TO_CANCEL = "no alarm to cancel";
+    public static final String NO_TIME_ERROR = "no time given";
+    public static final String NO_USER_INFO = "no user info";
+    public static final String TOO_SOON_ERROR = "alarm time too soon";
+    public static final String DUPLICATE_ERROR = "duplicate alarm";
+    public static final String TOO_LATE_ERROR = "alarm time too late";
+    public static final String SMART_ALARM_ERROR = "smart alarm not supported";
 
     public static final String ERROR_INVALID_SENSOR = "invalid sensor";
     public static final String NO_TIMEZONE = "no timezone";
