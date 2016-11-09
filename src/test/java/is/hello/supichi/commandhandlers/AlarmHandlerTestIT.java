@@ -511,7 +511,7 @@ public class AlarmHandlerTestIT {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
 
-        final String senseId = "thisisbullshter";
+        final String senseId = "goldenbullshter";
         final Long accountId = 12345L;
         mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
 
@@ -552,7 +552,7 @@ public class AlarmHandlerTestIT {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
 
-        final String senseId = "thisisbullsht";
+        final String senseId = "tremendousbullsht";
         final Long accountId = 12345L;
         mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
 
@@ -594,7 +594,7 @@ public class AlarmHandlerTestIT {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
 
-        final String senseId = "thisisbullsht";
+        final String senseId = "bigpicturebullsht";
         final Long accountId = 12345L;
         mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
 
@@ -636,7 +636,7 @@ public class AlarmHandlerTestIT {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
 
-        final String senseId = "thisisbullsht";
+        final String senseId = "shtisbshtullsht";
         final Long accountId = 12345L;
         mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
 
