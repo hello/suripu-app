@@ -682,4 +682,18 @@ public class AlarmHandlerTestIT {
         assertEquals(result.outcome(), Outcome.OK);
         assertEquals(result.responseText().contains("9:05 AM"), true);
     }
+
+    @Test
+    public void testSetSmartAlarmFail() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        final String transcript = "set a smart alarm for 7 am";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+        assertEquals(result.outcome(), Outcome.FAIL);
+        assertEquals(result.responseText().equalsIgnoreCase(AlarmHandler.SMART_ALARM_ERROR_RESPONSE), true);
+    }
 }
