@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -34,7 +35,6 @@ import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 
-import static is.hello.supichi.commandhandlers.AlarmHandler.CANCEL_ALARM_OK_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.DUPLICATE_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
@@ -45,6 +45,8 @@ import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCE
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
@@ -380,6 +382,7 @@ public class AlarmHandlerTestIT {
 
     }
 
+
     @Test
     public void testCancelAlarmOK() {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
@@ -413,7 +416,7 @@ public class AlarmHandlerTestIT {
             assertEquals(cancelResult.optionalResult.get().outcome, Outcome.OK);
             assertEquals(cancelResult.optionalResult.get().responseText.isPresent(), true);
             final String responseText = cancelResult.optionalResult.get().responseText.get();
-            assertEquals(responseText, CANCEL_ALARM_OK_RESPONSE);
+            assertEquals(responseText.contains("is canceled"), true);
         }
 
 
@@ -461,4 +464,222 @@ public class AlarmHandlerTestIT {
         assertEquals(newAlarms.size(), 2);
     }
 
+    @Test
+    public void testSetAlarmWithDisabledShouldPass() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+
+        final String senseId = "thisisbullsht";
+        final Long accountId = 12345L;
+        mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
+
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarmTime = now.plusDays(1);
+        final Alarm existingAlarm = new Alarm.Builder()
+                .withYear(existingAlarmTime.getYear())
+                .withMonth(existingAlarmTime.getMonthOfYear())
+                .withDay(existingAlarmTime.getDayOfMonth())
+                .withHour(9)
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
+                .withIsRepeated(true)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(false)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.MOBILE_APP)
+                .build();
+
+        final List<Alarm> alarmList = Lists.newArrayList(existingAlarm);
+        alarmProcessor.setAlarms(accountId, senseId, alarmList);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        assertThat(alarms.size(), is(1));
+
+        // existing alarm template for 9am exist, but is disabled. should allow set alarm
+        String transcript = "set my alarm for 9 am tomorrow";
+        AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+        assertEquals(result.outcome(), Outcome.OK);
+    }
+
+    @Test
+    public void testSetAlarmWithRepeatingSameTimeShouldFail() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+
+        final String senseId = "thisisbullshter";
+        final Long accountId = 12345L;
+        mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
+
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarmTime = now.plusDays(1);
+        final Alarm existingAlarm = new Alarm.Builder()
+                .withYear(existingAlarmTime.getYear())
+                .withMonth(existingAlarmTime.getMonthOfYear())
+                .withDay(existingAlarmTime.getDayOfMonth())
+                .withHour(9)
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
+                .withIsRepeated(true)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(true)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.MOBILE_APP)
+                .build();
+
+        final List<Alarm> alarmList = Lists.newArrayList(existingAlarm);
+        alarmProcessor.setAlarms(accountId, senseId, alarmList);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        assertThat(alarms.size(), is(1));
+        // existing alarm template for 9am exist, but is disabled. should allow set alarm
+        String transcript = "set my alarm for 9 am tomorrow";
+        AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+        assertEquals(result.outcome(), Outcome.FAIL);
+
+    }
+    @Test
+    public void testCancelDisabledAlarmShouldFail() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+
+        final String senseId = "thisisbullsht";
+        final Long accountId = 12345L;
+        mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
+
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarmTime = now.plusDays(1);
+        final Alarm existingAlarm = new Alarm.Builder()
+                .withYear(existingAlarmTime.getYear())
+                .withMonth(existingAlarmTime.getMonthOfYear())
+                .withDay(existingAlarmTime.getDayOfMonth())
+                .withHour(9)
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
+                .withIsRepeated(true)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(false)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.VOICE_SERVICE)
+                .build();
+
+        final List<Alarm> alarmList = Lists.newArrayList(existingAlarm);
+        alarmProcessor.setAlarms(accountId, senseId, alarmList);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        assertThat(alarms.size(), is(1));
+
+        // cancel fail because we cannot cancel repeating alarm
+        final String transcript = "cancel my alarm";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_DELETE.getValue());
+        assertEquals(result.outcome(), Outcome.FAIL);
+    }
+
+    @Test
+    public void testCancelRepeatingAlarmShouldFail() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+
+        final String senseId = "thisisbullsht";
+        final Long accountId = 12345L;
+        mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
+
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarmTime = now.plusDays(1);
+        final Alarm existingAlarm = new Alarm.Builder()
+                .withYear(existingAlarmTime.getYear())
+                .withMonth(existingAlarmTime.getMonthOfYear())
+                .withDay(existingAlarmTime.getDayOfMonth())
+                .withHour(9)
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
+                .withIsRepeated(true)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(true)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.VOICE_SERVICE)
+                .build();
+
+        final List<Alarm> alarmList = Lists.newArrayList(existingAlarm);
+        alarmProcessor.setAlarms(accountId, senseId, alarmList);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        assertThat(alarms.size(), is(1));
+
+        // cancel fail because we cannot cancel repeating alarm
+        final String transcript = "cancel my alarm";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_DELETE.getValue());
+        assertEquals(result.outcome(), Outcome.FAIL);
+    }
+
+    @Test
+    public void testCancelNonRepeatingAlarmOnly() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+
+        final String senseId = "thisisbullsht";
+        final Long accountId = 12345L;
+        mergedUserInfoDynamoDB.setTimeZone(senseId, accountId, TIME_ZONE);
+
+        final DateTime now = DateTime.now(TIME_ZONE);
+        final DateTime existingAlarmTime = now.plusDays(1);
+        final Alarm existingAlarm = new Alarm.Builder()
+                .withYear(existingAlarmTime.getYear())
+                .withMonth(existingAlarmTime.getMonthOfYear())
+                .withDay(existingAlarmTime.getDayOfMonth())
+                .withHour(9)
+                .withMinute(0)
+                .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
+                .withIsRepeated(true)
+                .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
+                .withIsEnabled(true)
+                .withIsEditable(true)
+                .withIsSmart(true)
+                .withSource(AlarmSource.VOICE_SERVICE)
+                .build();
+
+        final List<Alarm> alarmList = Lists.newArrayList(existingAlarm);
+        alarmProcessor.setAlarms(accountId, senseId, alarmList);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        assertThat(alarms.size(), is(1));
+
+        // set an non-repeating alarm for 9:05, this is the one we want to cancel
+        String transcript = "set alarm for 9:05 am tomorrow";
+        AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+        HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+        assertEquals(result.outcome(), Outcome.OK);
+
+        // existing alarm: repeating 9:00am and non-repeating 9:05am
+        // cancel fail because we cannot cancel repeating alarm
+        transcript = "cancel my alarm";
+        annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(senseId, accountId, transcript, ""));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_DELETE.getValue());
+        assertEquals(result.outcome(), Outcome.OK);
+        assertEquals(result.responseText().contains("9:05 AM"), true);
+    }
 }
