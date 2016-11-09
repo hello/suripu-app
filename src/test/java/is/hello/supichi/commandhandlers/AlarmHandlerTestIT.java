@@ -35,14 +35,14 @@ import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 
-import static is.hello.supichi.commandhandlers.AlarmHandler.DUPLICATE_ERROR;
-import static is.hello.supichi.commandhandlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.supichi.commandhandlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
-import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_LATE_ERROR;
-import static is.hello.supichi.commandhandlers.AlarmHandler.TOO_SOON_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.DUPLICATE_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_TIME_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_LATE_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_SOON_ERROR;
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,7 +70,6 @@ public class AlarmHandlerTestIT {
     private final Long FAIL_ACCOUNT_ID = 100L;
 
     private final DateTimeZone TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
-
 
     private MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
     private AlarmDAODynamoDB alarmDAO;
@@ -144,6 +143,7 @@ public class AlarmHandlerTestIT {
             mergedUserInfoDynamoDB.setAlarms(SENSE_ID, ACCOUNT_ID, lastUpdated, Collections.emptyList(), returnedAlarms, TIME_ZONE);
         }
         mergedUserInfoDynamoDB.setPillColor(FAIL_SENSE_ID, FAIL_ACCOUNT_ID, "123", Color.black);
+
     }
 
     @After
@@ -484,7 +484,7 @@ public class AlarmHandlerTestIT {
                 .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
                 .withIsRepeated(true)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
-                .withIsEnabled(false)
+                .withIsEnabled(false) // <-- disabled
                 .withIsEditable(true)
                 .withIsSmart(true)
                 .withSource(AlarmSource.MOBILE_APP)
@@ -567,7 +567,7 @@ public class AlarmHandlerTestIT {
                 .withDayOfWeek(Sets.newHashSet(existingAlarmTime.getDayOfWeek()))
                 .withIsRepeated(true)
                 .withAlarmSound(AlarmHandler.DEFAULT_ALARM_SOUND)
-                .withIsEnabled(false)
+                .withIsEnabled(false) // <--- !!!! diff
                 .withIsEditable(true)
                 .withIsSmart(true)
                 .withSource(AlarmSource.VOICE_SERVICE)

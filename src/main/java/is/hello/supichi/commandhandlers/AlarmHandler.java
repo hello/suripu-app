@@ -32,8 +32,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.supichi.commandhandlers.ErrorText.DUPLICATE_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_TIME_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_USER_INFO;
+import static is.hello.supichi.commandhandlers.ErrorText.SMART_ALARM_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_LATE_ERROR;
+import static is.hello.supichi.commandhandlers.ErrorText.TOO_SOON_ERROR;
 import static is.hello.supichi.models.HandlerResult.EMPTY_COMMAND;
 
 /**
@@ -66,14 +72,11 @@ public class AlarmHandler extends BaseHandler {
     public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be cancelled. Please try again later.";
     public static final String CANCEL_ALARM_OK_RESPONSE_TEMPLATE = "OK, your alarm for %s is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no non-repeating alarm to cancel.";
-    public static final String REPEATED_ALARM_CANCEL_INSTRUCTIONS = "To cancel a repeating alarm, please use the mobile app.";
+    public static final String REPEATED_ALARM_CANCEL_INSTRUCTIONS = "You only have a repeating alarm set. Use the app to cancel.";
+    public static final String SMART_ALARM_ERROR_RESPONSE = "Sorry, your smart alarm could not be set. Please use the mobile app to set smart alarms.";
 
-    // error text
-    public static final String NO_TIME_ERROR = "no time given";
-    public static final String NO_USER_INFO = "no user info";
-    public static final String TOO_SOON_ERROR = "alarm time too soon";
-    public static final String DUPLICATE_ERROR = "duplicate alarm";
-    public static final String TOO_LATE_ERROR = "alarm time too late";
+    public static final String SMART_ALARM_CHECK_STRING = "smart alarm";
+
 
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
@@ -152,8 +155,13 @@ public class AlarmHandler extends BaseHandler {
         }
 
         if (annotatedTranscript.times.isEmpty()) {
-            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
+            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account_id={}", annotatedTranscript.transcript, accountId);
             return GenericResult.failWithResponse(NO_TIME_ERROR, SET_ALARM_ERROR_NO_TIME_RESPONSE);
+        }
+
+        if (annotatedTranscript.transcript.toLowerCase().contains(SMART_ALARM_CHECK_STRING)) {
+            LOGGER.error("error=tried-to-set-smart-alarm text={} account_id={}", annotatedTranscript.transcript, accountId);
+            return GenericResult.failWithResponse(SMART_ALARM_ERROR, SMART_ALARM_ERROR_RESPONSE);
         }
 
 
@@ -300,7 +308,7 @@ public class AlarmHandler extends BaseHandler {
         // traverse map ordered by ring-time in chronological order
         boolean foundAlarm = false;
         Long canceledRingTime = 0L;
-        String extraMessage = "";
+        boolean repeatingAlarm = false;
         for (final Long ringtime : ringTimeIndexMap.keySet()) {
             final int alarmIndex = ringTimeIndexMap.get(ringtime);
             final Alarm alarm = userInfo.alarmList.get(alarmIndex);
@@ -311,7 +319,7 @@ public class AlarmHandler extends BaseHandler {
                     foundAlarm = true;
                     continue;
                 } else {
-                    extraMessage = " " + REPEATED_ALARM_CANCEL_INSTRUCTIONS;
+                    repeatingAlarm = true;
                 }
             }
             newAlarms.add(alarm);
@@ -320,7 +328,8 @@ public class AlarmHandler extends BaseHandler {
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
             LOGGER.warn("action=no-alarm-to-cancel reason=no-eligible-alarms sense_id={} account_id={}", senseId, accountId);
-            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, NO_ALARM_RESPONSE + extraMessage);
+            final String response = (repeatingAlarm) ? REPEATED_ALARM_CANCEL_INSTRUCTIONS : NO_ALARM_RESPONSE;
+            return GenericResult.failWithResponse(ERROR_NO_ALARM_TO_CANCEL, response);
         }
 
         try {
