@@ -112,7 +112,7 @@ public class SleepSummaryHandler extends BaseHandler {
     }
 
     private Optional<AggregateSleepStats> getSleepStat(final Long accountId, final DateTimeZone timezoneId) {
-        final DateTime localToday = DateTime.now(DateTimeZone.UTC).withZone(timezoneId).withTimeAtStartOfDay();
+        final DateTime localToday = DateTime.now(timezoneId).withTimeAtStartOfDay();
         final String lastNightDate = DateTimeUtil.dateToYmdString(localToday.minusDays(1));
 
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
@@ -121,8 +121,9 @@ public class SleepSummaryHandler extends BaseHandler {
             return optionalSleepStat;
         }
 
+        final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(lastNightDate);
         final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
-        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.absent());
+        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.absent());
 
         if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
             final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
