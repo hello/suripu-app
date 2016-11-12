@@ -38,6 +38,8 @@ import is.hello.gaibu.homeauto.clients.HueLight;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -87,17 +89,20 @@ public class ExpansionsResource extends BaseResource {
     private final ExternalOAuthTokenStore<ExternalToken> externalTokenStore;
     private final PersistentExpansionDataStore expansionDataStore;
     private final Vault tokenKMSVault;
+    private final OkHttpClient httpClient;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     public ExpansionsResource(
-        final ExpansionConfiguration expansionConfig,
-        final ExpansionStore<Expansion> expansionStore,
-        final ExternalAuthorizationStateDAO externalAuthorizationStateDAO,
-        final DeviceDAO deviceDAO,
-        final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
-        final PersistentExpansionDataStore expansionDataStore,
-        final Vault tokenKMSVault) throws Exception{
+            final ExpansionConfiguration expansionConfig,
+            final ExpansionStore<Expansion> expansionStore,
+            final ExternalAuthorizationStateDAO externalAuthorizationStateDAO,
+            final DeviceDAO deviceDAO,
+            final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
+            final PersistentExpansionDataStore expansionDataStore,
+            final Vault tokenKMSVault,
+            final OkHttpClient httpClient,
+            final ObjectMapper mapper) throws Exception{
 
         this.expansionConfig = expansionConfig;
         this.expansionStore = expansionStore;
@@ -106,8 +111,10 @@ public class ExpansionsResource extends BaseResource {
         this.externalTokenStore = externalTokenStore;
         this.expansionDataStore = expansionDataStore;
         this.tokenKMSVault = tokenKMSVault;
+        this.httpClient = httpClient;
 
         mapper.registerModule(new JodaModule());
+        this.mapper = mapper;
     }
 
     @ScopesAllowed({OAuthScope.EXTERNAL_APPLICATION_READ})
@@ -172,14 +179,38 @@ public class ExpansionsResource extends BaseResource {
             LOGGER.debug("action=expansion-enabled expansion_id={}", appId);
         }
 
-        if(stateRequest.state.equals(Expansion.State.REVOKED)){
+        if(stateRequest.state.equals(Expansion.State.REVOKED)) {
             newDataBuilder.withEnabled(false)
-            .withData("");
+                    .withData("");
             //Revoke tokens too
             final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(deviceId, expansion.id);
-            if(!externalTokenOptional.isPresent()) {
+            if (!externalTokenOptional.isPresent()) {
                 LOGGER.warn("warning=token-not-found");
                 throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
+            }
+
+            // Specific Nest use case
+            if (Expansion.ServiceName.NEST.equals(expansion.serviceName)) {
+                try {
+
+                    final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+                    if(!decryptedTokenOptional.isPresent()) {
+                        LOGGER.warn("action=deauth-nest result=fail-to-decrypt-token account_id={}", accessToken.accountId);
+                    }
+
+                    final String decryptedToken = decryptedTokenOptional.get();
+                    final String url = "https://api.home.nest.com/oauth2/access_tokens/" + decryptedToken;
+                    final Request request = new Request.Builder()
+                            .url(url)
+                            .delete()
+                            .build();
+
+                    final okhttp3.Response response = httpClient.newCall(request).execute();
+                    response.close();
+                    LOGGER.info("action=deauth-nest account_id={} http_resp={} success={}", accessToken.accountId, response.code(), response.isSuccessful());
+                } catch (IOException e) {
+                    LOGGER.error("error=deauth-nest message={}", e.getMessage());
+                }
             }
 
             externalTokenStore.disableByDeviceId(deviceId, appId);

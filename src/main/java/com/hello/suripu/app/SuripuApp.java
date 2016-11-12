@@ -216,6 +216,7 @@ import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.supichi.Supichi;
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -714,14 +715,22 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
         final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
-        environment.jersey().register(new ExpansionsResource(
-            configuration.expansionConfiguration(),
-            expansionStore,
-            externalAuthorizationStateDAO,
-            deviceDAO,
-            externalTokenStore,
-            externalAppDataStore,
-            tokenKMSVault));
+        // Required for Nest token revocation
+        final OkHttpClient httpClient = new OkHttpClient(); //TODO: configure timeouts
+
+        final ExpansionsResource expansionsResource = new ExpansionsResource(
+                configuration.expansionConfiguration(),
+                expansionStore,
+                externalAuthorizationStateDAO,
+                deviceDAO,
+                externalTokenStore,
+                externalAppDataStore,
+                tokenKMSVault,
+                httpClient,
+                environment.getObjectMapper()
+        );
+
+        environment.jersey().register(expansionsResource);
 
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
         final SpeechTimelineReadDAO speechTimelineReadDAO = SpeechTimelineReadDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
