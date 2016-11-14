@@ -754,6 +754,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
             environment.jersey().register(supichi.demoUploadResource());
             environment.jersey().register(supichi.uploadResource());
+            environment.jersey().register(supichi.pingResource());
         }
     }
 }
