@@ -68,6 +68,7 @@ import is.hello.supichi.kinesis.KinesisData;
 import is.hello.supichi.kinesis.SpeechKinesisProducer;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.resources.demo.DemoUploadResource;
+import is.hello.supichi.resources.ping.PingResource;
 import is.hello.supichi.resources.v2.UploadResource;
 import is.hello.supichi.response.CachedResponseBuilder;
 import is.hello.supichi.response.SilentResponseBuilder;
@@ -319,5 +320,9 @@ public class Supichi
 
     public DemoUploadResource demoUploadResource() {
         return new DemoUploadResource(audioRequestHandler);
+    }
+
+    public PingResource pingResource() {
+        return new PingResource();
     }
 }

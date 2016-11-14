@@ -121,6 +121,7 @@ logging:
     com.amazonaws: WARN
     is.hello: DEBUG
     com.joestelmach.natty: WARN
+    is.hello.supichi.resources.ping: DEBUG
   appenders:
     - type: file
       threshold: DEBUG
