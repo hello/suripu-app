@@ -1,6 +1,7 @@
 package is.hello.supichi.executors;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
@@ -23,11 +24,15 @@ import is.hello.gaibu.core.models.MultiDensityImage;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.supichi.commandhandlers.BaseHandler;
 import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.commandhandlers.HueHandler;
 import is.hello.supichi.commandhandlers.NestHandler;
+import is.hello.supichi.commandhandlers.SleepSummaryHandler;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.db.SpeechCommandDAO;
+import is.hello.supichi.models.AnnotatedTranscript;
+import is.hello.supichi.models.Annotator;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.VoiceRequest;
@@ -38,7 +43,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -205,6 +212,41 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(result.optionalResult.isPresent(), false);
     }
 
+    private static class HandlerTestData{
+        public final String text;
+        public final Class klass;
+        public final Boolean resultPresent;
+
+        private HandlerTestData(final String text, final Class klass, final Boolean resultPresent) {
+            this.text = text;
+            this.klass = klass;
+            this.resultPresent = resultPresent;
+        }
+    }
+
+    @Test
+    public void TestTextToHandler() {
+        final List<HandlerTestData> dataList = Lists.newArrayList(
+                new HandlerTestData("how's my sleep last night", SleepSummaryHandler.class, true),
+                new HandlerTestData("how is my sleep last night", SleepSummaryHandler.class, true),
+                new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
+                new HandlerTestData("what's my score", SleepSummaryHandler.class, true),
+                new HandlerTestData("what was my score", SleepSummaryHandler.class, true),
+                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false)
+        );
+
+        final TimeZone timeZone = DateTimeZone.forID("America/Los_Angeles").toTimeZone();
+        final HandlerExecutor handlerExecutor = getExecutor();
+        for (final HandlerTestData data : dataList) {
+            final AnnotatedTranscript transcript = Annotator.get(data.text, Optional.of(timeZone));
+            Optional<BaseHandler> result = handlerExecutor.getHandler(transcript);
+            assertEquals(data.text, result.isPresent(), data.resultPresent);
+            if (result.isPresent()) {
+                assertEquals(data.text, result.get().getClass(), data.klass);
+            }
+        }
+
+    }
 
     //Reproduce tests for UnigramHandlerExecutor to ensure regex executor doesn't break anything
     @Test

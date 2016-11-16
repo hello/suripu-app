@@ -68,6 +68,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
+
     private Optional<BaseHandler> getHandler(final String command) {
         if (commandToHandlerMap.containsKey(command)) {
             final HandlerType handlerType = commandToHandlerMap.get(command);
@@ -81,5 +82,10 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
     @Override
     public Map<HandlerType, SupichiResponseType> responseBuilders() {
         return responseBuilders;
+    }
+
+    @Override
+    public Optional<BaseHandler> getHandler(AnnotatedTranscript annotatedTranscript) {
+        return getHandler(annotatedTranscript.transcript);
     }
 }

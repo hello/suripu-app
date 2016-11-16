@@ -52,8 +52,13 @@ public class SleepSummaryHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("sleep score", SpeechCommand.SLEEP_SCORE);
+        tempMap.put("what was my score", SpeechCommand.SLEEP_SCORE);
+        tempMap.put("what's my score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("sleep summary", SLEEP_SUMMARY);
         tempMap.put("how was my sleep", SLEEP_SUMMARY);
+        tempMap.put("how is my sleep", SLEEP_SUMMARY);
+        tempMap.put("how's my sleep", SLEEP_SUMMARY);
+        tempMap.put("how did i sleep", SLEEP_SUMMARY);
         return tempMap;
     }
 

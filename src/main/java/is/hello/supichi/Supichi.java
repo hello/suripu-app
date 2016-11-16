@@ -306,7 +306,7 @@ public class Supichi
 
 
         this.audioRequestHandler = new AudioRequestHandler(
-                client, signedBodyHandler, handlerExecutor, deviceDAO,
+                client, signedBodyHandler, handlerExecutor,
                 speechKinesisProducer, responseBuilders, handlersToBuilders,
                 deviceProcessor,
                 environment.metrics());

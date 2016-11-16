@@ -4,7 +4,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.speech.models.Result;
 import com.hello.suripu.core.speech.models.SpeechResult;
@@ -48,7 +47,6 @@ public class AudioRequestHandler {
     private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;
 
-    private final DeviceDAO deviceDAO;
     private final DeviceProcessor deviceProcessor;
 
     private final SpeechKinesisProducer speechKinesisProducer;
@@ -70,7 +68,6 @@ public class AudioRequestHandler {
     public AudioRequestHandler(final InstrumentedSpeechClient speechClient,
                                final SignedBodyHandler signedBodyHandler,
                                final HandlerExecutor handlerExecutor,
-                               final DeviceDAO deviceDAO,
                                final SpeechKinesisProducer speechKinesisProducer,
                                final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
                                final Map<HandlerType, SupichiResponseType> handlerMap,
@@ -80,7 +77,6 @@ public class AudioRequestHandler {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
-        this.deviceDAO = deviceDAO;
         this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilders = responseBuilders;
         this.handlerMap = handlerMap;

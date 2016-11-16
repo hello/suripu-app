@@ -87,10 +87,10 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
-    private Optional<BaseHandler> getHandler(final AnnotatedTranscript annotatedTranscript) {
+    public Optional<BaseHandler> getHandler(final AnnotatedTranscript annotatedTranscript) {
 
         // Find a suitable handler via text
-        final String command = annotatedTranscript.transcript;
+        final String command = annotatedTranscript.transcript.toLowerCase();
 
         // final Map<BaseHandler, Integer> possibleHandlers = Maps.newHashMap();
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
