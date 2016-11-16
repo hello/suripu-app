@@ -63,7 +63,7 @@ public class SpeechResource {
         final Optional<SpeechResult> result = getLatest(accountId, lookBackMinutes);
 
         if (result.isPresent()) {
-            LOGGER.debug("action=get-latest-speech-result sense_id={} found=true", senseId);
+            LOGGER.debug("action=get-latest-speech-result-1 sense_id={} found=true result={}", senseId, result.get().result);
             return Lists.newArrayList(result.get());
         }
 
@@ -77,7 +77,7 @@ public class SpeechResource {
 
                 final Optional<SpeechResult> otherResults = getLatest(accountPair.accountId, lookBackMinutes);
                 if (otherResults.isPresent()) {
-                    LOGGER.debug("action=get-latest-speech-result sense_id={} found=true", senseId);
+                    LOGGER.debug("action=get-latest-speech-result-2 sense_id={} found=true result={}", senseId, otherResults.get().result);
                     return Lists.newArrayList(otherResults.get());
                 }
             }
