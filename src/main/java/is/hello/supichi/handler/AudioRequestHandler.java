@@ -165,7 +165,7 @@ public class AudioRequestHandler {
             final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
             LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
 
-            final SpeechServiceResult resp = speechClient.stream(decoded, uploadData.request.getSamplingRate());
+            final SpeechServiceResult resp = speechClient.stream(rawRequest.senseId(), decoded, uploadData.request.getSamplingRate());
 
 
             if (!resp.getTranscript().isPresent()) {
