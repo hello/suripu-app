@@ -63,6 +63,11 @@ public class RegexHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
+    @Override
+    public Optional<BaseHandler> getHandler(final AnnotatedTranscript transcript) {
+        return getHandler(transcript.transcript);
+    }
+
     private Optional<BaseHandler> getHandler(String command) {
         Optional<BaseHandler> foundHandler = Optional.absent();
         for(final String pattern : commandToHandlerMap.keySet()) {

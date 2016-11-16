@@ -318,7 +318,7 @@ speech:
   audio_parameters:
     interim_results_preference: false
     encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-    buffer_size: 6400 # play around with this (100ms of audio at 16K SR)
+    buffer_size: 25600 # play around with this (3200 size = 100ms of audio at 16K SR)
 
   watson:
     username: ce487881-c6f6-45cf-8aa5-585554de4941
