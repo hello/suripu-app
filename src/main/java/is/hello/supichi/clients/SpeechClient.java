@@ -50,19 +50,16 @@ public class SpeechClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeechClient.class.getName());
 
     private final AudioConfiguration configuration;
-
-
     private final SpeechApi speechApi;
 
     /**
      * Construct client connecting to Cloud Speech server at {@code host:port}.
      */
-    public SpeechClient(String host, int port, AudioConfiguration configuration) throws IOException {
+    public SpeechClient(final AudioConfiguration configuration) throws IOException {
         this.configuration = configuration;
+        this.speechApi  = SpeechApi.create();
 
-        speechApi  = SpeechApi.create();
-
-        LOGGER.info("action=created-stub host={} port={}", host, port);
+        LOGGER.info("action=speech-api-create");
     }
 
     public void shutdown() throws Exception {
@@ -78,10 +75,10 @@ public class SpeechClient {
      * @throws InterruptedException
      * @throws IOException
      */
-    public SpeechServiceResult stream(final byte [] bytes, int samplingRate) throws InterruptedException, IOException {
+    public SpeechServiceResult stream(final String senseId, final byte [] bytes, int samplingRate) throws InterruptedException, IOException {
         final CountDownLatch finishLatch = new CountDownLatch(1);
 
-        final HelloStreamObserver responseObserver = new HelloStreamObserver(finishLatch);
+        final HelloStreamObserver responseObserver = new HelloStreamObserver(finishLatch, senseId);
         final StreamObserver<StreamingRecognizeRequest> requestObserver = speechApi.streamingRecognizeCallable().bidiStreamingCall(responseObserver);
         try {
             // Build and send a RecognizeRequest containing the parameters for processing the audio.
@@ -109,7 +106,7 @@ public class SpeechClient {
 
             int totalBytes = 0;
 
-            LOGGER.debug("body_length={} buffer_size={} num_chunks={}", bytes.length, bufferSize, numChunks);
+            LOGGER.debug("sense_id={} body_length={} buffer_size={} num_chunks={}",senseId, bytes.length, bufferSize, numChunks);
 
             for (int i = 0; i < numChunks + 1; i++) {
                 final int startIndex = i * bufferSize;
@@ -117,17 +114,15 @@ public class SpeechClient {
                 final byte[] buffer = Arrays.copyOfRange(bytes, startIndex, endIndex);
 
                 totalBytes += buffer.length;
-                LOGGER.debug("action=read-bytes-from-input-stream iteration={} bytes_read={}", i, buffer.length);
-
                 final StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
                         .setAudioContent(ByteString.copyFrom(buffer))
                         .build();
                 requestObserver.onNext(request);
             }
-            LOGGER.info("action=sent-bytes-from-audio total_bytes={}", totalBytes);
+            LOGGER.info("action=sent-bytes-from-audio total_bytes={} sense_id={}",totalBytes, senseId);
         } catch (RuntimeException e) {
             // Cancel RPC.
-            LOGGER.error("error=stream-audio-fail");
+            LOGGER.error("error=stream-audio-fail sense_id={}", senseId);
             requestObserver.onError(e);
             throw e;
         }

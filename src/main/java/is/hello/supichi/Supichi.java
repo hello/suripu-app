@@ -182,10 +182,9 @@ public class Supichi
         final InstrumentedSpeechClient client;
         try {
             client = new InstrumentedSpeechClient(
-                    speechConfiguration.googleAPIHost(),
-                    speechConfiguration.googleAPIPort(),
                     speechConfiguration.audioConfiguration(),
-                    environment.metrics());
+                    environment.metrics()
+            );
         } catch (IOException e) {
             LOGGER.error("error=fail-to-create-google-speech-client error_msg={}", e.getMessage());
             throw new RuntimeException("Fail to create google speech client");
