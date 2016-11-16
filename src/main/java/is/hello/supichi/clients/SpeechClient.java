@@ -25,25 +25,14 @@ package is.hello.supichi.clients;
 //
 // Then set environment variable GOOGLE_APPLICATION_CREDENTIALS to the full path of that file.
 
-import com.google.cloud.speech.v1beta1.AsyncRecognizeRequest;
-import com.google.cloud.speech.v1beta1.AsyncRecognizeResponse;
-import com.google.cloud.speech.v1beta1.RecognitionAudio;
+import com.google.cloud.speech.spi.v1beta1.SpeechApi;
 import com.google.cloud.speech.v1beta1.RecognitionConfig;
-import com.google.cloud.speech.v1beta1.SpeechGrpc;
-import com.google.cloud.speech.v1beta1.SpeechRecognitionResult;
 import com.google.cloud.speech.v1beta1.StreamingRecognitionConfig;
 import com.google.cloud.speech.v1beta1.StreamingRecognizeRequest;
-import com.google.common.base.Optional;
-import com.google.longrunning.GetOperationRequest;
-import com.google.longrunning.Operation;
-import com.google.longrunning.OperationsGrpc;
 import com.google.protobuf.ByteString;
-import io.grpc.ManagedChannel;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import is.hello.supichi.configuration.AudioConfiguration;
 import is.hello.supichi.models.SpeechServiceResult;
-import is.hello.supichi.utils.ClientUtils;
 import is.hello.supichi.utils.HelloStreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,16 +49,10 @@ public class SpeechClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeechClient.class.getName());
 
-    private static final long OPERATION_WAIT_TIME = 500L;
-
     private final AudioConfiguration configuration;
 
-    private final ManagedChannel channel;
 
-    private final SpeechGrpc.SpeechBlockingStub stub;
-    private final OperationsGrpc.OperationsBlockingStub statusClient;
-
-    private final SpeechGrpc.Speech stubStreaming;
+    private final SpeechApi speechApi;
 
     /**
      * Construct client connecting to Cloud Speech server at {@code host:port}.
@@ -77,80 +60,15 @@ public class SpeechClient {
     public SpeechClient(String host, int port, AudioConfiguration configuration) throws IOException {
         this.configuration = configuration;
 
-        channel = ClientUtils.createChannel(host, port);
-        stub = SpeechGrpc.newBlockingStub(channel);
-        statusClient = OperationsGrpc.newBlockingStub(channel);
-
-        stubStreaming = SpeechGrpc.newStub(channel);
+        speechApi  = SpeechApi.create();
 
         LOGGER.info("action=created-stub host={} port={}", host, port);
     }
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown() throws Exception {
 //        channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-        channel.shutdownNow();
+        speechApi.close();
     }
-
-    /** Send async recognize requests to server. */
-    public SpeechServiceResult recognize(final byte[] body, final int samplingRate) throws InterruptedException, IOException {
-
-        SpeechServiceResult speechServiceResult = new SpeechServiceResult();
-
-        final RecognitionAudio audio = RecognitionAudio.newBuilder().setContent(ByteString.copyFrom(body)).build();
-        LOGGER.info("action=sending-audio byte_size={}", audio.getContent().size());
-
-        final RecognitionConfig config = RecognitionConfig.newBuilder()
-                .setEncoding(configuration.getEncoding()) // AudioEncoding.LINEAR16
-                .setSampleRate(samplingRate)
-                .setMaxAlternatives(1)
-                .build();
-
-        final AsyncRecognizeRequest request = AsyncRecognizeRequest.newBuilder()
-                .setConfig(config)
-                .setAudio(audio).build();
-
-        Operation operation;
-        Operation status;
-        try {
-            operation = stub.asyncRecognize(request);
-            LOGGER.debug("action=async-recognize operation_handle={}", operation.getName());
-        } catch (StatusRuntimeException e) {
-            LOGGER.warn("error=rpc-fail status={} error_msg={}", e.getStatus(), e.getMessage());
-            return speechServiceResult;
-        }
-
-        // loop till operations is done
-        while (true) {
-            try {
-                LOGGER.info("action=wait-for-operations time={} unit=ms", OPERATION_WAIT_TIME);
-                Thread.sleep(OPERATION_WAIT_TIME);
-                GetOperationRequest operationRequest = GetOperationRequest.newBuilder().setName(operation.getName()).build();
-                status = statusClient.getOperation(operationRequest);
-                if (status.getDone()) {
-                    break;
-                }
-
-            } catch (Exception ex) {
-                LOGGER.warn("error=fail-to-get-operations result msg={}", ex.getMessage());
-                return speechServiceResult;
-            }
-        }
-
-        // operation done, get the results
-        try {
-            final AsyncRecognizeResponse asyncResponse = status.getResponse().unpack(AsyncRecognizeResponse.class);
-            LOGGER.info("received_response={}", asyncResponse);
-            final SpeechRecognitionResult speechRecognitionResult = asyncResponse.getResults(0);
-            speechServiceResult.setFinal(true);
-            speechServiceResult.setStability(1.0f);
-            speechServiceResult.setTranscript(Optional.of(speechRecognitionResult.getAlternatives(0).getTranscript()));
-            speechServiceResult.setConfidence(speechRecognitionResult.getAlternatives(0).getConfidence());
-        } catch (com.google.protobuf.InvalidProtocolBufferException ex) {
-            LOGGER.warn("error=protobuf-unpack-error, msg={}", ex.getMessage());
-        }
-        return speechServiceResult;
-    }
-
 
     /**
      * Send StreamRecognizeRequest
@@ -164,7 +82,7 @@ public class SpeechClient {
         final CountDownLatch finishLatch = new CountDownLatch(1);
 
         final HelloStreamObserver responseObserver = new HelloStreamObserver(finishLatch);
-        final StreamObserver<StreamingRecognizeRequest> requestObserver = stubStreaming.streamingRecognize(responseObserver);
+        final StreamObserver<StreamingRecognizeRequest> requestObserver = speechApi.streamingRecognizeCallable().bidiStreamingCall(responseObserver);
         try {
             // Build and send a RecognizeRequest containing the parameters for processing the audio.
             final RecognitionConfig config = RecognitionConfig.newBuilder()
