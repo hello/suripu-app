@@ -59,6 +59,7 @@ public class SleepSummaryHandler extends BaseHandler {
         tempMap.put("how is my sleep", SLEEP_SUMMARY);
         tempMap.put("how's my sleep", SLEEP_SUMMARY);
         tempMap.put("how did i sleep", SLEEP_SUMMARY);
+        tempMap.put("how do i sleep", SLEEP_SUMMARY);
         return tempMap;
     }
 
