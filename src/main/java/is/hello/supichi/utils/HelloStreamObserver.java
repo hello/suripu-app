@@ -3,7 +3,6 @@ package is.hello.supichi.utils;
 import com.google.cloud.speech.v1beta1.StreamingRecognitionResult;
 import com.google.cloud.speech.v1beta1.StreamingRecognizeResponse;
 import com.google.common.base.Optional;
-import com.google.protobuf.TextFormat;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import is.hello.supichi.clients.SpeechClient;
@@ -23,41 +22,39 @@ public class HelloStreamObserver implements StreamObserver<StreamingRecognizeRes
 
 
     private final CountDownLatch finishLatch;
+    private final String senseId;
 
-    public HelloStreamObserver(final CountDownLatch latch) {
+    public HelloStreamObserver(final CountDownLatch latch, final String senseId) {
         this.finishLatch = latch;
+        this.senseId = senseId;
     }
 
     @Override
     public void onNext(final StreamingRecognizeResponse response) {
-        logger.debug("action=check-results size={}", response.getResultsCount());
+        logger.debug("action=check-results size={} sense_id={}", response.getResultsCount(), senseId);
 
         for(final StreamingRecognitionResult result : response.getResultsList()) {
-            logger.debug("action=received-api-result result={}", TextFormat.printToString(result));
             speechServiceResult.setStability(result.getStability());
             speechServiceResult.setConfidence(result.getAlternatives(0).getConfidence());
             speechServiceResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
-            logger.debug("action=get-interim-api-result result={}", speechServiceResult);
 
             if(result.getIsFinal()) {
                 speechServiceResult.setFinal(true);
-                logger.debug("action=get-final-result result={}", speechServiceResult);
                 finishLatch.countDown();
             }
-
         }
     }
 
     @Override
     public void onError(Throwable throwable) {
         Status status = Status.fromThrowable(throwable);
-        logger.warn("warning=stream-recognize-failed status={}", status);
+        logger.warn("warning=stream-recognize-failed status={} sense_id={}", status, senseId);
         finishLatch.countDown();
     }
 
     @Override
     public void onCompleted() {
-        logger.info("action=stream-recognize-completed");
+        logger.info("action=stream-recognize-completed sense_id={}", senseId);
         finishLatch.countDown();
     }
 

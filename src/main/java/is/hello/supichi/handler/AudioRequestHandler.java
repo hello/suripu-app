@@ -170,7 +170,7 @@ public class AudioRequestHandler {
             LOGGER.debug("action=done-adpcm-pcm-conversion sense_id={} output_size={}", senseId, decoded.length);
 
             // send speech to google
-            final SpeechServiceResult resp = speechClient.stream(decoded, uploadData.request.getSamplingRate());
+            final SpeechServiceResult resp = speechClient.stream(rawRequest.senseId(), decoded, uploadData.request.getSamplingRate());
 
 
             if (!resp.getTranscript().isPresent()) {
@@ -217,7 +217,6 @@ public class AudioRequestHandler {
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.STATIC);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
-            // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 // save OK speech result
                 Result commandResult = Result.OK;

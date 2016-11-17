@@ -14,16 +14,16 @@ public class InstrumentedSpeechClient extends SpeechClient {
 
     private final Timer streamer;
 
-    public InstrumentedSpeechClient(String host, int port, AudioConfiguration configuration, final MetricRegistry metricRegistry) throws IOException {
-        super(host, port, configuration);
+    public InstrumentedSpeechClient(AudioConfiguration configuration, final MetricRegistry metricRegistry) throws IOException {
+        super(configuration);
         this.streamer = metricRegistry.timer(MetricRegistry.name(InstrumentedSpeechClient.class, "transcript-timer"));
     }
 
     @Override
-    public SpeechServiceResult stream(final byte [] bytes, int samplingRate) throws InterruptedException, IOException {
+    public SpeechServiceResult stream(final String senseId, final byte [] bytes, int samplingRate) throws InterruptedException, IOException {
         final Timer.Context context = streamer.time();
         try {
-            return super.stream(bytes, samplingRate);
+            return super.stream(senseId, bytes, samplingRate);
         } finally {
             context.stop();
         }
