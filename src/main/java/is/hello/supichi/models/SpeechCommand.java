@@ -10,6 +10,7 @@ import is.hello.supichi.commandhandlers.SleepSummaryHandler;
 import is.hello.supichi.commandhandlers.TimeHandler;
 import is.hello.supichi.commandhandlers.TimelineHandler;
 import is.hello.supichi.commandhandlers.TriviaHandler;
+import is.hello.supichi.commandhandlers.WaitHandler;
 import is.hello.supichi.commandhandlers.WeatherHandler;
 
 /**
@@ -38,7 +39,8 @@ public enum SpeechCommand {
     TIMELINE("timeline",TimelineHandler.class),
     ALEXA("alexa",AlexaHandler.class),
     SLEEP_SCORE("sleep_score", SleepSummaryHandler.class),
-    SLEEP_SUMMARY("sleep_summary", SleepSummaryHandler.class);
+    SLEEP_SUMMARY("sleep_summary", SleepSummaryHandler.class),
+    WAIT("wait",WaitHandler.class);
 
     private String value;
     private Class commandClass;

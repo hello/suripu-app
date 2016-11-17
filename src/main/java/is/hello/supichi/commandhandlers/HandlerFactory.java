@@ -154,4 +154,8 @@ public class HandlerFactory {
     public SleepSummaryHandler sleepSummaryHandler() {
         return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO, timelineProcessor);
     }
+
+    public WaitHandler waitHandler() {
+        return new WaitHandler(speechCommandDAO);
+    }
 }

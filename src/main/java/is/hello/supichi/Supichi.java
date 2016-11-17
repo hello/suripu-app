@@ -228,6 +228,10 @@ public class Supichi
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
                 .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
 
+        if(configuration.getDebug()) {
+            handlerExecutor.register(HandlerType.WAIT, handlerFactory.waitHandler());
+        }
+
         // set up Kinesis Producer
         final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
 

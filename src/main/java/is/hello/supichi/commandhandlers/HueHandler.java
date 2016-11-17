@@ -1,36 +1,12 @@
 package is.hello.supichi.commandhandlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.apache.commons.codec.binary.Base64;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-
 import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
@@ -49,12 +25,28 @@ import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.response.SupichiResponseType;
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static is.hello.supichi.commandhandlers.ErrorText.BAD_EXPANSION_DATA;
-import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
-import static is.hello.supichi.commandhandlers.ErrorText.EXPANSION_NOT_FOUND;
-import static is.hello.supichi.commandhandlers.ErrorText.NO_EXPANSION_DATA;
-import static is.hello.supichi.commandhandlers.ErrorText.TOKEN_NOT_FOUND;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static is.hello.supichi.commandhandlers.ErrorText.*;
 
 
 /**
@@ -79,8 +71,8 @@ public class HueHandler extends BaseHandler {
     public static final Integer COLOR_TEMPERATURE_DECREMENT = -COLOR_TEMPERATURE_INCREMENT;
     public static final String SET_LIGHT_OK_RESPONSE = "Okay, done";
     public static final String SET_LIGHT_ERROR_RESPONSE = "Sorry, your lights could not be reached";
-    public static final String SET_LIGHT_ERROR_AUTH = "Please connect your lights on the Sense app under Expansions";
-    public static final String SET_LIGHT_ERROR_CONFIG = "Please connect your lights on the Sense app under Expansions";
+    public static final String SET_LIGHT_ERROR_AUTH = "Please connect your lights on the Sense mobile app under Expansions";
+    public static final String SET_LIGHT_ERROR_CONFIG = "Please connect your lights on the Sense mobile app under Expansions";
     public static final String SET_LIGHT_ERROR_APPLICATION = "Sorry, your lights could not be reached";
 
     public HueHandler(final String hueAppName,

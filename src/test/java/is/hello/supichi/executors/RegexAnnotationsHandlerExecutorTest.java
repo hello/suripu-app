@@ -232,7 +232,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("what's my score", SleepSummaryHandler.class, true),
                 new HandlerTestData("what was my score", SleepSummaryHandler.class, true),
-                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false)
+                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false),
+                new HandlerTestData("turn on the bedroom lights", HueHandler.class, true)
         );
 
         final TimeZone timeZone = DateTimeZone.forID("America/Los_Angeles").toTimeZone();
