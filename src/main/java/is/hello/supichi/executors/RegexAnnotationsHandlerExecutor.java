@@ -99,7 +99,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             final HandlerType handlerType = commandToHandlerMap.get(pattern);
             Matcher m = pattern.matcher(command);
             if(m.find()) {
-                LOGGER.debug("match_pattern={}, handler_type={}", pattern, handlerType);
+                LOGGER.debug("match_pattern={} handler_type={}", pattern, handlerType);
                 if (availableHandlers.containsKey(handlerType)) {
                     final BaseHandler matchedHandler = availableHandlers.get(handlerType);
                     if (!possibleHandlers.contains(matchedHandler)) {
