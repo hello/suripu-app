@@ -117,7 +117,7 @@ public class SleepSoundHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.lowercaseTranscript();
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
         GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);

@@ -47,7 +47,7 @@ public class TriviaHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript.toLowerCase();
+        final String text = annotatedTranscript.lowercaseTranscript();
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
         String command = HandlerResult.EMPTY_COMMAND;

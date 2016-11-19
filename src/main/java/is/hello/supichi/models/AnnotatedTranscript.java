@@ -47,7 +47,16 @@ public class AnnotatedTranscript {
         this.volumes = volumes;
     }
 
+    public String lowercaseTranscript() {
+        return this.transcript.toLowerCase();
+    }
+
+    public String transcript() {
+        return this.transcript;
+    }
+
     public static class Builder {
+
         private String transcript = "";
         private Optional<TimeZone> timeZoneOptional = Optional.absent();
         private List<TimeAnnotation> times = Lists.newArrayList();

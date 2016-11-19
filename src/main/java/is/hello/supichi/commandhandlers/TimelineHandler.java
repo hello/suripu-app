@@ -33,7 +33,7 @@ public class TimelineHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.lowercaseTranscript();
 
         String command = HandlerResult.EMPTY_COMMAND;
         GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);
