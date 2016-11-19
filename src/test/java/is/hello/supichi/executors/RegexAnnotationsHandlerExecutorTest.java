@@ -247,7 +247,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("what's the humidity", RoomConditionsHandler.class, true),
                 new HandlerTestData("what humidity is it", RoomConditionsHandler.class, true),
                 new HandlerTestData("how's the humidity", RoomConditionsHandler.class, true),
-                new HandlerTestData("how is the humidity", RoomConditionsHandler.class, true)
+                new HandlerTestData("how is the humidity", RoomConditionsHandler.class, true),
+                new HandlerTestData("how was the humidity", RoomConditionsHandler.class, true)
         );
 
         final TimeZone timeZone = DateTimeZone.forID("America/Los_Angeles").toTimeZone();
