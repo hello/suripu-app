@@ -259,7 +259,7 @@ public class RegexAnnotationsHandlerExecutorTest {
             if (result.isPresent()) {
                 assertEquals(data.text, result.get().getClass(), data.klass);
                 final BaseHandler handler = result.get();
-                assertTrue(data.text, handler.getCommand(data.text).isPresent());
+                assertTrue(data.text, handler.getCommand(transcript).isPresent());
             }
         }
 

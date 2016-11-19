@@ -66,7 +66,7 @@ public class SleepSummaryHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.lowercaseTranscript());
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
 
         final Long accountId = request.accountId;
 

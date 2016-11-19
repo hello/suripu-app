@@ -108,7 +108,8 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    public Optional<SpeechCommand> getCommand(final String text) {
+    public Optional<SpeechCommand> getCommand(final AnnotatedTranscript transcript) {
+        final String text = transcript.lowercaseTranscript();
         final Matcher cancelMatcher = CANCEL_ALARM_PATTERN.matcher(text);
         if (cancelMatcher.find()) {
             return Optional.of (SpeechCommand.ALARM_DELETE);
@@ -124,7 +125,7 @@ public class AlarmHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.lowercaseTranscript());
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
 
         final Long accountId = request.accountId;
         final String senseId = request.senseId;
