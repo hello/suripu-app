@@ -28,6 +28,7 @@ import is.hello.supichi.commandhandlers.BaseHandler;
 import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.commandhandlers.HueHandler;
 import is.hello.supichi.commandhandlers.NestHandler;
+import is.hello.supichi.commandhandlers.RoomConditionsHandler;
 import is.hello.supichi.commandhandlers.SleepSummaryHandler;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.db.SpeechCommandDAO;
@@ -51,6 +52,7 @@ import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class RegexAnnotationsHandlerExecutorTest {
@@ -230,9 +232,23 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("how's my sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how is my sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
+                new HandlerTestData("how was my sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how do i sleep", SleepSummaryHandler.class, true),
                 new HandlerTestData("what's my score", SleepSummaryHandler.class, true),
                 new HandlerTestData("what was my score", SleepSummaryHandler.class, true),
-                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false)
+                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false),
+
+                new HandlerTestData("what's the temperature", RoomConditionsHandler.class, true),
+                new HandlerTestData("how's the temperature", RoomConditionsHandler.class, true),
+                new HandlerTestData("how is the temperature", RoomConditionsHandler.class, true),
+                new HandlerTestData("how was the temperature", RoomConditionsHandler.class, true),
+                new HandlerTestData("what temperature is it", RoomConditionsHandler.class, true),
+
+                new HandlerTestData("what's the humidity", RoomConditionsHandler.class, true),
+                new HandlerTestData("what humidity is it", RoomConditionsHandler.class, true),
+                new HandlerTestData("how's the humidity", RoomConditionsHandler.class, true),
+                new HandlerTestData("how is the humidity", RoomConditionsHandler.class, true),
+                new HandlerTestData("how was the humidity", RoomConditionsHandler.class, true)
         );
 
         final TimeZone timeZone = DateTimeZone.forID("America/Los_Angeles").toTimeZone();
@@ -243,6 +259,8 @@ public class RegexAnnotationsHandlerExecutorTest {
             assertEquals(data.text, result.isPresent(), data.resultPresent);
             if (result.isPresent()) {
                 assertEquals(data.text, result.get().getClass(), data.klass);
+                final BaseHandler handler = result.get();
+                assertTrue(data.text, handler.getCommand(transcript).isPresent());
             }
         }
 

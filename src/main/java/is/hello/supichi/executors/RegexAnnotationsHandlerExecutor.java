@@ -60,10 +60,14 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
 
         if (optionalHandler.isPresent()) {
             final BaseHandler handler = optionalHandler.get();
-            LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
+            LOGGER.debug("action=find-handler sense_id={} account_id={} result=success handler={}",
+                    request.senseId, accountId, handler.getClass().toString());
 
             final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, request);
-            LOGGER.info("action=execute-command result={} response={}", executeResult.outcome().getValue(), executeResult.responseText());
+            LOGGER.info("action=execute-command sense_id={} account_id={} result={} response={}",
+                    request.senseId, accountId, executeResult.outcome().getValue(),
+                    executeResult.responseText().replace(" ", "-"));
+
             return executeResult;
         }
 
@@ -99,7 +103,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             final HandlerType handlerType = commandToHandlerMap.get(pattern);
             Matcher m = pattern.matcher(command);
             if(m.find()) {
-                LOGGER.debug("match_pattern={}, handler_type={}", pattern, handlerType);
+                LOGGER.debug("match_pattern={} handler_type={}", pattern, handlerType);
                 if (availableHandlers.containsKey(handlerType)) {
                     final BaseHandler matchedHandler = availableHandlers.get(handlerType);
                     if (!possibleHandlers.contains(matchedHandler)) {

@@ -49,7 +49,7 @@ public class WeatherHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.lowercaseTranscript();
 
         final Optional<AccountLocation> accountLocationOptional = accountLocationDAO.getLastLocationByAccountId(request.accountId);
         final Map<String,String> params = Maps.newHashMap();

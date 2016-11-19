@@ -55,16 +55,18 @@ public class SleepSummaryHandler extends BaseHandler {
         tempMap.put("what was my score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("what's my score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("sleep summary", SLEEP_SUMMARY);
+
         tempMap.put("how was my sleep", SLEEP_SUMMARY);
         tempMap.put("how is my sleep", SLEEP_SUMMARY);
         tempMap.put("how's my sleep", SLEEP_SUMMARY);
         tempMap.put("how did i sleep", SLEEP_SUMMARY);
+        tempMap.put("how do i sleep", SLEEP_SUMMARY);
         return tempMap;
     }
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
 
         final Long accountId = request.accountId;
 
@@ -102,7 +104,6 @@ public class SleepSummaryHandler extends BaseHandler {
     private HandlerResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-sleep-score reason=no-timezone account_id={}", accountId);
-
             return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE));
         }
 
@@ -120,13 +121,21 @@ public class SleepSummaryHandler extends BaseHandler {
         final DateTime localToday = DateTime.now(timezoneId).withTimeAtStartOfDay();
         final String lastNightDate = DateTimeUtil.dateToYmdString(localToday.minusDays(1));
 
+        LOGGER.debug("action=get-sleep-stats-from-ddb account_id={} night_date={}", accountId, lastNightDate);
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
 
         if (optionalSleepStat.isPresent()) {
+            final AggregateSleepStats stat = optionalSleepStat.get();
+            LOGGER.info("action=found-sleep-stats-in-ddb account_id={} night_date={} score={} sleep={} wake={} deep={}",
+                    accountId, lastNightDate, stat.sleepScore,
+                    stat.sleepStats.sleepTime, stat.sleepStats.wakeTime,
+                    stat.sleepStats.soundSleepDurationInMinutes);
             return optionalSleepStat;
         }
 
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(lastNightDate);
+        LOGGER.debug("action=compute-timeline-for-stats account_id={} target_date={}", accountId, targetDate);
+
         final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
         final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.absent());
 
@@ -134,9 +143,16 @@ public class SleepSummaryHandler extends BaseHandler {
             final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
                     .withSleepStats(result.timelines.get(0).statistics.get())
                     .withSleepScore(result.timelines.get(0).score).build();
+
+            LOGGER.info("action=compute-timeline-ok account_id={} target_date={} score={} sleep={} wake={} deep={}",
+                    accountId, targetDate, aggStats.sleepScore,
+                    aggStats.sleepStats.sleepTime, aggStats.sleepStats.wakeTime,
+                    aggStats.sleepStats.soundSleepDurationInMinutes);
+
             return Optional.of(aggStats);
         }
 
+        LOGGER.info("action=fail-to-get-sleep-stats account_id={} target_date={}", accountId, targetDate);
         return Optional.absent();
     }
 

@@ -1,36 +1,12 @@
 package is.hello.supichi.commandhandlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.apache.commons.codec.binary.Base64;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-
 import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
@@ -49,6 +25,26 @@ import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.response.SupichiResponseType;
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static is.hello.supichi.commandhandlers.ErrorText.BAD_EXPANSION_DATA;
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
@@ -141,8 +137,8 @@ public class HueHandler extends BaseHandler {
 
         final Expansion expansion = expansionOptional.get();
 
-        final String text = annotatedTranscript.transcript;
-        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
+        final String text = annotatedTranscript.lowercaseTranscript();
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript); // TODO: ensure that only valid commands are returned
 
 
         if (!optionalCommand.isPresent()) {
@@ -152,6 +148,7 @@ public class HueHandler extends BaseHandler {
         }
 
         final SpeechCommand command = optionalCommand.get();
+        LOGGER.debug("action=hue-command-found sense_id={} command={}", senseId, command.toString());
 
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
@@ -227,6 +224,8 @@ public class HueHandler extends BaseHandler {
                 final Boolean isSuccessful = light.setLightState(isOn);
 
                 lightOn = isOn.toString();
+                LOGGER.info("action=hue-light-toggle-result sense_id={} account_id={} is_on={} success={}",
+                        senseId, accountId, lightOn, isSuccessful);
 
                 if(isSuccessful) {
                     GenericResult.ok(SET_LIGHT_OK_RESPONSE);
@@ -252,6 +251,8 @@ public class HueHandler extends BaseHandler {
                     final Boolean isSuccessful = light.adjustBrightness(adjustment.getValue());
 
                     brightnessAdjust =  adjustment.getValue().toString();
+                    LOGGER.info("action=hue-light-set-brightness-result sense_id={} account_id={} brightness={} success={}",
+                            senseId, accountId, brightnessAdjust, isSuccessful);
 
                     if(isSuccessful) {
                         final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
@@ -276,6 +277,9 @@ public class HueHandler extends BaseHandler {
 
                     colorTempAdjust =  adjustment.getValue().toString();
 
+                    LOGGER.info("action=hue-light-set-color-result sense_id={} account_id={} color={} success={}",
+                            senseId, accountId, colorTempAdjust, isSuccessful);
+
                     if(isSuccessful) {
                         final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
                         hueResult = GenericResult.ok(SET_LIGHT_OK_RESPONSE);
@@ -284,6 +288,9 @@ public class HueHandler extends BaseHandler {
                 }
             }
         }
+
+        LOGGER.error("error=hue-command-fail sense_id={} account_id={} cmd={} isOn={} brightness={} color={}",
+                senseId, accountId, command.name(), lightOn, brightnessAdjust, colorTempAdjust);
 
         final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
         hueResult = GenericResult.failWithResponse("unknown command", SET_LIGHT_ERROR_RESPONSE);

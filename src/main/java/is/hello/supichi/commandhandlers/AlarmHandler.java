@@ -108,7 +108,8 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    Optional<SpeechCommand> getCommand(final String text) {
+    public Optional<SpeechCommand> getCommand(final AnnotatedTranscript transcript) {
+        final String text = transcript.lowercaseTranscript();
         final Matcher cancelMatcher = CANCEL_ALARM_PATTERN.matcher(text);
         if (cancelMatcher.find()) {
             return Optional.of (SpeechCommand.ALARM_DELETE);
@@ -124,7 +125,7 @@ public class AlarmHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
 
         final Long accountId = request.accountId;
         final String senseId = request.senseId;
@@ -155,12 +156,12 @@ public class AlarmHandler extends BaseHandler {
         }
 
         if (annotatedTranscript.times.isEmpty()) {
-            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account_id={}", annotatedTranscript.transcript, accountId);
+            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account_id={}", annotatedTranscript.lowercaseTranscript(), accountId);
             return GenericResult.failWithResponse(NO_TIME_ERROR, SET_ALARM_ERROR_NO_TIME_RESPONSE);
         }
 
-        if (annotatedTranscript.transcript.toLowerCase().contains(SMART_ALARM_CHECK_STRING)) {
-            LOGGER.error("error=tried-to-set-smart-alarm text={} account_id={}", annotatedTranscript.transcript, accountId);
+        if (annotatedTranscript.lowercaseTranscript().contains(SMART_ALARM_CHECK_STRING)) {
+            LOGGER.error("error=tried-to-set-smart-alarm text={} account_id={}", annotatedTranscript.lowercaseTranscript(), accountId);
             return GenericResult.failWithResponse(SMART_ALARM_ERROR, SMART_ALARM_ERROR_RESPONSE);
         }
 

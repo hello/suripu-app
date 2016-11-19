@@ -39,21 +39,23 @@ public class TriviaHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
+        tempMap.put("best nba", SpeechCommand.TRIVIA);
+        tempMap.put("best team in nba", SpeechCommand.TRIVIA);
         return tempMap;
     }
 
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript.toLowerCase();
+        final String text = annotatedTranscript.lowercaseTranscript();
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text);
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
         String command = HandlerResult.EMPTY_COMMAND;
 
         GenericResult result = GenericResult.failWithResponse(COMMAND_NOT_FOUND, NO_COMMAND_RESPONSE_TEXT);
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-            if (text.contains("best basketball")) {
+            if (text.contains("best basketball") || text.contains("nba")) {
                 result = GenericResult.ok("The best basketball team in the NBA is the Golden State Warriors.");
 
             }
