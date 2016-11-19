@@ -63,9 +63,9 @@ public class TimeHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.lowercaseTranscript();
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript); // TODO: ensure that only valid commands are returned
 
         if (optionalCommand.isPresent()) {
             final String command = optionalCommand.get().getValue();

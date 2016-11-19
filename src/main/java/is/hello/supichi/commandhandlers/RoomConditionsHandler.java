@@ -43,7 +43,9 @@ public class RoomConditionsHandler extends BaseHandler {
     private static final boolean DEFAULT_USE_FAHRENHEIT = false; // check is for use-Celsius
     private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
     private static final String TEMPERATURE_PATTERN = "what('s)?.+\\s(temperature)";
-    private static final String HUMIDITY_PATTERN = "what('s)?.+\\s(humidity)";
+    private static final String TEMPERATURE_PATTERN_HOW = "how('s)?.+\\s(temperature)";
+    private static final String HUMIDITY_PATTERN = "what('s)?.*\\s(humidity)";
+    private static final String HUMIDITY_PATTERN_HOW = "how('s)?.*\\s(humidity)";
 
     private static final String NO_DATA_ERROR_RESPONSE_TEXT = "Sorry, I wasn't able to access your %s data right now. Please try again later";
     private static final String ROOM_CONDITION_UNAVAILABLE_RESPONSE_TEXT = "Room conditions are currently unavailable. Please try again later.";
@@ -97,7 +99,11 @@ public class RoomConditionsHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put(TEMPERATURE_PATTERN, SpeechCommand.ROOM_TEMPERATURE);
+        tempMap.put(TEMPERATURE_PATTERN_HOW, SpeechCommand.ROOM_TEMPERATURE);
+        tempMap.put("what temperature", SpeechCommand.ROOM_TEMPERATURE);
         tempMap.put(HUMIDITY_PATTERN, SpeechCommand.ROOM_HUMIDITY);
+        tempMap.put(HUMIDITY_PATTERN_HOW, SpeechCommand.ROOM_HUMIDITY);
+        tempMap.put("what humidity", SpeechCommand.ROOM_HUMIDITY);
         tempMap.put("light level", SpeechCommand.ROOM_LIGHT);
         tempMap.put("how bright", SpeechCommand.ROOM_LIGHT);
         tempMap.put("sound level", SpeechCommand.ROOM_SOUND);
@@ -111,9 +117,9 @@ public class RoomConditionsHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.transcript;
+        final String text = annotatedTranscript.lowercaseTranscript();
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
+        final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript); // TODO: ensure that only valid commands are returned
 
         if (optionalCommand.isPresent()) {
             return getCurrentRoomConditions(request.accountId, optionalCommand.get());

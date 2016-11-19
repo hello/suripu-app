@@ -129,7 +129,8 @@ public class AudioRequestHandler {
         }
 
         final Long accountId = optionalPrimaryAccount.get();
-        LOGGER.debug("action=get-speech-audio sense_id={} primary_account_id={} response_type={}", rawRequest.senseId(), accountId, uploadData.request.getResponse());
+        final String senseId = rawRequest.senseId();
+        LOGGER.debug("action=get-speech-audio sense_id={} primary_account_id={} response_type={}", senseId, accountId, uploadData.request.getResponse());
 
         // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();
@@ -162,14 +163,19 @@ public class AudioRequestHandler {
 
         try {
             // convert audio: ADPCM to 16-bit 16k PCM
-            final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
-            LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
+            LOGGER.debug("action=start-adpcm-pcm-conversion sense_id={} input_size={}", senseId, body.length);
 
+            final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
+
+            LOGGER.debug("action=done-adpcm-pcm-conversion sense_id={} output_size={}", senseId, decoded.length);
+
+            // send speech to google
             final SpeechServiceResult resp = speechClient.stream(rawRequest.senseId(), decoded, uploadData.request.getSamplingRate());
 
 
             if (!resp.getTranscript().isPresent()) {
-                LOGGER.warn("action=google-transcript-failed sense_id={}", rawRequest.senseId());
+                LOGGER.warn("action=google-transcript-failed final_result=try_again sense_id={} account_id={} response=silence",
+                        senseId, accountId);
 
                 this.transcriptFail.mark(1);
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
@@ -198,6 +204,8 @@ public class AudioRequestHandler {
                             .withResult(Result.REJECTED);
                     speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
+                    LOGGER.error("error=command-rejected reason=single-word final_result=rejected sense_id={} account_id={} response=silence",
+                            senseId, accountId);
                     return WrappedResponse.silence();
                 }
             }
@@ -209,7 +217,6 @@ public class AudioRequestHandler {
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.STATIC);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
-            // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 // save OK speech result
                 Result commandResult = Result.OK;
@@ -230,6 +237,8 @@ public class AudioRequestHandler {
                         .withResult(commandResult);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
+                LOGGER.info("action=command-processed-building-response final_result={} sense_id={} account_id={} command={} response={}",
+                        commandResult.name(), senseId, accountId, executeResult.command, executeResult.responseText().replace(" ", "-"));
 
                 final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.OK, executeResult, uploadData.request);
                 return WrappedResponse.ok(content);
@@ -242,7 +251,9 @@ public class AudioRequestHandler {
                     .withResult(Result.TRY_AGAIN);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            // executeResult = new HandlerResult(HandlerType.NONE, "", GenericResult.failWithResponse(COMMAND_NOT_FOUND, GenericResponseText.TRY_AGAIN_TEXT));
+            LOGGER.info("action=command-processed-no-handler-found final_result=try-again sense_id={} account_id={} response=generic-try-again-text",
+                    senseId, accountId);
+
             final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
 
@@ -251,11 +262,15 @@ public class AudioRequestHandler {
         }
 
         // no text or command found, save REJECT result
+        final String responseText = executeResult.responseText().isEmpty() ? GenericResponseText.UNKNOWN_TEXT : executeResult.responseText();
         this.commandRejected.mark(1);
         builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withResponseText(executeResult.responseText().isEmpty() ? GenericResponseText.UNKNOWN_TEXT : executeResult.responseText())
+                .withResponseText(responseText)
                 .withResult(Result.REJECTED);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+
+        LOGGER.info("action=nothing-processed final_result=rejected sense_id={} account_id={} response={}",
+                senseId, accountId, responseText.replace(" ", "-"));
 
         final byte[] content = responseBuilders.get(SupichiResponseType.STATIC).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
         return WrappedResponse.ok(content);
