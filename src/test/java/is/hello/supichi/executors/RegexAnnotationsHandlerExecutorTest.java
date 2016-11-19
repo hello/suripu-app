@@ -52,6 +52,7 @@ import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class RegexAnnotationsHandlerExecutorTest {
@@ -257,6 +258,8 @@ public class RegexAnnotationsHandlerExecutorTest {
             assertEquals(data.text, result.isPresent(), data.resultPresent);
             if (result.isPresent()) {
                 assertEquals(data.text, result.get().getClass(), data.klass);
+                final BaseHandler handler = result.get();
+                assertTrue(data.text, handler.getCommand(data.text).isPresent());
             }
         }
 

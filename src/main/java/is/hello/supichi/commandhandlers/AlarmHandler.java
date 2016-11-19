@@ -108,7 +108,7 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    Optional<SpeechCommand> getCommand(final String text) {
+    public Optional<SpeechCommand> getCommand(final String text) {
         final Matcher cancelMatcher = CANCEL_ALARM_PATTERN.matcher(text);
         if (cancelMatcher.find()) {
             return Optional.of (SpeechCommand.ALARM_DELETE);

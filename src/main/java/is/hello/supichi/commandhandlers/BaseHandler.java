@@ -34,7 +34,7 @@ public abstract class BaseHandler {
         return this.commandMap.keySet();
     }
 
-    Optional<SpeechCommand> getCommand(final String text) {
+    public Optional<SpeechCommand> getCommand(final String text) {
         if (commandMap.containsKey(text)) {
             return Optional.of(commandMap.get(text));
         }
