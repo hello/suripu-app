@@ -265,7 +265,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("play Horizon", SleepSoundHandler.class, true),
                 new HandlerTestData("play Nocturne", SleepSoundHandler.class, true),
                 new HandlerTestData("play Ocean Waves", SleepSoundHandler.class, false),
-                new HandlerTestData("play shit storm", SleepSoundHandler.class, false)
+                new HandlerTestData("play shit storm", SleepSoundHandler.class, false),
+                new HandlerTestData("play ambient sounds", SleepSoundHandler.class, true)
 
         );
 
