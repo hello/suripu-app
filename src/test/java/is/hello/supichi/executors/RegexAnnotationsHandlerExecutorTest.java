@@ -29,6 +29,7 @@ import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.commandhandlers.HueHandler;
 import is.hello.supichi.commandhandlers.NestHandler;
 import is.hello.supichi.commandhandlers.RoomConditionsHandler;
+import is.hello.supichi.commandhandlers.SleepSoundHandler;
 import is.hello.supichi.commandhandlers.SleepSummaryHandler;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.db.SpeechCommandDAO;
@@ -233,10 +234,12 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("how is my sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how was my sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false),
                 new HandlerTestData("how do i sleep", SleepSummaryHandler.class, true),
+
                 new HandlerTestData("what's my score", SleepSummaryHandler.class, true),
                 new HandlerTestData("what was my score", SleepSummaryHandler.class, true),
-                new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false),
+                new HandlerTestData("what is my sleep score", SleepSummaryHandler.class, true),
 
                 new HandlerTestData("what's the temperature", RoomConditionsHandler.class, true),
                 new HandlerTestData("how's the temperature", RoomConditionsHandler.class, true),
@@ -248,7 +251,22 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("what humidity is it", RoomConditionsHandler.class, true),
                 new HandlerTestData("how's the humidity", RoomConditionsHandler.class, true),
                 new HandlerTestData("how is the humidity", RoomConditionsHandler.class, true),
-                new HandlerTestData("how was the humidity", RoomConditionsHandler.class, true)
+                new HandlerTestData("how was the humidity", RoomConditionsHandler.class, true),
+
+                new HandlerTestData("play Brown Noise", SleepSoundHandler.class, true),
+                new HandlerTestData("play Cosmos", SleepSoundHandler.class, true),
+                new HandlerTestData("play Autumn Wind", SleepSoundHandler.class, true),
+                new HandlerTestData("play Fireside", SleepSoundHandler.class, true),
+                new HandlerTestData("play Rainfall", SleepSoundHandler.class, true),
+                new HandlerTestData("play White Noise", SleepSoundHandler.class, true),
+                new HandlerTestData("play Forest Creek", SleepSoundHandler.class, true),
+                new HandlerTestData("play Morpheus", SleepSoundHandler.class, true),
+                new HandlerTestData("play Aura", SleepSoundHandler.class, true),
+                new HandlerTestData("play Horizon", SleepSoundHandler.class, true),
+                new HandlerTestData("play Nocturne", SleepSoundHandler.class, true),
+                new HandlerTestData("play Ocean Waves", SleepSoundHandler.class, false),
+                new HandlerTestData("play shit storm", SleepSoundHandler.class, false)
+
         );
 
         final TimeZone timeZone = DateTimeZone.forID("America/Los_Angeles").toTimeZone();

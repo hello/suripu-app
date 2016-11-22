@@ -51,7 +51,7 @@ public class Annotator {
     private static List<SleepSoundAnnotation> getSleepSounds(final String text) {
         final List<SleepSoundAnnotation> entities = Lists.newArrayList();
         for (final SleepSoundHandler.SoundName soundName : SleepSoundHandler.SoundName.values()) {
-            if (text.contains(soundName.value)) {
+            if (text.contains(soundName.value.toLowerCase())) {
                 entities.add(new SleepSoundAnnotation(soundName.value, soundName));
             }
         }

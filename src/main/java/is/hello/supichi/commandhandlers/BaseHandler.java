@@ -44,7 +44,7 @@ public abstract class BaseHandler {
                 return Optional.of(commandMap.get(key));
             }
             //Check if there is a pattern match when treating the commandMap key as a regex pattern
-            final Pattern r = Pattern.compile(key);
+            final Pattern r = Pattern.compile(key, Pattern.CASE_INSENSITIVE);
             Matcher m = r.matcher(text);
             if(m.find()) {
                 return Optional.of(commandMap.get(key));

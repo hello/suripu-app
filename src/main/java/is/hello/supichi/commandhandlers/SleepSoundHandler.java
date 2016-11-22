@@ -1,5 +1,6 @@
 package is.hello.supichi.commandhandlers;
 
+import com.google.api.client.util.Lists;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.messeji.Sender;
@@ -14,10 +15,12 @@ import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
+import is.hello.supichi.models.annotations.SleepSoundAnnotation;
 import is.hello.supichi.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,17 +34,17 @@ import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 public class SleepSoundHandler extends BaseHandler {
     public enum SoundName {
         NONE("none"),
-        AURA("aura"),
-        NOCTURNE("nocturne"),
-        MORPHEUS("morpheus"),
-        HORIZON("horizon"),
-        COSMOS("cosmos"),
-        AUTUMN_WIND("autumn wind"),
-        FIRESIDE("fireside"),
-        RAINFALL("rainfall"),
-        FOREST_CREEK("forest creek"),
-        BROWN_NOISE("brown noise"),
-        WHITE_NOISE("white noise");
+        AURA("Aura"),
+        NOCTURNE("Nocturne"),
+        MORPHEUS("Morpheus"),
+        HORIZON("Horizon"),
+        COSMOS("Cosmos"),
+        AUTUMN_WIND("Autumn Wind"),
+        FIRESIDE("Fireside"),
+        RAINFALL("Rainfall"),
+        FOREST_CREEK("Forest Creek"),
+        BROWN_NOISE("Brown Noise"),
+        WHITE_NOISE("White Noise");
 
         public final String value;
 
@@ -58,20 +61,22 @@ public class SleepSoundHandler extends BaseHandler {
             }
             return SoundName.NONE;
         }
+        public static String regexPattern() {
+            final List<String> names = Lists.newArrayList();
+            for (final SoundName soundName : SoundName.values()) {
+                names.add(soundName.value.toLowerCase());
+            }
+            final String regex = String.join("|", names);
+            return String.format("play.+(%s)", regex);
+        }
 
     }
 
     // TODO: need to get these info from somewhere
     private static final Duration DEFAULT_SLEEP_SOUND_DURATION = Duration.create(2L, "30 Minutes", 1800);
-    private static final Sound DEFAULT_SOUND = Sound.create(20L,
-            "https://s3.amazonaws.com/hello-audio/sleep-tones-preview/Rainfall.mp3",
-            "Rainfall",
-            "/SLPTONES/ST006.RAW",
-            "s3://hello-audio/sleep-tones-raw/2016-04-01/ST006.raw"
-    );
-    private static final long DEFAULT_SLEEP_SOUND_ID =  20L; //
+    private static final String DEFAULT_SOUND_NAME = "Rainfall";
     private static final Double SENSE_MAX_DECIBELS = 60.0;
-    private static final int DEFAULT_SLEEP_SOUND_VOLUME_PERCENT = 70;
+    private static final int DEFAULT_SLEEP_SOUND_VOLUME_PERCENT = 50;
 
     // Fade in/out sounds over this many seconds on Sense
     private static final Integer FADE_IN = 1;
@@ -83,6 +88,7 @@ public class SleepSoundHandler extends BaseHandler {
 
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
+    private Map<String, Sound> availableSounds = Maps.newConcurrentMap();
 
     final ScheduledThreadPoolExecutor executor;
 
@@ -97,6 +103,8 @@ public class SleepSoundHandler extends BaseHandler {
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
+        tempMap.put(SoundName.regexPattern(), SpeechCommand.SLEEP_SOUND_PLAY);
+
         tempMap.put("okay play", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("play sound", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("play sleep sound", SpeechCommand.SLEEP_SOUND_PLAY);
@@ -117,7 +125,6 @@ public class SleepSoundHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.lowercaseTranscript();
 
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript);
         GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);
@@ -126,7 +133,7 @@ public class SleepSoundHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
             if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
-                result = playSleepSound(request.senseId, request.accountId);
+                result = playSleepSound(request.senseId, request.accountId, annotatedTranscript);
             } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
                 result = stopSleepSound(request.senseId, request.accountId);
             }
@@ -143,18 +150,31 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
 
-    private GenericResult playSleepSound(final String senseId, final Long accountId) {
+    private GenericResult playSleepSound(final String senseId, final Long accountId, final AnnotatedTranscript annotatedTranscript) {
 
         // TODO: get most recently played sleep_sound_id, order, volume, etc...
-        // final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, DEFAULT_SLEEP_SOUND_ID);
-        final Optional<Sound> soundOptional = Optional.of(DEFAULT_SOUND);
-        if (!soundOptional.isPresent()) {
-            LOGGER.error("error=invalid-sound-id id={} sense_id={}", DEFAULT_SLEEP_SOUND_ID, senseId);
-            return GenericResult.fail("invalid sound id");
+
+        final String soundName;
+        if (annotatedTranscript.sleepSounds.isEmpty()) {
+            soundName = DEFAULT_SOUND_NAME;
+        } else {
+            final SleepSoundAnnotation sleepSound = annotatedTranscript.sleepSounds.get(0);
+            soundName = sleepSound.sound().value;
+        }
+
+        if (!availableSounds.containsKey(soundName)) {
+            Optional<Sound> optionalSound = sleepSoundsProcessor.getSoundByFileName(soundName);
+            if (optionalSound.isPresent()) {
+                availableSounds.put(soundName, optionalSound.get());
+            }
+        }
+
+        if (!availableSounds.containsKey(soundName)) {
+            LOGGER.error("error=invalid-sleep-sound sense_id={} sound_name={}", senseId, soundName);
+            return GenericResult.fail("invalid sound name");
         }
 
         final Integer volumeScalingFactor = convertToSenseVolumePercent(SENSE_MAX_DECIBELS, DEFAULT_SLEEP_SOUND_VOLUME_PERCENT);
-
 
         executor.schedule((Runnable) () -> {
             final Optional<Long> messageId = messejiClient.playAudio(
@@ -162,7 +182,7 @@ public class SleepSoundHandler extends BaseHandler {
                     Sender.fromAccountId(accountId),
                     System.nanoTime(),
                     DEFAULT_SLEEP_SOUND_DURATION,
-                    soundOptional.get(),
+                    availableSounds.get(soundName),
                     FADE_IN, FADE_OUT,
                     volumeScalingFactor,
                     TIMEOUT_FADE_OUT);
