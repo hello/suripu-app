@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -213,6 +214,7 @@ public class AlarmHandler extends BaseHandler {
                 .withIsEditable(true)
                 .withIsSmart(false)
                 .withSource(AlarmSource.VOICE_SERVICE)
+                .withId(UUID.randomUUID().toString().toUpperCase())
                 .build();
 
         final List<Alarm> currentAlarms = alarmProcessor.getAlarms(accountId, senseId);
