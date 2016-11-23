@@ -66,7 +66,8 @@ public class HandlerResult {
         if (optionalResult.isPresent()) {
             responseText = optionalResult.get().responseText();
         }
-        return (!responseText.isEmpty()) ? responseText : GenericResponseText.UNKNOWN_TEXT;
+
+        return (!responseText.isEmpty()) ? responseText : GenericResponseText.alternativeResponseText(optionalResult);
     }
 
     public Optional<String> optionalErrorText() {
