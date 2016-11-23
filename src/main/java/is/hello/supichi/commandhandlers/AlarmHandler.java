@@ -74,7 +74,7 @@ public class AlarmHandler extends BaseHandler {
     public static final String CANCEL_ALARM_OK_RESPONSE_TEMPLATE = "OK, your alarm for %s is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no non-repeating alarm to cancel.";
     public static final String REPEATED_ALARM_CANCEL_INSTRUCTIONS = "You only have a repeating alarm set. Use the app to cancel.";
-    public static final String SMART_ALARM_ERROR_RESPONSE = "Sorry, your smart alarm could not be set. Please use the mobile app to set smart alarms.";
+    public static final String SMART_ALARM_ERROR_RESPONSE = "Smart Alarm could not be set. Use the app to set a Smart Alarm.";
 
     public static final String SMART_ALARM_CHECK_STRING = "smart alarm";
 
