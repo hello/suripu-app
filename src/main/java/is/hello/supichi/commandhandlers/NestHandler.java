@@ -13,6 +13,7 @@ import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.homeauto.clients.NestThermostat;
+import is.hello.gaibu.homeauto.models.AlarmActionStatus;
 import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
 import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.commandhandlers.results.NestResult;
@@ -207,8 +208,8 @@ public class NestHandler extends BaseHandler {
                 final TemperatureUnit units = (temperatureSum > 49) ? TemperatureUnit.FAHRENHEIT : TemperatureUnit.CELSIUS;
                 final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
 
-                final Boolean isSuccessful = nest.setTempFromValueRange(values, units);
-                if(isSuccessful) {
+                final AlarmActionStatus status = nest.setTempFromValueRange(values, units);
+                if(AlarmActionStatus.OK.equals(status)) {
                     final NestResult actualNestResult = new NestResult(temperatureSum.toString());
                     nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
                     return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
@@ -226,7 +227,8 @@ public class NestHandler extends BaseHandler {
 
                 final TemperatureUnit units = (temperatureSum > 49) ? TemperatureUnit.FAHRENHEIT : TemperatureUnit.CELSIUS;
                 final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
-                final Boolean isSuccessful = nest.setTempFromValueRange(values, units);
+                final AlarmActionStatus status = nest.setTempFromValueRange(values, units);
+                LOGGER.info("action=set-temperature-numeric status={} account_id={} sense_id={}", status, request.accountId, request.senseId);
                 final NestResult actualNestResult = new NestResult(temperatureSum.toString());
                 nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
                 return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);

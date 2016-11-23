@@ -246,7 +246,7 @@ public class ExpansionsResource extends BaseResource {
         final Optional<Expansion> expansionOptional = expansionStore.getApplicationById(appId);
         if(!expansionOptional.isPresent()) {
             LOGGER.warn("warning=application-not-found");
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.FORBIDDEN).build());
         }
 
         final Expansion expansion = expansionOptional.get();
@@ -599,7 +599,7 @@ public class ExpansionsResource extends BaseResource {
         final List<DeviceAccountPair> sensePairedWithAccount = this.deviceDAO.getSensesForAccountId(accessToken.accountId);
         if(sensePairedWithAccount.size() == 0){
             LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.FORBIDDEN).build());
         }
 
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
@@ -623,7 +623,7 @@ public class ExpansionsResource extends BaseResource {
         //Enumerate devices on a service-specific basis
         final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
         if(!decryptedTokenOptional.isPresent()) {
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            throw new WebApplicationException(Response.status(Response.Status.FORBIDDEN).build());
         }
 
         final String decryptedToken = decryptedTokenOptional.get();
@@ -711,6 +711,7 @@ public class ExpansionsResource extends BaseResource {
 
             appData.setId(configuration.getId());
             appData.setName(configuration.getName());
+            appData.setCapabilities(configuration.capabilities());
 
             final ExpansionData newData = new ExpansionData.Builder()
                 .withAppId(expansion.id)
