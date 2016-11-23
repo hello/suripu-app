@@ -24,7 +24,7 @@ public class UnigramHandlerExecutorTest {
     public void TestHandleSingleHandler() {
 
         final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
-        final TriviaHandler handler = new TriviaHandler(speechCommandDAO);
+        final TriviaHandler handler = new TriviaHandler(speechCommandDAO, false);
         final HandlerExecutor executor = new UnigramHandlerExecutor()
                 .register(HandlerType.TRIVIA, handler);
 
