@@ -30,16 +30,19 @@ public class TriviaHandler extends BaseHandler {
     private static final String NO_COMMAND_RESPONSE_TEXT = "Sorry, there was a problem. Please try again later.";
 
     private final SpeechCommandDAO speechCommandDAO;
+    private final boolean isDebug;
 
-    public TriviaHandler(final SpeechCommandDAO speechCommandDAO) {
+    public TriviaHandler(final SpeechCommandDAO speechCommandDAO, final boolean isDebug) {
         super("trivia", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
+        this.isDebug = isDebug;
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
         tempMap.put("best nba", SpeechCommand.TRIVIA);
+        tempMap.put("best baseball", SpeechCommand.TRIVIA);
         tempMap.put("best team in nba", SpeechCommand.TRIVIA);
         return tempMap;
     }
@@ -54,10 +57,14 @@ public class TriviaHandler extends BaseHandler {
 
         GenericResult result = GenericResult.failWithResponse(COMMAND_NOT_FOUND, NO_COMMAND_RESPONSE_TEXT);
         if (optionalCommand.isPresent()) {
+            // 3E4C72A31C78C0F6 is Kyrk
+            final boolean hasBaseball = request.senseId.equals("3E4C72A31C78C0F6") || isDebug;
             command = optionalCommand.get().getValue();
             if (text.contains("best basketball") || text.contains("nba")) {
                 result = GenericResult.ok("The best basketball team in the NBA is the Golden State Warriors.");
 
+            } else if(text.contains("best baseball") && hasBaseball) {
+                result = GenericResult.ok("The Chicago Cubs are surprisingly the best baseball team in the MLB.");
             }
         }
         return new HandlerResult(HandlerType.TRIVIA, command, result);

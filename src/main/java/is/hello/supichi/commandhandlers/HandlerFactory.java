@@ -44,6 +44,7 @@ public class HandlerFactory {
     private final InstrumentedTimelineProcessor timelineProcessor;
     private final Optional<DatabaseReader> geoIpDatabase;
     private final SensorViewLogic sensorViewLogic;
+    private final boolean isDebug;
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
@@ -61,7 +62,8 @@ public class HandlerFactory {
                            final InstrumentedTimelineProcessor timelineProcessor,
                            final Optional<DatabaseReader> geoIpDatabase,
                            final SensorViewLogic sensorViewLogic,
-                           final AccountPreferencesDAO accountPreferencesDAO) {
+                           final AccountPreferencesDAO accountPreferencesDAO,
+                           final boolean isDebug) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -79,6 +81,7 @@ public class HandlerFactory {
         this.geoIpDatabase = geoIpDatabase;
         this.sensorViewLogic = sensorViewLogic;
         this.accountPreferencesDAO = accountPreferencesDAO;
+        this.isDebug = isDebug;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -97,13 +100,14 @@ public class HandlerFactory {
                                         final InstrumentedTimelineProcessor timelineProcessor,
                                         final Optional<DatabaseReader> geoIPDatabase,
                                         final SensorViewLogic sensorViewLogic,
-                                        final AccountPreferencesDAO accountPreferencesDAO) {
+                                        final AccountPreferencesDAO accountPreferencesDAO,
+                                        final boolean isDebug) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor,
                 timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
                 externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
-                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO);
+                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO, isDebug);
     }
 
     public WeatherHandler weatherHandler() {
@@ -124,7 +128,7 @@ public class HandlerFactory {
     }
 
     public TriviaHandler triviaHandler() {
-        return new TriviaHandler(speechCommandDAO);
+        return new TriviaHandler(speechCommandDAO, isDebug);
     }
 
     public TimelineHandler timelineHandler() {

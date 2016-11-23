@@ -213,7 +213,8 @@ public class Supichi
                 timelineProcessor,
                 geoIPDatabase,
                 sensorViewLogic,
-                accountPreferencesDAO
+                accountPreferencesDAO,
+                configuration.getDebug()
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
