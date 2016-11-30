@@ -26,6 +26,7 @@ import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
+import com.hello.suripu.app.cli.CreateMonthlyTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
 import com.hello.suripu.app.cli.MigratePillHeartbeatCommand;
 import com.hello.suripu.app.cli.MovePillDataToDynamoDBCommand;
@@ -247,6 +248,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
         bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
         bootstrap.addCommand(new PopulateInsightsUUIDCommand());
+        bootstrap.addCommand(new CreateMonthlyTables());
         bootstrap.addBundle(new ViewBundle());
     }
 
