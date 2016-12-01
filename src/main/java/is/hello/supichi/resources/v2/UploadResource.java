@@ -1,7 +1,7 @@
 package is.hello.supichi.resources.v2;
 
 import com.codahale.metrics.annotation.Timed;
-import com.hello.suripu.core.flipper.FeatureFlipper;
+import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
@@ -57,7 +57,7 @@ public class UploadResource extends BaseResource{
         }
 
         final RawRequest rawRequest = RawRequest.create(signedBody, senseId, Metadata.getIpAddress(request));
-        final Boolean usePolly = feature.deviceFeatureActive(FeatureFlipper.POLLY_RESPONSE_SERVICE, senseId, Collections.emptyList());
+        final Boolean usePolly = feature.deviceFeatureActive(AppFeatureFlipper.POLLY_RESPONSE_SERVICE, senseId, Collections.emptyList());
         final WrappedResponse response = audioRequestHandler.handle(rawRequest, usePolly);
         if(response.hasError()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
