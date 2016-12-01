@@ -313,6 +313,10 @@ public class Supichi
             final CachedResponseBuilder cachedResponseBuilder = new CachedResponseBuilder(watsonConfiguration.getVoiceName(), watsonResponseBuilder, mc, cachePrefix);
             // Override watson
             responseBuilders.put(SupichiResponseType.WATSON, cachedResponseBuilder);
+
+            // Override polly
+            final CachedResponseBuilder pollyCachedResponseBuilder = new CachedResponseBuilder(pollyConfig.voiceId(), pollyResponseBuilder, mc, "polly");
+            responseBuilders.put(SupichiResponseType.POLLY, pollyCachedResponseBuilder);
         }
 
         // map command-handlers to response-builders
