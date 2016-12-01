@@ -71,4 +71,8 @@ public class SpeechConfiguration extends Configuration {
     public String cachePrefix() {
         return cachePrefix;
     }
+
+    @JsonProperty("polly")
+    private PollyConfiguration pollyConfiguration;
+    public PollyConfiguration pollyConfiguration() { return pollyConfiguration; }
 }

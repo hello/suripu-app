@@ -113,7 +113,7 @@ public class TimeHandler extends BaseHandler {
 
     @Override
     public SupichiResponseType responseType() {
-        return SupichiResponseType.WATSON;
+        return SupichiResponseType.POLLY;
     }
 
 }
