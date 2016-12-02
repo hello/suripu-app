@@ -47,8 +47,7 @@ public class DemoUploadResource {
         }
 
         final RawRequest rawRequest = RawRequest.create(signedBody, senseId, Metadata.getIpAddress(request));
-        final Boolean usePolly = false;
-        final WrappedResponse response = audioRequestHandler.handle(rawRequest, usePolly);
+        final WrappedResponse response = audioRequestHandler.handle(rawRequest);
         if(response.hasError()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }

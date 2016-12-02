@@ -93,7 +93,7 @@ public class AudioRequestHandler {
         this.transcriptFail = metrics.meter(name(AudioRequestHandler.class, "transcript-fail"));
     }
 
-    public WrappedResponse handle(final RawRequest rawRequest, final Boolean usePolly) {
+    public WrappedResponse handle(final RawRequest rawRequest) {
         LOGGER.debug("action=received-bytes size={} sense_id={}", rawRequest.signedBody().length, rawRequest.senseId());
 
         // parse audio and protobuf
@@ -215,12 +215,7 @@ public class AudioRequestHandler {
             executeResult = handlerExecutor.handle(voiceRequest);
 
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.STATIC);
-            final SupichiResponseBuilder responseBuilder;
-            if (responseType.equals(SupichiResponseType.WATSON) && usePolly) {
-                responseBuilder = responseBuilders.get(SupichiResponseType.POLLY);
-            } else {
-                responseBuilder = responseBuilders.get(responseType);
-            }
+            final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 // save OK speech result

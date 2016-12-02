@@ -20,7 +20,6 @@ import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
 import dagger.Module;
 import dagger.Provides;
-import is.hello.supichi.resources.v2.UploadResource;
 
 import javax.inject.Singleton;
 
@@ -39,8 +38,7 @@ import javax.inject.Singleton;
         QuestionsResource.class,
         OTAResource.class,
         SensorsResource.class,
-        ExpansionsResource.class,
-        UploadResource.class
+        ExpansionsResource.class
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;
