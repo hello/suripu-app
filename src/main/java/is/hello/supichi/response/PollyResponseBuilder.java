@@ -35,7 +35,8 @@ public class PollyResponseBuilder implements SupichiResponseBuilder {
         KENDRA("Kendra"),
         IVY("Ivy"),
         JUSTIN("Justin"),
-        JOEY("Joey");
+        JOEY("Joey"),
+        MIZUKI("Mizuki"); // japanese for Jackson!
 
         private String value;
 
