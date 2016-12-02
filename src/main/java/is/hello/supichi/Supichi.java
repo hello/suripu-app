@@ -7,6 +7,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.polly.AmazonPollyAsyncClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.base.Optional;
@@ -57,6 +58,7 @@ import is.hello.supichi.clients.SpeechClientManaged;
 import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.configuration.KinesisProducerConfiguration;
 import is.hello.supichi.configuration.KinesisStream;
+import is.hello.supichi.configuration.PollyConfiguration;
 import is.hello.supichi.configuration.SpeechConfiguration;
 import is.hello.supichi.configuration.WatsonConfiguration;
 import is.hello.supichi.db.SpeechCommandDynamoDB;
@@ -71,6 +73,7 @@ import is.hello.supichi.resources.demo.DemoUploadResource;
 import is.hello.supichi.resources.ping.PingResource;
 import is.hello.supichi.resources.v2.UploadResource;
 import is.hello.supichi.response.CachedResponseBuilder;
+import is.hello.supichi.response.PollyResponseBuilder;
 import is.hello.supichi.response.SilentResponseBuilder;
 import is.hello.supichi.response.StaticResponseBuilder;
 import is.hello.supichi.response.SupichiResponseBuilder;
@@ -272,12 +275,24 @@ public class Supichi
                 .put(Speech.Equalizer.NONE, s3ResponseBucketNoEq)
                 .build();
 
+        // set up Polly
+        final PollyConfiguration pollyConfig = speechConfiguration.pollyConfiguration();
+        final AmazonPollyAsyncClient pollyAsyncClient = new AmazonPollyAsyncClient(awsCredentialsProvider, clientConfiguration);
+        pollyAsyncClient.setEndpoint(pollyConfig.endpoint());
+        final PollyResponseBuilder pollyResponseBuilder = new PollyResponseBuilder(
+                pollyAsyncClient,
+                pollyConfig.sampleRate(),
+                pollyConfig.outputFormat(),
+                pollyConfig.voiceId(),
+                environment.metrics());
+
         final StaticResponseBuilder staticResponseBuilder = StaticResponseBuilder.create();
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName(), environment.metrics());
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
         responseBuilders.put(SupichiResponseType.STATIC, staticResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
         responseBuilders.put(SupichiResponseType.SILENT, new SilentResponseBuilder());
+        responseBuilders.put(SupichiResponseType.POLLY, pollyResponseBuilder);
 
         final List<String> memcacheHosts = configuration.speechConfiguration().memcacheHosts();
         if (!memcacheHosts.isEmpty()) {
@@ -298,6 +313,10 @@ public class Supichi
             final CachedResponseBuilder cachedResponseBuilder = new CachedResponseBuilder(watsonConfiguration.getVoiceName(), watsonResponseBuilder, mc, cachePrefix);
             // Override watson
             responseBuilders.put(SupichiResponseType.WATSON, cachedResponseBuilder);
+
+            // Override polly
+            final CachedResponseBuilder pollyCachedResponseBuilder = new CachedResponseBuilder(pollyConfig.voiceId(), pollyResponseBuilder, mc, "polly");
+            responseBuilders.put(SupichiResponseType.POLLY, pollyCachedResponseBuilder);
         }
 
         // map command-handlers to response-builders
