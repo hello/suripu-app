@@ -4,5 +4,6 @@ public enum  SupichiResponseType {
     WATSON,
     WATSON_JP,
     SILENT,
-    STATIC;
+    STATIC,
+    POLLY;
 }
