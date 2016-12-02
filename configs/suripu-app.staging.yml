@@ -355,9 +355,9 @@ speech:
   memcache_hosts:
       - localhost:11211
 
-    polly:
-      endpoint: https://polly.us-east-1.amazonaws.com
-      region: us-east-1
-      output_format: mp3  # Valid Values: mp3 | ogg_vorbis | pcm
-      sample_rate: 16000 # mp3 and ogg_vorbis: "8000", "16000", and "22050" (default),  pcm: "8000" and "16000" (default)
-      voice_id: Salli
+  polly:
+    endpoint: https://polly.us-east-1.amazonaws.com
+    region: us-east-1
+    output_format: mp3  # Valid Values: mp3 | ogg_vorbis | pcm
+    sample_rate: 16000 # mp3 and ogg_vorbis: "8000", "16000", and "22050" (default),  pcm: "8000" and "16000" (default)
+    voice_id: Salli
