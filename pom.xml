@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <aws.sdk.version>1.11.62</aws.sdk.version>
+        <aws.sdk.version>1.11.63</aws.sdk.version>
         <dagger.version>1.2.2</dagger.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <jackson.version>2.8.1</jackson.version>
@@ -20,7 +20,7 @@
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
         <google-speech-api-version>0.6.0</google-speech-api-version>
-        <suripu.version>0.8.5831</suripu.version>
+        <suripu.version>0.8.5838-SNAPSHOT</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -135,6 +135,11 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0</version>
@@ -149,9 +154,14 @@
                     <groupId>joda-time</groupId>
                 </exclusion>
                 <exclusion>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-            </exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-cbor</artifactId>
+                </exclusion>
+
             </exclusions>
         </dependency>
         <dependency>
