@@ -1,7 +1,8 @@
 package com.hello.suripu.app.v2;
 
-import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.firmware.HardwareVersion;
@@ -31,11 +32,14 @@ import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-import io.dropwizard.jersey.PATCH;
+
 import org.hibernate.validator.constraints.NotEmpty;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -49,8 +53,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.Map;
+
+import io.dropwizard.jersey.PATCH;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
 
 @Path("/v2/devices")
 public class DeviceResource extends BaseResource {
@@ -66,14 +72,22 @@ public class DeviceResource extends BaseResource {
     private final SenseMetadataDAO senseMetadataDAO;
     private final VoiceMetadataDAO voiceMetadataDAO;
     private final MessejiApi messejiClient;
+    private final ExternalOAuthTokenStore<ExternalToken> externalTokenStore;
 
-    public DeviceResource(final DeviceProcessor deviceProcessor,final Swapper swapper, final AccountDAO accountDAO, final SenseMetadataDAO senseMetadataDAO, final VoiceMetadataDAO voiceMetadataDAO, final MessejiClient messejiClient) {
+    public DeviceResource(final DeviceProcessor deviceProcessor,
+                          final Swapper swapper,
+                          final AccountDAO accountDAO,
+                          final SenseMetadataDAO senseMetadataDAO,
+                          final VoiceMetadataDAO voiceMetadataDAO,
+                          final MessejiClient messejiClient,
+                          final ExternalOAuthTokenStore<ExternalToken> externalTokenStore) {
         this.deviceProcessor = deviceProcessor;
         this.swapper = swapper;
         this.accountDAO = accountDAO;
         this.senseMetadataDAO = senseMetadataDAO;
         this.voiceMetadataDAO = voiceMetadataDAO;
         this.messejiClient = messejiClient;
+        this.externalTokenStore = externalTokenStore;
     }
 
     @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
@@ -152,6 +166,8 @@ public class DeviceResource extends BaseResource {
     public Response factoryReset(@Auth final AccessToken accessToken,
                                  @PathParam("sense_id") final String senseId) {
         deviceProcessor.factoryReset(accessToken.accountId, senseId);
+        externalTokenStore.disableAllByDeviceId(senseId);
+
         return Response.noContent().build();
     }
 

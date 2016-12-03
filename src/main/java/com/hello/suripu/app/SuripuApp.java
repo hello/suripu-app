@@ -666,8 +666,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new PhotoResource(amazonS3, configuration.photoUploadConfiguration(), profilePhotoStore));
 
 
-        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient));
-
         if (configuration.getDebug()) {
             System.setProperty(Sdk.DISABLE_REQUEST_SIGNATURE_CHECK_SYSTEM_PROPERTY, "true");
         } else {
@@ -712,14 +710,18 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final ExpansionsDAO externalApplicationsDAO = commonDB.onDemand(ExpansionsDAO.class);
         final PersistentExpansionStore expansionStore = new PersistentExpansionStore(externalApplicationsDAO);
 
+        // Required for Nest token revocation
+        final OkHttpClient httpClient = new OkHttpClient(); //TODO: configure timeouts
+
         final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore, tokenKMSVault, httpClient);
 
         final ExpansionDataDAO expansionDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
         final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
-        // Required for Nest token revocation
-        final OkHttpClient httpClient = new OkHttpClient(); //TODO: configure timeouts
+
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore));
+
 
         final ExpansionsResource expansionsResource = new ExpansionsResource(
                 configuration.expansionConfiguration(),
@@ -729,7 +731,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 externalTokenStore,
                 externalAppDataStore,
                 tokenKMSVault,
-                httpClient,
                 environment.getObjectMapper()
         );
 

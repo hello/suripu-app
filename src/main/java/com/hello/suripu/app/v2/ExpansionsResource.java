@@ -1,14 +1,15 @@
 package com.hello.suripu.app.v2;
 
 
-import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.hello.suripu.app.configuration.ExpansionConfiguration;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -20,31 +21,20 @@ import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-import io.dropwizard.jersey.PATCH;
-import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
-import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
-import is.hello.gaibu.core.models.Configuration;
-import is.hello.gaibu.core.models.Expansion;
-import is.hello.gaibu.core.models.ExpansionData;
-import is.hello.gaibu.core.models.ExpansionDeviceData;
-import is.hello.gaibu.core.models.ExternalAuthorizationState;
-import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.models.StateRequest;
-import is.hello.gaibu.core.stores.ExpansionStore;
-import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
-import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
-import is.hello.gaibu.core.utils.TokenUtils;
-import is.hello.gaibu.homeauto.clients.HueLight;
-import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
-import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
-import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
+
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -66,13 +56,24 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
+import io.dropwizard.jersey.PATCH;
+import is.hello.gaibu.core.db.ExternalAuthorizationStateDAO;
+import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
+import is.hello.gaibu.core.models.Configuration;
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
+import is.hello.gaibu.core.models.ExpansionDeviceData;
+import is.hello.gaibu.core.models.ExternalAuthorizationState;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.models.StateRequest;
+import is.hello.gaibu.core.stores.ExpansionStore;
+import is.hello.gaibu.core.stores.ExternalOAuthTokenStore;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.homeauto.clients.HueLight;
+import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
+import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
+import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 
 @Path("/v2/expansions")
 public class ExpansionsResource extends BaseResource {
@@ -89,7 +90,6 @@ public class ExpansionsResource extends BaseResource {
     private final ExternalOAuthTokenStore<ExternalToken> externalTokenStore;
     private final PersistentExpansionDataStore expansionDataStore;
     private final Vault tokenKMSVault;
-    private final OkHttpClient httpClient;
 
     private final ObjectMapper mapper;
 
@@ -101,7 +101,6 @@ public class ExpansionsResource extends BaseResource {
             final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
             final PersistentExpansionDataStore expansionDataStore,
             final Vault tokenKMSVault,
-            final OkHttpClient httpClient,
             final ObjectMapper mapper) throws Exception{
 
         this.expansionConfig = expansionConfig;
@@ -111,7 +110,6 @@ public class ExpansionsResource extends BaseResource {
         this.externalTokenStore = externalTokenStore;
         this.expansionDataStore = expansionDataStore;
         this.tokenKMSVault = tokenKMSVault;
-        this.httpClient = httpClient;
 
         mapper.registerModule(new JodaModule());
         this.mapper = mapper;
@@ -182,35 +180,11 @@ public class ExpansionsResource extends BaseResource {
         if(stateRequest.state.equals(Expansion.State.REVOKED)) {
             newDataBuilder.withEnabled(false)
                     .withData("");
-            //Revoke tokens too
+             //Revoke tokens too
             final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(deviceId, expansion.id);
             if (!externalTokenOptional.isPresent()) {
                 LOGGER.warn("warning=token-not-found");
                 throw new WebApplicationException(Response.status(Response.Status.NO_CONTENT).build());
-            }
-
-            // Specific Nest use case
-            if (Expansion.ServiceName.NEST.equals(expansion.serviceName)) {
-                try {
-
-                    final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
-                    if(!decryptedTokenOptional.isPresent()) {
-                        LOGGER.warn("action=deauth-nest result=fail-to-decrypt-token account_id={}", accessToken.accountId);
-                    }
-
-                    final String decryptedToken = decryptedTokenOptional.get();
-                    final String url = "https://api.home.nest.com/oauth2/access_tokens/" + decryptedToken;
-                    final Request request = new Request.Builder()
-                            .url(url)
-                            .delete()
-                            .build();
-
-                    final okhttp3.Response response = httpClient.newCall(request).execute();
-                    response.close();
-                    LOGGER.info("action=deauth-nest account_id={} http_resp={} success={}", accessToken.accountId, response.code(), response.isSuccessful());
-                } catch (IOException e) {
-                    LOGGER.error("error=deauth-nest message={}", e.getMessage());
-                }
             }
 
             externalTokenStore.disableByDeviceId(deviceId, appId);
@@ -436,13 +410,13 @@ public class ExpansionsResource extends BaseResource {
         }
         final ExternalToken externalToken = externalTokenOptional.get();
 
-        final Optional<String> decryptedAccessTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, false);
+        final Optional<String> decryptedAccessTokenOptional = externalTokenStore.getDecryptedExternalToken(deviceId, expansion, false);
         if(!decryptedAccessTokenOptional.isPresent()) {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
         final String decryptedAccessToken = decryptedAccessTokenOptional.get();
 
-        final Optional<String> decryptedRefreshTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansion, true);
+        final Optional<String> decryptedRefreshTokenOptional = externalTokenStore.getDecryptedExternalToken(deviceId, expansion, true);
         if(!decryptedRefreshTokenOptional.isPresent()) {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
@@ -563,7 +537,7 @@ public class ExpansionsResource extends BaseResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        final Optional<String> decryptedTokenOptional = externalTokenStore.getDecryptedExternalToken(deviceId, expansionInfo, false);
         if(!decryptedTokenOptional.isPresent()) {
             return Optional.absent();
         }
@@ -621,7 +595,7 @@ public class ExpansionsResource extends BaseResource {
         }
 
         //Enumerate devices on a service-specific basis
-        final Optional<String> decryptedTokenOptional = TokenUtils.getDecryptedExternalToken(externalTokenStore, tokenKMSVault, deviceId, expansionInfo, false);
+        final Optional<String> decryptedTokenOptional = externalTokenStore.getDecryptedExternalToken(deviceId, expansionInfo, false);
         if(!decryptedTokenOptional.isPresent()) {
             throw new WebApplicationException(Response.status(Response.Status.FORBIDDEN).build());
         }
