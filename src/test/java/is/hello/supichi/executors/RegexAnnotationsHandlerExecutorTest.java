@@ -3,6 +3,7 @@ package is.hello.supichi.executors;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -17,6 +18,18 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -38,16 +51,6 @@ import is.hello.supichi.models.Annotator;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.VoiceRequest;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -112,8 +115,9 @@ public class RegexAnnotationsHandlerExecutorTest {
             "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.TEMPERATURE,
             DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED, ValueRange.createEmpty());
 
+        final String fakeDecryptedToken = "fake_token";
         final ExternalToken fakeToken = new ExternalToken.Builder()
-            .withAccessToken("fake_token")
+            .withAccessToken(fakeDecryptedToken)
             .withRefreshToken("fake_refresh")
             .withAccessExpiresIn(123456789L)
             .withRefreshExpiresIn(123456789L)
@@ -126,7 +130,9 @@ public class RegexAnnotationsHandlerExecutorTest {
         Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.HUE.toString())).thenReturn(Optional.of(fakeHueApplication));
         Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.NEST.toString())).thenReturn(Optional.of(fakeNestApplication));
         Mockito.when(externalTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.of(fakeToken));
+        Mockito.when(externalTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.of(fakeDecryptedToken));
         Mockito.when(badTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.absent());
+        Mockito.when(badTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.absent());
         Mockito.when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
         Mockito.when(externalAppDataStore.getAppData(1L, SENSE_ID)).thenReturn(Optional.of(fakeHueApplicationData));
         Mockito.when(externalAppDataStore.getAppData(2L, SENSE_ID)).thenReturn(Optional.of(fakeNestApplicationData));
@@ -461,12 +467,12 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.outcome(), Outcome.FAIL);
         assertEquals(correctResult.optionalErrorText().isPresent(), true);
-        assertEquals(correctResult.optionalErrorText().get(), "token-not-found");
+        assertEquals(correctResult.optionalErrorText().get(), "token decrypt failed");
 
         correctResult = executor.handle(newVoiceRequest("set the temp to seventy seven degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
         assertEquals(correctResult.outcome(), Outcome.FAIL);
         assertEquals(correctResult.optionalErrorText().isPresent(), true);
-        assertEquals(correctResult.optionalErrorText().get(), "token-not-found");
+        assertEquals(correctResult.optionalErrorText().get(), "token decrypt failed");
     }
 }
