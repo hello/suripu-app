@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <aws.sdk.version>1.11.62</aws.sdk.version>
+        <aws.sdk.version>1.10.34</aws.sdk.version>
         <dagger.version>1.2.2</dagger.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <jackson.version>2.8.1</jackson.version>
@@ -16,11 +16,11 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gaibu.version>0.1.96</gaibu.version>
+        <gaibu.version>0.1.99</gaibu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
         <google-speech-api-version>0.6.0</google-speech-api-version>
-        <suripu.version>0.8.5831</suripu.version>
+        <suripu.version>0.8.5839</suripu.version>
     </properties>
 
     <distributionManagement>
@@ -177,11 +177,6 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${aws.sdk.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-polly</artifactId>
             <version>${aws.sdk.version}</version>
         </dependency>
         <dependency>
