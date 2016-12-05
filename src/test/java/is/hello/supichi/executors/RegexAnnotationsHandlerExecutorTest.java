@@ -411,9 +411,21 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(correctResult.optionalNestResult.isPresent(), true);
         assertEquals(correctResult.optionalNestResult.get().temperatureSet, "75");
 
-        // no match if "degrees" is not present in the command.
-        HandlerResult noResult = executor.handle(newVoiceRequest("set the temperature to 75"));
+        // match when "degrees" is not present for numeric pattern
+        correctResult = executor.handle(newVoiceRequest("set the temp to 75"));
+        assertEquals(HandlerType.NEST, correctResult.handlerType);
+        assertEquals(correctResult.optionalNestResult.isPresent(), true);
+        assertEquals(correctResult.optionalNestResult.get().temperatureSet, "75");
+
+        correctResult = executor.handle(newVoiceRequest("set the temperature to 75"));
+        assertEquals(HandlerType.NEST, correctResult.handlerType);
+        assertEquals(correctResult.optionalNestResult.isPresent(), true);
+        assertEquals(correctResult.optionalNestResult.get().temperatureSet, "75");
+
+        // no result if missing "degrees" from word pattern
+        HandlerResult noResult = executor.handle(newVoiceRequest("set the temperature to seventy-five"));
         assertEquals(HandlerType.NONE, noResult.handlerType);
+
     }
 
     @Test
@@ -431,7 +443,7 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(HandlerType.ROOM_CONDITIONS, correctResult.handlerType);
 
         HandlerResult wrongResult = executor.handle(newVoiceRequest("set the temperature to 75"));
-        assertEquals(HandlerType.NONE, wrongResult.handlerType);
+        assertEquals(HandlerType.NEST, wrongResult.handlerType);
     }
 
     @Test

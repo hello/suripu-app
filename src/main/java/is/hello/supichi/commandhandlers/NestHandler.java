@@ -42,7 +42,7 @@ public class NestHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NestHandler.class);
 
     private static final String TEMP_SET_PATTERN_WORDS = "(?i)^.*(?:nest|thermostat|temp|temperature)?\\sto\\s(\\w+)\\s(\\w+)\\sdegrees";
-    private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp|temperature)?\\sto\\s(\\d+)\\sdegrees";
+    private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp|temperature)?\\sto\\s(\\d+)(\\sdegrees)?";
     private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:nest|thermostat)?\\s(on|off).*(?:nest|thermostat)?";
 
     public static final String SET_TEMP_OK_RESPONSE = "Okay, done";
