@@ -12,6 +12,7 @@ import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
+import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
@@ -37,6 +38,7 @@ import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.Annotator;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
+import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -80,6 +82,12 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final Long ACCOUNT_ID = 99L;
     private final DateTimeZone TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
+    private static final Sound DEFAULT_SOUND = Sound.create(20L,
+            "https://s3.amazonaws.com/hello-audio/sleep-tones-preview/Rainfall.mp3",
+            "Rainfall",
+            "/SLPTONES/ST006.RAW",
+            "s3://hello-audio/sleep-tones-raw/2016-04-01/ST006.raw"
+    );
 
     @Before
     public void setUp() {
@@ -142,6 +150,8 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         final SensorResponse sensorResponse = SensorResponse.noData(Collections.emptyList());
         Mockito.when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
+
+        Mockito.when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString())).thenReturn(Optional.of(DEFAULT_SOUND));
     }
 
     private HandlerExecutor getExecutor() {
@@ -234,6 +244,10 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestTextToHandler() {
         final List<HandlerTestData> dataList = Lists.newArrayList(
+
+                new HandlerTestData("Play Sleep Sound", SleepSoundHandler.class, true),
+                new HandlerTestData("play sleep sounds", SleepSoundHandler.class, true),
+
                 new HandlerTestData("how's my sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how is my sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
@@ -259,6 +273,12 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("how's the humidity", RoomConditionsHandler.class, true),
                 new HandlerTestData("how is the humidity", RoomConditionsHandler.class, true),
                 new HandlerTestData("how was the humidity", RoomConditionsHandler.class, true),
+
+                // bad google transcript
+                new HandlerTestData("what is the road condition", RoomConditionsHandler.class, true),
+                new HandlerTestData("what's the road conditions", RoomConditionsHandler.class, true),
+
+
 
                 new HandlerTestData("play Brown Noise", SleepSoundHandler.class, true),
                 new HandlerTestData("play Cosmos", SleepSoundHandler.class, true),
@@ -464,6 +484,48 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         HandlerResult wrongResult = executor.handle(newVoiceRequest("who is the humidity"));
         assertEquals(HandlerType.NONE, wrongResult.handlerType);
+    }
+
+    @Test
+    public void TestSleepSoundHandlerPlay() {
+        final HandlerExecutor executor = getExecutor();
+
+        HandlerResult correctResult = executor.handle(newVoiceRequest("Play Sleep Sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play sleep sounds"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play some sleep sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play a sleep sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play ambient sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play rainfall"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("begin playing a sleep sound"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("play White Noise"));
+        assertEquals(HandlerType.SLEEP_SOUNDS, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.SLEEP_SOUND_PLAY.getValue());
+
     }
 
     @Test
