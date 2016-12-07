@@ -3,7 +3,6 @@ package is.hello.supichi.executors;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -18,18 +17,6 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -51,6 +38,16 @@ import is.hello.supichi.models.Annotator;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.VoiceRequest;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
@@ -242,7 +239,10 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("how did I sleep last night", SleepSummaryHandler.class, true),
                 new HandlerTestData("how was my sleep", SleepSummaryHandler.class, true),
                 new HandlerTestData("how the my sleep last night", SleepSummaryHandler.class, false),
-                new HandlerTestData("how do i sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how do I sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how long did I sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how many hours did I sleep", SleepSummaryHandler.class, true),
+                new HandlerTestData("how much did I sleep", SleepSummaryHandler.class, true),
 
                 new HandlerTestData("what's my score", SleepSummaryHandler.class, true),
                 new HandlerTestData("what was my score", SleepSummaryHandler.class, true),
