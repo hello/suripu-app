@@ -655,7 +655,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
         environment.jersey().register(new StoreFeedbackResource(storeFeedbackDAO));
-        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB));
 
         final TrendsProcessor trendsProcessor = new TrendsProcessor(sleepStatsDAODynamoDB, accountDAO, timeZoneHistoryDAODynamoDB);
         environment.jersey().register(new TrendsResource(trendsProcessor));
@@ -722,6 +721,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore));
 
+        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB, deviceDAO, configuration.expansionConfiguration(), expansionStore, externalTokenStore, externalAppDataStore, environment.getObjectMapper()));
 
         final ExpansionsResource expansionsResource = new ExpansionsResource(
                 configuration.expansionConfiguration(),

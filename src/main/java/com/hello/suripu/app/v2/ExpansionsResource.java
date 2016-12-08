@@ -616,7 +616,14 @@ public class ExpansionsResource extends BaseResource {
         }
 
         final HomeAutomationExpansion expansion = expansionOptional.get();
-        final List<Configuration> configs = expansion.getConfigurations();
+        final Optional<List<Configuration>> configsOptional = expansion.getConfigurations();
+        if(!configsOptional.isPresent()) {
+            //disable the unusable token to force refresh (manual re-auth for Nest)
+            externalTokenStore.disableByDeviceId(deviceId, expansionInfo.id);
+            return Lists.newArrayList();
+        }
+
+        final List<Configuration> configs = configsOptional.get();
 
         if(extData.data.isEmpty()) {
             return configs;
