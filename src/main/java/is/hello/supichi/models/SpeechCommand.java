@@ -33,6 +33,7 @@ public enum SpeechCommand {
     THERMOSTAT_SET("thermostat_set", NestHandler.class),
     THERMOSTAT_ACTIVE("thermostat_active", NestHandler.class),
     TIME_REPORT("time_report",TimeHandler.class),
+    DAY_REPORT("day_report",TimeHandler.class),
     TRIVIA("trivia", TriviaHandler.class),
     WEATHER("weather", WeatherHandler.class),
     TIMELINE("timeline",TimelineHandler.class),

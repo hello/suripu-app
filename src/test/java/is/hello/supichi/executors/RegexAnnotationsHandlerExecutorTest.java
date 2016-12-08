@@ -529,6 +529,27 @@ public class RegexAnnotationsHandlerExecutorTest {
     }
 
     @Test
+    public void TestTimeHandlerPlay() {
+        final HandlerExecutor executor = getExecutor();
+
+        HandlerResult correctResult = executor.handle(newVoiceRequest("what is the time"));
+        assertEquals(HandlerType.TIME_REPORT, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.TIME_REPORT.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("what day is it"));
+        assertEquals(HandlerType.TIME_REPORT, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.DAY_REPORT.getValue());
+        final String response = correctResult.responseText();
+
+        correctResult = executor.handle(newVoiceRequest("what's the date"));
+        assertEquals(HandlerType.TIME_REPORT, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.DAY_REPORT.getValue());
+
+        // test might fail if it's run right around midnight!!
+        assertEquals(correctResult.responseText(), response);
+    }
+
+    @Test
     public void TestBadToken() {
         final HueHandler hueHandler = new HueHandler("sense_dev", speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
