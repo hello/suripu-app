@@ -67,6 +67,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
+import com.hello.suripu.app.utils.TokenChecker;
 import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
@@ -721,7 +722,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore));
 
-        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB, deviceDAO, configuration.expansionConfiguration(), expansionStore, externalTokenStore, externalAppDataStore, environment.getObjectMapper()));
+        final TokenChecker tokenChecker = new TokenChecker(deviceDAO, configuration.expansionConfiguration(), expansionStore, externalTokenStore, externalAppDataStore, environment.getObjectMapper());
+        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB, tokenChecker));
 
         final ExpansionsResource expansionsResource = new ExpansionsResource(
                 configuration.expansionConfiguration(),

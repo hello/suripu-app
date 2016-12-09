@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.app.configuration.ExpansionConfiguration;
+import com.hello.suripu.app.utils.TokenChecker;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AppStatsDAO;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -92,7 +93,8 @@ public class AppStatsResourceTests {
         doReturn(Optional.absent())
                 .when(tzHistoryDAO)
                 .getCurrentTimeZone(ACCOUNT_ID);
-        this.resource = new AppStatsResource(appStatsDAO, insightsDAO, questionProcessor, accountDAO, tzHistoryDAO, deviceDAO, expansionConfig, externalApplicationStore, externalTokenStore, externalAppDataStore, mapper);
+        final TokenChecker tokenChecker = new TokenChecker(deviceDAO, expansionConfig, externalApplicationStore, externalTokenStore, externalAppDataStore, mapper);
+        this.resource = new AppStatsResource(appStatsDAO, insightsDAO, questionProcessor, accountDAO, tzHistoryDAO, tokenChecker);
 
         DateTimeUtils.setCurrentMillisFixed(FIXED_NOW.getMillis());
     }
