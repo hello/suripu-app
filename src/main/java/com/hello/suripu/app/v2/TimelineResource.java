@@ -87,7 +87,7 @@ public class TimelineResource extends BaseResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/byuser/{start_date}/{end_date}/{account_id}")
-    public void populateSleepScoresForUserInDateRange(@PathParam("start_date") String startDate, @PathParam("end_date") String endDate,@PathParam("account_id") Long accountId) {
+    public void populateSleepScoresForUserInDateRange(@PathParam("start_date") String startDate, @PathParam("end_date") String endDate,@PathParam("account_id") Long accountId) throws InterruptedException {
         final DateTime start = DateTimeUtil.ymdStringToDateTime(startDate);
         final DateTime end = DateTimeUtil.ymdStringToDateTime(endDate);
         int count = 0;
@@ -97,6 +97,8 @@ public class TimelineResource extends BaseResource {
         while (current.isBefore(end) && count < 600) {
 
             timelineProcessor.retrieveTimelinesFast(accountId,current,Optional.<TimelineFeedback>absent());
+
+            Thread.sleep(500);
 
             current = current.plusDays(1);
             count++;
