@@ -83,6 +83,29 @@ public class TimelineResource extends BaseResource {
         this.timelineLogDAOV2 = timelineLogDAOV2;
     }
 
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/byuser/{start_date}/{end_date}/{account_id}")
+    public void populateSleepScoresForUserInDateRange(@PathParam("start_date") String startDate, @PathParam("end_date") String endDate,@PathParam("account_id") Long accountId) {
+        final DateTime start = DateTimeUtil.ymdStringToDateTime(startDate);
+        final DateTime end = DateTimeUtil.ymdStringToDateTime(endDate);
+        int count = 0;
+
+        DateTime current = start;
+
+        while (current.isBefore(end) && count < 600) {
+
+            timelineProcessor.retrieveTimelinesFast(accountId,current,Optional.<TimelineFeedback>absent());
+
+            current = current.plusDays(1);
+            count++;
+        }
+
+
+
+    }
+
     @ScopesAllowed({OAuthScope.SLEEP_TIMELINE})
     @GET
     @Timed
