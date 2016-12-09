@@ -5,7 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import com.codahale.metrics.annotation.Timed;
-import com.hello.suripu.app.utils.TokenChecker;
+import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AppStatsDAO;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
@@ -48,7 +48,7 @@ public class AppStatsResource {
     private final QuestionProcessor questionProcessor;
     private final AccountDAO accountDAO;
     private final TimeZoneHistoryDAODynamoDB tzHistoryDAO;
-    private final TokenChecker tokenChecker;
+    private final TokenCheckerFactory tokenCheckerFactory;
 
 
     public AppStatsResource(final AppStatsDAO appStatsDAO,
@@ -56,13 +56,13 @@ public class AppStatsResource {
                             final QuestionProcessor questionProcessor,
                             final AccountDAO accountDAO,
                             final TimeZoneHistoryDAODynamoDB tzHistoryDAO,
-                            final TokenChecker tokenChecker) {
+                            final TokenCheckerFactory tokenCheckerFactory) {
         this.appStatsDAO = appStatsDAO;
         this.insightsDAO = insightsDAO;
         this.questionProcessor = questionProcessor;
         this.accountDAO = accountDAO;
         this.tzHistoryDAO = tzHistoryDAO;
-        this.tokenChecker = tokenChecker;
+        this.tokenCheckerFactory = tokenCheckerFactory;
     }
 
     @ScopesAllowed({OAuthScope.APP_STATS})
@@ -142,7 +142,7 @@ public class AppStatsResource {
             }
         });
 
-        final Thread tokenCheckerThread = new Thread(tokenChecker.createNewWithAccessToken(accessToken), "Token Checker Thread");
+        final Thread tokenCheckerThread = new Thread(tokenCheckerFactory.create(accessToken), "Token Checker Thread");
         tokenCheckerThread.start();
 
         return new AppUnreadStats(hasUnreadInsights.or(false), hasUnansweredQuestions.or(false));
