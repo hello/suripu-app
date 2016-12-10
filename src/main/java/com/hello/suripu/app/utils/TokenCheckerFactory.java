@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import is.hello.gaibu.core.models.Configuration;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExpansionDeviceData;
@@ -25,6 +24,8 @@ import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
+import is.hello.gaibu.homeauto.models.ConfigurationResponse;
+import is.hello.gaibu.homeauto.models.ResponseStatus;
 
 /**
  * Created by jnorgan on 12/9/16.
@@ -147,8 +148,8 @@ public class TokenCheckerFactory {
 
         final HomeAutomationExpansion homeAutomationExpansion = homeAutomationExpansionOptional.get();
         //Check status of token with external service
-        final Optional<List<Configuration>> configsOptional = homeAutomationExpansion.getConfigurations();
-        if(!configsOptional.isPresent()) {
+        final ConfigurationResponse configResponse = homeAutomationExpansion.getConfigurations();
+        if(ResponseStatus.UNAUTHORIZED == configResponse.getStatus()) {
           LOGGER.info("info=disabling-invalid-token service_name={} device_id={}", Expansion.ServiceName.NEST.toString(), deviceId);
           //disable the unusable token to force refresh (manual re-auth for Nest)
           externalTokenStore.disableByDeviceId(deviceId, expansion.id);
