@@ -74,6 +74,8 @@ import is.hello.gaibu.homeauto.clients.HueLight;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionDataFactory;
 import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
+import is.hello.gaibu.homeauto.models.ConfigurationResponse;
+import is.hello.gaibu.homeauto.models.ResponseStatus;
 
 @Path("/v2/expansions")
 public class ExpansionsResource extends BaseResource {
@@ -616,7 +618,16 @@ public class ExpansionsResource extends BaseResource {
         }
 
         final HomeAutomationExpansion expansion = expansionOptional.get();
-        final List<Configuration> configs = expansion.getConfigurations();
+        final ConfigurationResponse configResponse = expansion.getConfigurations();
+        if(ResponseStatus.UNAUTHORIZED == configResponse.getStatus()) {
+            //disable the unusable token to force refresh (manual re-auth for Nest)
+            externalTokenStore.disableByDeviceId(deviceId, expansionInfo.id);
+        }
+        if(ResponseStatus.OK != configResponse.getStatus()) {
+            return Lists.newArrayList();
+        }
+
+        final List<Configuration> configs = configResponse.getConfigurations();
 
         if(extData.data.isEmpty()) {
             return configs;
