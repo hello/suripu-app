@@ -36,6 +36,7 @@ import static is.hello.supichi.models.SpeechCommand.SLEEP_SUMMARY;
 public class SleepSummaryHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SleepSummaryHandler.class);
 
+    private static final String SLEEP_SUMMARY_PATTERN = "(how|how's)\\s(is|was|much|do|many hours|long)?\\s?(did)?\\s?(my|i|the)\\s(sleep)";
     public static final String ERROR_NO_SLEEP_STATS = "Sorry, you have no sleep data for last night.";
     public static final String ERROR_NO_TIMEZONE = "Sorry, we're unable to retrieve your sleep score. Please set your timezone in the app.";
 
@@ -54,13 +55,14 @@ public class SleepSummaryHandler extends BaseHandler {
         tempMap.put("sleep score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("what was my score", SpeechCommand.SLEEP_SCORE);
         tempMap.put("what's my score", SpeechCommand.SLEEP_SCORE);
-        tempMap.put("sleep summary", SLEEP_SUMMARY);
 
-        tempMap.put("how was my sleep", SLEEP_SUMMARY);
-        tempMap.put("how is my sleep", SLEEP_SUMMARY);
-        tempMap.put("how's my sleep", SLEEP_SUMMARY);
-        tempMap.put("how did i sleep", SLEEP_SUMMARY);
-        tempMap.put("how do i sleep", SLEEP_SUMMARY);
+        tempMap.put("sleep summary", SpeechCommand.SLEEP_SUMMARY);
+        tempMap.put(SLEEP_SUMMARY_PATTERN, SpeechCommand.SLEEP_SUMMARY);
+//        tempMap.put("how was my sleep", SpeechCommand.SLEEP_SUMMARY);
+//        tempMap.put("how is my sleep", SpeechCommand.SLEEP_SUMMARY);
+//        tempMap.put("how's my sleep", SpeechCommand.SLEEP_SUMMARY);
+//        tempMap.put("how did i sleep", SpeechCommand.SLEEP_SUMMARY);
+//        tempMap.put("how do i sleep", SpeechCommand.SLEEP_SUMMARY);
         return tempMap;
     }
 

@@ -3,8 +3,13 @@ package com.hello.suripu.app.resources.v1;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hello.suripu.app.configuration.ExpansionConfiguration;
+import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AppStatsDAO;
+import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.Account;
@@ -13,8 +18,6 @@ import com.hello.suripu.core.models.AppStats;
 import com.hello.suripu.core.models.AppUnreadStats;
 import com.hello.suripu.core.models.Choice;
 import com.hello.suripu.core.models.Insights.InsightCard;
-
-
 import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.Questions.QuestionCategory;
 import com.hello.suripu.core.oauth.OAuthScope;
@@ -28,10 +31,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import javax.ws.rs.core.Response;
+
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -52,6 +60,12 @@ public class AppStatsResourceTests {
     private QuestionProcessor questionProcessor;
     private AccountDAO accountDAO;
     private AppStatsResource resource;
+    private DeviceDAO deviceDAO = mock(DeviceDAO.class);
+    private final ExpansionConfiguration expansionConfig = mock(ExpansionConfiguration.class);
+    private final PersistentExternalTokenStore externalTokenStore = mock(PersistentExternalTokenStore.class);
+    private final PersistentExpansionStore externalApplicationStore = mock(PersistentExpansionStore.class);
+    private final PersistentExpansionDataStore externalAppDataStore = mock(PersistentExpansionDataStore.class);
+    private final ObjectMapper mapper = mock(ObjectMapper.class);
 
     public AppStatsResourceTests() {
         this.accessToken = new AccessToken.Builder()
@@ -79,7 +93,8 @@ public class AppStatsResourceTests {
         doReturn(Optional.absent())
                 .when(tzHistoryDAO)
                 .getCurrentTimeZone(ACCOUNT_ID);
-        this.resource = new AppStatsResource(appStatsDAO, insightsDAO, questionProcessor, accountDAO, tzHistoryDAO);
+        final TokenCheckerFactory tokenCheckerFactory = new TokenCheckerFactory(deviceDAO, expansionConfig, externalApplicationStore, externalTokenStore, externalAppDataStore, mapper);
+        this.resource = new AppStatsResource(appStatsDAO, insightsDAO, questionProcessor, accountDAO, tzHistoryDAO, tokenCheckerFactory);
 
         DateTimeUtils.setCurrentMillisFixed(FIXED_NOW.getMillis());
     }

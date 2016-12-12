@@ -27,6 +27,7 @@ import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
+import com.hello.suripu.app.cli.CreateMonthlyTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
 import com.hello.suripu.app.cli.MigratePillHeartbeatCommand;
 import com.hello.suripu.app.cli.MovePillDataToDynamoDBCommand;
@@ -67,6 +68,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
+import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
@@ -250,6 +252,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         bootstrap.addCommand(new MovePillDataToDynamoDBCommand());
         bootstrap.addCommand(new PopulateSleepScoreParametersDynamoDBTable());
         bootstrap.addCommand(new PopulateInsightsUUIDCommand());
+        bootstrap.addCommand(new CreateMonthlyTables());
         bootstrap.addBundle(new ViewBundle());
     }
 
@@ -655,7 +658,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new com.hello.suripu.app.v2.AccountPreferencesResource(accountPreferencesDAO));
         final StoreFeedbackDAO storeFeedbackDAO = commonDB.onDemand(StoreFeedbackDAO.class);
         environment.jersey().register(new StoreFeedbackResource(storeFeedbackDAO));
-        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB));
 
         final TrendsProcessor trendsProcessor = new TrendsProcessor(sleepStatsDAODynamoDB, accountDAO, timeZoneHistoryDAODynamoDB);
         environment.jersey().register(new TrendsResource(trendsProcessor));
@@ -722,6 +724,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore));
 
+        final TokenCheckerFactory tokenCheckerFactory = new TokenCheckerFactory(deviceDAO, configuration.expansionConfiguration(), expansionStore, externalTokenStore, externalAppDataStore, environment.getObjectMapper());
+        environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB, tokenCheckerFactory));
 
         final ExpansionsResource expansionsResource = new ExpansionsResource(
                 configuration.expansionConfiguration(),

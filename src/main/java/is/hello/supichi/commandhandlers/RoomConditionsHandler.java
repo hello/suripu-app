@@ -111,6 +111,7 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put("how noisy", SpeechCommand.ROOM_SOUND);
         tempMap.put("air quality", SpeechCommand.PARTICULATES);
         tempMap.put(ROOM_CONDITION_PATTERN, SpeechCommand.ROOM_CONDITION);
+        tempMap.put("road condition", SpeechCommand.ROOM_CONDITION); // due to google bad transcript
         return tempMap;
     }
 

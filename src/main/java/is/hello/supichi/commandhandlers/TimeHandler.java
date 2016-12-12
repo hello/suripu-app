@@ -34,10 +34,14 @@ import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 public class TimeHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeHandler.class);
 
+    private static final String TIME_PATTERN = "(what)('s)?(.+)?\\s(time)";
+    private static final String DAY_PATTERN = "(what)('s)?(.+)?\\s(day|date)";
+
     private static final String TIMEZONE_ERROR_TEXT = "Sorry, I'm not able to get the time. Please set your timezone in the mobile app.";
     private static final String TIME_ERROR_TEXT = "Sorry, I'm not able to determine the time right now. Please try again later.";
 
     private static final String TIME_RESPONSE_TEXT_FORMATTER = "The time is %s.";
+    private static final String DAY_RESPONSE_TEXT_FORMATTER = "It's %s.";
 
     private final SpeechCommandDAO speechCommandDAO;
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
@@ -56,14 +60,15 @@ public class TimeHandler extends BaseHandler {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("the time", SpeechCommand.TIME_REPORT);
-        tempMap.put("what time", SpeechCommand.TIME_REPORT);
+        tempMap.put(TIME_PATTERN, SpeechCommand.TIME_REPORT);
+
+        tempMap.put(DAY_PATTERN, SpeechCommand.DAY_REPORT);
         return tempMap;
     }
 
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
-        final String text = annotatedTranscript.lowercaseTranscript();
 
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript); // TODO: ensure that only valid commands are returned
 
@@ -78,11 +83,18 @@ public class TimeHandler extends BaseHandler {
             final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
             final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
 
-            final String currentTime = localNow.toString("h:mm a");
-            LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
-                    localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
+            final String responseString;
+            if (optionalCommand.get().equals(SpeechCommand.TIME_REPORT)) {
+                final String currentTime = localNow.toString("h:mm a");
+                LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
+                        localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
+                responseString = String.format(TIME_RESPONSE_TEXT_FORMATTER, currentTime);
+            } else {
+                final String currentDate = localNow.toString("EEEE, MMMM d, Y");
+                responseString = String.format(DAY_RESPONSE_TEXT_FORMATTER, currentDate);
+            }
 
-            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(String.format(TIME_RESPONSE_TEXT_FORMATTER, currentTime)));
+            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(responseString));
         }
 
         return new HandlerResult(HandlerType.TIME_REPORT, HandlerResult.EMPTY_COMMAND, GenericResult.failWithResponse(COMMAND_NOT_FOUND, TIME_ERROR_TEXT));
