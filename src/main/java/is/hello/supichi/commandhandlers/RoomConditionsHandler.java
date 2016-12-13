@@ -46,6 +46,8 @@ public class RoomConditionsHandler extends BaseHandler {
     private static final String TEMPERATURE_PATTERN_HOW = "how('s)?.+\\s(temperature)";
     private static final String HUMIDITY_PATTERN = "what('s)?.*\\s(humidity)";
     private static final String HUMIDITY_PATTERN_HOW = "how('s)?.*\\s(humidity)";
+    private static final String PRESSURE_PATTERN = "(what|how)('s)?(.+)?(\\sbarometric)?\\s(pressure)";
+    private static final String CO2_PATTERN = "(what|how)('s)?(.+)?\\s(co2|carbon dioxide)";
 
     private static final String NO_DATA_ERROR_RESPONSE_TEXT = "Sorry, I wasn't able to access your %s data right now. Please try again later";
     private static final String ROOM_CONDITION_UNAVAILABLE_RESPONSE_TEXT = "Room conditions are currently unavailable. Please try again later.";
@@ -57,9 +59,11 @@ public class RoomConditionsHandler extends BaseHandler {
         final Map<SpeechCommand, String> temp = Maps.newHashMap();
         temp.put(SpeechCommand.ROOM_TEMPERATURE, "The temperature in your room is %s %s.");
         temp.put(SpeechCommand.ROOM_HUMIDITY, "The humidity in your room is %s %s.");
-        temp.put(SpeechCommand.ROOM_LIGHT,"The light level in your room is %s %s.");
-        temp.put(SpeechCommand.ROOM_SOUND,"The sound in your room is %s %s");
-        temp.put(SpeechCommand.PARTICULATES,"The air quality in your room is %s %s");
+        temp.put(SpeechCommand.ROOM_LIGHT, "The light level in your room is %s %s.");
+        temp.put(SpeechCommand.ROOM_SOUND, "The sound in your room is %s %s.");
+        temp.put(SpeechCommand.PARTICULATES, "The air quality in your room is %s %s.");
+        temp.put(SpeechCommand.PRESSURE, "The barometric pressure is %s %s.");
+        temp.put(SpeechCommand.CO2, "The CO2 level is %s %s.");
         sensorResponseFormat = ImmutableMap.copyOf(temp);
     }
 
@@ -75,6 +79,8 @@ public class RoomConditionsHandler extends BaseHandler {
         temp.put(SpeechCommand.ROOM_LIGHT, Sensor.LIGHT);
         temp.put(SpeechCommand.ROOM_SOUND, Sensor.SOUND);
         temp.put(SpeechCommand.PARTICULATES, Sensor.PARTICULATES);
+        temp.put(SpeechCommand.CO2, Sensor.CO2);
+        temp.put(SpeechCommand.PRESSURE, Sensor.PRESSURE);
         commandSensorMap = ImmutableMap.copyOf(temp);
     }
 
@@ -101,15 +107,23 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put(TEMPERATURE_PATTERN, SpeechCommand.ROOM_TEMPERATURE);
         tempMap.put(TEMPERATURE_PATTERN_HOW, SpeechCommand.ROOM_TEMPERATURE);
         tempMap.put("what temperature", SpeechCommand.ROOM_TEMPERATURE);
+
         tempMap.put(HUMIDITY_PATTERN, SpeechCommand.ROOM_HUMIDITY);
         tempMap.put(HUMIDITY_PATTERN_HOW, SpeechCommand.ROOM_HUMIDITY);
         tempMap.put("what humidity", SpeechCommand.ROOM_HUMIDITY);
+
         tempMap.put("light level", SpeechCommand.ROOM_LIGHT);
         tempMap.put("how bright", SpeechCommand.ROOM_LIGHT);
+
         tempMap.put("sound level", SpeechCommand.ROOM_SOUND);
         tempMap.put("noise level", SpeechCommand.ROOM_SOUND);
         tempMap.put("how noisy", SpeechCommand.ROOM_SOUND);
+
         tempMap.put("air quality", SpeechCommand.PARTICULATES);
+
+        tempMap.put(PRESSURE_PATTERN, SpeechCommand.PRESSURE);
+        tempMap.put(CO2_PATTERN, SpeechCommand.CO2);
+
         tempMap.put(ROOM_CONDITION_PATTERN, SpeechCommand.ROOM_CONDITION);
         tempMap.put("road condition", SpeechCommand.ROOM_CONDITION); // due to google bad transcript
         return tempMap;
@@ -254,6 +268,10 @@ public class RoomConditionsHandler extends BaseHandler {
                 return Sensor.PARTICULATES.toString();
             case ROOM_CONDITION:
                 return SpeechCommand.ROOM_CONDITION.getValue();
+            case PRESSURE:
+                return SpeechCommand.PRESSURE.getValue();
+            case CO2:
+                return SpeechCommand.CO2.getValue();
         }
         return "";
     }
