@@ -252,6 +252,10 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestTextToHandler() {
         final List<HandlerTestData> dataList = Lists.newArrayList(
 
+                new HandlerTestData("what's the pressure", RoomConditionsHandler.class, true),
+                new HandlerTestData("what's the co2 level", RoomConditionsHandler.class, true),
+                new HandlerTestData("what's the carbon dioxide level", RoomConditionsHandler.class, true),
+
                 new HandlerTestData("Play Sleep Sound", SleepSoundHandler.class, true),
                 new HandlerTestData("play sleep sounds", SleepSoundHandler.class, true),
 

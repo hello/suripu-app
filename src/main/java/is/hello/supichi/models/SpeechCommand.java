@@ -30,6 +30,8 @@ public enum SpeechCommand {
     ROOM_LIGHT("room_light", RoomConditionsHandler.class),
     ROOM_SOUND("room_sound", RoomConditionsHandler.class),
     PARTICULATES("particulates", RoomConditionsHandler.class),
+    PRESSURE("pressure", RoomConditionsHandler.class),
+    CO2("co2", RoomConditionsHandler.class),
     THERMOSTAT_READ("thermostat_read", NestHandler.class),
     THERMOSTAT_SET("thermostat_set", NestHandler.class),
     THERMOSTAT_ACTIVE("thermostat_active", NestHandler.class),
