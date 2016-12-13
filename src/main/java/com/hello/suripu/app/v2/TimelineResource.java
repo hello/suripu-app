@@ -3,6 +3,7 @@ package com.hello.suripu.app.v2;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.hello.suripu.app.models.TimelineCache;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
@@ -66,6 +67,7 @@ public class TimelineResource extends BaseResource {
     private final PillDataDAODynamoDB pillDataDAODynamoDB;
     private final SleepStatsDAODynamoDB sleepStatsDAODynamoDB;
     private final DataLogger timelineLogDAOV2;
+    private final TimelineCache timelineCache;
 
     public TimelineResource(final TimelineDAODynamoDB timelineDAODynamoDB,
                             final InstrumentedTimelineProcessor timelineProcessor,
@@ -73,7 +75,8 @@ public class TimelineResource extends BaseResource {
                             final FeedbackDAO feedbackDAO,
                             final PillDataDAODynamoDB pillDataDAODynamoDB,
                             final SleepStatsDAODynamoDB sleepStatsDAODynamoDB,
-                            final DataLogger timelineLogDAOV2) {
+                            final DataLogger timelineLogDAOV2,
+                            final TimelineCache timelineCache) {
         this.timelineProcessor = timelineProcessor;
         this.timelineDAODynamoDB = timelineDAODynamoDB;
         this.timelineLogDAO = timelineLogDAO;
@@ -81,6 +84,7 @@ public class TimelineResource extends BaseResource {
         this.pillDataDAODynamoDB = pillDataDAODynamoDB;
         this.sleepStatsDAODynamoDB = sleepStatsDAODynamoDB;
         this.timelineLogDAOV2 = timelineLogDAOV2;
+        this.timelineCache = timelineCache;
     }
 
     @ScopesAllowed({OAuthScope.SLEEP_TIMELINE})
@@ -271,6 +275,13 @@ public class TimelineResource extends BaseResource {
     private Timeline getTimelineForNightInternal(final long accountId, final String night, final Optional<TimelineFeedback> newFeedback) {
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(night);
 
+        // Only check cache if no new feedback is present
+        if(!newFeedback.isPresent()) {
+            Optional<Timeline> timelineOptional = timelineCache.get(accountId, night);
+            if(timelineOptional.isPresent()) {
+                return timelineOptional.get();
+            }
+        }
         //GET THE TIMELINE WITH THE NEW FEEDBACK (or no new feedback)
         //TODO change timeline result to a V2 timeline result
         final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(accountId, targetDate,newFeedback);
@@ -288,6 +299,7 @@ public class TimelineResource extends BaseResource {
             timelineLogDAO.putTimelineLog(accountId, logV2.getAsV1Log());
         }
 
+        timelineCache.save(timeline, accountId, night);
         return timeline;
     }
 
