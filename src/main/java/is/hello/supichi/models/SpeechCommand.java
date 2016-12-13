@@ -19,6 +19,7 @@ public enum SpeechCommand {
     SLEEP_SOUND_PLAY("sleep_sound_play", SleepSoundHandler.class),
     SLEEP_SOUND_STOP("sleep_sound_stop", SleepSoundHandler.class),
     ALARM_SET("alarm_set", AlarmHandler.class),
+    ALARM_GET("alarm_get", AlarmHandler.class),
     ALARM_DELETE("alarm_delete", AlarmHandler.class),
     LIGHT_SET_BRIGHTNESS("light_set_brightness", HueHandler.class),
     LIGHT_SET_COLOR("light_set_color", HueHandler.class),

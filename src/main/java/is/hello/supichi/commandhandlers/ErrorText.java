@@ -18,6 +18,7 @@ public class ErrorText {
     public static final String DUPLICATE_ERROR = "duplicate alarm";
     public static final String TOO_LATE_ERROR = "alarm time too late";
     public static final String SMART_ALARM_ERROR = "smart alarm not supported";
+    public static final String NO_ALARM_SET_ERROR = "no alarm set";
 
     public static final String ERROR_INVALID_SENSOR = "invalid sensor";
     public static final String NO_TIMEZONE = "no timezone";

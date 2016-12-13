@@ -10,6 +10,7 @@ import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
 import com.hello.suripu.core.models.RingTime;
 import com.hello.suripu.core.models.UserInfo;
+import com.hello.suripu.core.processors.RingProcessor;
 import is.hello.supichi.commandhandlers.results.GenericResult;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
@@ -35,6 +36,7 @@ import java.util.regex.Pattern;
 
 import static is.hello.supichi.commandhandlers.ErrorText.DUPLICATE_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_ALARM_TO_CANCEL;
+import static is.hello.supichi.commandhandlers.ErrorText.NO_ALARM_SET_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_TIME_ERROR;
 import static is.hello.supichi.commandhandlers.ErrorText.NO_USER_INFO;
@@ -56,7 +58,10 @@ public class AlarmHandler extends BaseHandler {
     private static final Pattern CANCEL_ALARM_PATTERN = Pattern.compile(CANCEL_ALARM_REGEX);
 
     private static final String SET_ALARM_REGEX = "((set).*(?:alarm))|(wake me)";
-    private static final Pattern SET_ALARM__PATTERN = Pattern.compile(SET_ALARM_REGEX);
+    private static final Pattern SET_ALARM_PATTERN = Pattern.compile(SET_ALARM_REGEX);
+
+    private static final String GET_ALARM_REGEX = "(what|when)('s)?(.+)?\\s(alarm)";
+    private static final Pattern GET_ALARM_PATTERN = Pattern.compile(GET_ALARM_REGEX);
 
     public static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
 
@@ -65,16 +70,19 @@ public class AlarmHandler extends BaseHandler {
     public static final String SET_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be set. Please try again later";
     public static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
 
-    public static final String SET_ALARM_ERROR_TOO_LATE_RESPONSE = "Sorry, your alarm could not be set. Please set a time no more than one day ahead.";
-    public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, your alarm could not be set. Please set a time greater than 5 minutes from now";
-    public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, your alarm could not be set. Please specify an alarm time.";
-    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, your alarm could not be set. Please set your timezone in the mobile app.";
+    public static final String SET_ALARM_ERROR_TOO_LATE_RESPONSE = "Your alarm could not be set. Please set a time no more than one day ahead.";
+    public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Your alarm could not be set. Please set a time greater than 5 minutes from now";
+    public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Your alarm could not be set. Please specify an alarm time.";
+    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Your alarm could not be set. Please set your timezone in the mobile app.";
 
-    public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, your alarm could not be cancelled. Please try again later.";
+    public static final String CANCEL_ALARM_ERROR_RESPONSE = "Your alarm could not be cancelled. Please try again later.";
     public static final String CANCEL_ALARM_OK_RESPONSE_TEMPLATE = "OK, your alarm for %s is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no non-repeating alarm to cancel.";
     public static final String REPEATED_ALARM_CANCEL_INSTRUCTIONS = "You only have a repeating alarm set. Use the app to cancel.";
     public static final String SMART_ALARM_ERROR_RESPONSE = "Smart Alarm could not be set. Use the app to set a Smart Alarm.";
+
+    public static final String NO_ALARM_TO_GET_RESPONSE = "You have no alarm set.";
+    public static final String GET_ALARM_OK_RESPONSE_TEMPLATE = "Your next alarm is for %s.";
 
     public static final String SMART_ALARM_CHECK_STRING = "smart alarm";
 
@@ -105,6 +113,8 @@ public class AlarmHandler extends BaseHandler {
         tempMap.put("unset alarm", SpeechCommand.ALARM_DELETE);
         tempMap.put("remove alarm", SpeechCommand.ALARM_DELETE);
         tempMap.put("delete alarm", SpeechCommand.ALARM_DELETE);
+
+        tempMap.put(GET_ALARM_REGEX, SpeechCommand.ALARM_GET);
         return tempMap;
     }
 
@@ -116,11 +126,15 @@ public class AlarmHandler extends BaseHandler {
             return Optional.of (SpeechCommand.ALARM_DELETE);
         }
 
-        final Matcher setMatcher = SET_ALARM__PATTERN.matcher(text);
+        final Matcher setMatcher = SET_ALARM_PATTERN.matcher(text);
         if (setMatcher.find()) {
             return Optional.of(SpeechCommand.ALARM_SET);
         }
 
+        final Matcher getMatcher = GET_ALARM_PATTERN.matcher(text);
+        if (getMatcher.find()) {
+            return Optional.of(SpeechCommand.ALARM_GET);
+        }
         return Optional.absent();
     }
 
@@ -138,13 +152,61 @@ public class AlarmHandler extends BaseHandler {
         final String command = optionalCommand.get().getValue();
 
         final GenericResult alarmResult;
-        if (optionalCommand.get().equals(SpeechCommand.ALARM_SET)) {
-            alarmResult = setAlarm(accountId, senseId, annotatedTranscript);
-        } else {
-            alarmResult = cancelAlarm(accountId, senseId);
+        switch (optionalCommand.get()) {
+            case ALARM_SET:
+                alarmResult = setAlarm(accountId, senseId, annotatedTranscript);
+                break;
+            case ALARM_GET:
+                alarmResult = getAlarm(accountId, senseId, annotatedTranscript);
+                break;
+            default:
+                alarmResult = cancelAlarm(accountId, senseId);
         }
 
         return new HandlerResult(HandlerType.ALARM, command, alarmResult);
+    }
+
+    /**
+     * get next ring time
+     */
+    private GenericResult getAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+        final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(senseId, accountId);
+        if (!alarmInfoOptional.isPresent()) {
+            LOGGER.warn("warning=no-user-info sense_id={} account_id={}", senseId, accountId);
+            return GenericResult.failWithResponse(NO_USER_INFO, CANCEL_ALARM_ERROR_RESPONSE);
+        }
+
+        final UserInfo userInfo = alarmInfoOptional.get();
+        if (userInfo.alarmList.isEmpty()) {
+            LOGGER.warn("warning=no-alarms-set sense_id={} account_id={}", senseId, accountId);
+            return GenericResult.failWithResponse(NO_ALARM_SET_ERROR, NO_ALARM_TO_GET_RESPONSE);
+        }
+
+        final RingTime nextRingTime = RingProcessor.getNextRingTimeForSense(senseId, Lists.newArrayList(userInfo), DateTime.now());
+
+        final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
+        final DateTime localRingTime = new DateTime(nextRingTime.actualRingTimeUTC, DateTimeZone.UTC).withZone(timezoneId);
+        final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userInfo.timeZone.get());
+
+        if (localRingTime.isBefore(localNow)) {
+            LOGGER.warn("warning=no-future-alarms-set sense_id={} account_id={}", senseId, accountId);
+            return GenericResult.failWithResponse(NO_ALARM_SET_ERROR, NO_ALARM_TO_GET_RESPONSE);
+        }
+
+        final String alarmString;
+        if (localRingTime.getDayOfYear() ==  localNow.getDayOfYear()) {
+            alarmString = String.format("%s today", localRingTime.toString(DateTimeFormat.forPattern("hh:mm a")));
+        } else if ( localRingTime.getDayOfYear() == localNow.plusDays(1).getDayOfYear()) {
+            alarmString = String.format("%s tomorrow", localRingTime.toString(DateTimeFormat.forPattern("hh:mm a")));
+        } else {
+
+            final String descriptor = (localRingTime.getWeekOfWeekyear() == localNow.getWeekOfWeekyear()) ? "this" : "next";
+            alarmString =  String.format("%s %s at %s", descriptor,
+                    localRingTime.toString("EEEE"),
+                    localRingTime.toString("hh:mm a"));
+        }
+
+        return GenericResult.ok(String.format(GET_ALARM_OK_RESPONSE_TEMPLATE, alarmString));
     }
 
     /**
