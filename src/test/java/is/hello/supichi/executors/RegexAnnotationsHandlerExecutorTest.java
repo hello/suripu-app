@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
+import static is.hello.supichi.models.SpeechCommand.ALARM_GET;
 import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -202,7 +203,6 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(result.command, ALARM_SET.getValue());
 
         result = handlerExecutor.handle(newVoiceRequest("wake me at 7 am"));
-
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.optionalResult.isPresent(), true);
         assertEquals(result.command, ALARM_SET.getValue());
@@ -227,6 +227,13 @@ public class RegexAnnotationsHandlerExecutorTest {
         result = handlerExecutor.handle(newVoiceRequest("cancel all my appointments"));
         assertEquals(result.handlerType, HandlerType.NONE);
         assertEquals(result.optionalResult.isPresent(), false);
+
+        // get alarm
+        result = handlerExecutor.handle(newVoiceRequest("when is my alarm"));
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.optionalResult.isPresent(), true);
+        assertEquals(result.command, ALARM_GET.getValue());
+
     }
 
     private static class HandlerTestData{
