@@ -417,7 +417,8 @@ public class AlarmHandler extends BaseHandler {
 
     @Override
     public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
-        return annotatedTranscript.times.size();
+        final int alarmScore = (annotatedTranscript.lowercaseTranscript().contains("alarm")) ? 2 : 0;
+        return annotatedTranscript.times.size() + alarmScore;
     }
 
     @Override

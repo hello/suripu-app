@@ -34,8 +34,8 @@ import static is.hello.supichi.commandhandlers.ErrorText.NO_TIMEZONE;
 public class TimeHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeHandler.class);
 
-    private static final String TIME_PATTERN = "(what)('s)?(.+)?\\s(time)";
-    private static final String DAY_PATTERN = "(what)('s)?(.+)?\\s(day|date)";
+    private static final String TIME_REGEX = "(what)('s)?\\s?(is)?\\s(the time)";
+    private static final String DAY_REGEX = "(what)('s)?(.+)?\\s(day|date)";
 
     private static final String TIMEZONE_ERROR_TEXT = "Sorry, I'm not able to get the time. Please set your timezone in the mobile app.";
     private static final String TIME_ERROR_TEXT = "Sorry, I'm not able to determine the time right now. Please try again later.";
@@ -59,13 +59,11 @@ public class TimeHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("the time", SpeechCommand.TIME_REPORT);
-        tempMap.put(TIME_PATTERN, SpeechCommand.TIME_REPORT);
-
-        tempMap.put(DAY_PATTERN, SpeechCommand.DAY_REPORT);
+        tempMap.put(TIME_REGEX, SpeechCommand.TIME_REPORT);
+        tempMap.put("what time is it", SpeechCommand.TIME_REPORT);
+        tempMap.put(DAY_REGEX, SpeechCommand.DAY_REPORT);
         return tempMap;
     }
-
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
