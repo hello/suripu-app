@@ -25,6 +25,7 @@ import is.hello.gaibu.core.models.MultiDensityImage;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.supichi.commandhandlers.AlarmHandler;
 import is.hello.supichi.commandhandlers.BaseHandler;
 import is.hello.supichi.commandhandlers.HandlerFactory;
 import is.hello.supichi.commandhandlers.HueHandler;
@@ -32,6 +33,7 @@ import is.hello.supichi.commandhandlers.NestHandler;
 import is.hello.supichi.commandhandlers.RoomConditionsHandler;
 import is.hello.supichi.commandhandlers.SleepSoundHandler;
 import is.hello.supichi.commandhandlers.SleepSummaryHandler;
+import is.hello.supichi.commandhandlers.TimeHandler;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
@@ -251,6 +253,14 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestTextToHandler() {
         final List<HandlerTestData> dataList = Lists.newArrayList(
+                new HandlerTestData("What time did I fall asleep", TimeHandler.class, false),
+                new HandlerTestData("what time do I usually wake up", TimeHandler.class, false),
+                new HandlerTestData("that says I do it all the time", TimeHandler.class, false),
+
+                new HandlerTestData("What time are my alarm set for", AlarmHandler.class, true),
+                new HandlerTestData("What time is my alarm set for", AlarmHandler.class, true),
+                new HandlerTestData("What time is my alarm set", AlarmHandler.class, true),
+                new HandlerTestData("What time is my alarm tomorrow", AlarmHandler.class, true),
 
                 new HandlerTestData("what's the pressure", RoomConditionsHandler.class, true),
                 new HandlerTestData("what's the co2 level", RoomConditionsHandler.class, true),
@@ -544,6 +554,10 @@ public class RegexAnnotationsHandlerExecutorTest {
         final HandlerExecutor executor = getExecutor();
 
         HandlerResult correctResult = executor.handle(newVoiceRequest("what is the time"));
+        assertEquals(HandlerType.TIME_REPORT, correctResult.handlerType);
+        assertEquals(correctResult.command, SpeechCommand.TIME_REPORT.getValue());
+
+        correctResult = executor.handle(newVoiceRequest("what time is it"));
         assertEquals(HandlerType.TIME_REPORT, correctResult.handlerType);
         assertEquals(correctResult.command, SpeechCommand.TIME_REPORT.getValue());
 
