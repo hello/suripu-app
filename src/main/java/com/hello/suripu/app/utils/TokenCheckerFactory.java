@@ -1,19 +1,12 @@
 package com.hello.suripu.app.utils;
 
-import com.google.common.base.Optional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.base.Optional;
 import com.hello.suripu.app.configuration.ExpansionConfiguration;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExpansionDeviceData;
@@ -26,6 +19,10 @@ import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import is.hello.gaibu.homeauto.models.ConfigurationResponse;
 import is.hello.gaibu.homeauto.models.ResponseStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * Created by jnorgan on 12/9/16.
@@ -56,7 +53,7 @@ public class TokenCheckerFactory {
   }
 
   public TokenChecker create(final AccessToken accessToken) {
-    return new TokenChecker(accessToken, deviceDAO, expansionConfig, expansionStore, externalTokenStore, expansionDataStore, mapper);
+    return new TokenChecker(accessToken.accountId, deviceDAO, expansionConfig, expansionStore, externalTokenStore, expansionDataStore, mapper);
   }
 
   public class TokenChecker implements Runnable {
@@ -67,16 +64,16 @@ public class TokenCheckerFactory {
     private final ExternalOAuthTokenStore<ExternalToken> externalTokenStore;
     private final PersistentExpansionDataStore expansionDataStore;
     private final ObjectMapper mapper;
-    private AccessToken accessToken;
+    private Long accountId;
 
-    public TokenChecker(final AccessToken accessToken,
+    public TokenChecker(final Long accountId,
                         final DeviceDAO deviceDAO,
                         final ExpansionConfiguration expansionConfig,
                         final ExpansionStore<Expansion> expansionStore,
                         final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
                         final PersistentExpansionDataStore expansionDataStore,
                         final ObjectMapper mapper) {
-      this.accessToken = accessToken;
+      this.accountId = accountId;
       this.deviceDAO = deviceDAO;
       this.expansionConfig = expansionConfig;
       this.expansionStore = expansionStore;
@@ -96,9 +93,9 @@ public class TokenCheckerFactory {
         }
 
         final Expansion expansion = expansionOptional.get();
-        final List<DeviceAccountPair> sensePairedWithAccount = deviceDAO.getSensesForAccountId(accessToken.accountId);
+        final List<DeviceAccountPair> sensePairedWithAccount = deviceDAO.getSensesForAccountId(accountId);
         if(sensePairedWithAccount.size() == 0){
-          LOGGER.error("error=no-sense-paired account_id={}", accessToken.accountId);
+          LOGGER.error("error=no-sense-paired account_id={}", accountId);
           return;
         }
         final String deviceId = sensePairedWithAccount.get(0).externalDeviceId;
@@ -153,11 +150,19 @@ public class TokenCheckerFactory {
           LOGGER.info("info=disabling-invalid-token service_name={} device_id={}", Expansion.ServiceName.NEST.toString(), deviceId);
           //disable the unusable token to force refresh (manual re-auth for Nest)
           externalTokenStore.disableByDeviceId(deviceId, expansion.id);
+          final ExpansionData.Builder newDataBuilder = new ExpansionData.Builder();
+          newDataBuilder
+                  .withAppId(expansion.id)
+                  .withDeviceId(deviceId)
+                  .withData("")
+                  .withEnabled(false)
+                  .withAccountId(null);
+          expansionDataStore.updateAppData(newDataBuilder.build());
         }
 
         LOGGER.debug("debug=valid-expansion-token service_name={} device_id={}", Expansion.ServiceName.NEST.toString(), deviceId);
       } catch (Exception exception) {
-
+        LOGGER.error("error={}", exception.getMessage());
       } finally {
         LOGGER.debug("message=token-checker-thread-end");
       }
