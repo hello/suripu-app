@@ -41,7 +41,8 @@ public class RoomConditionsHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomConditionsHandler.class);
 
     private static final boolean DEFAULT_USE_FAHRENHEIT = false; // check is for use-Celsius
-    private static final String ROOM_CONDITION_PATTERN = "(bed)?room('s)? condition";
+    private static final String ROOM_CONDITION_REGEX_1 = "(bed)?room('s)? condition";
+    private static final String ROOM_CONDITION_REGEX_2 = "(what|how)('s)?(.+)?\\s(condition)";
     private static final String TEMPERATURE_PATTERN = "what('s)?.+\\s(temperature)";
     private static final String TEMPERATURE_PATTERN_HOW = "how('s)?.+\\s(temperature)";
     private static final String HUMIDITY_PATTERN = "what('s)?.*\\s(humidity)";
@@ -124,7 +125,8 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put(PRESSURE_PATTERN, SpeechCommand.PRESSURE);
         tempMap.put(CO2_PATTERN, SpeechCommand.CO2);
 
-        tempMap.put(ROOM_CONDITION_PATTERN, SpeechCommand.ROOM_CONDITION);
+        tempMap.put(ROOM_CONDITION_REGEX_1, SpeechCommand.ROOM_CONDITION);
+        tempMap.put(ROOM_CONDITION_REGEX_2, SpeechCommand.ROOM_CONDITION);
         tempMap.put("road condition", SpeechCommand.ROOM_CONDITION); // due to google bad transcript
         return tempMap;
     }
