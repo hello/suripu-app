@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Map;
 
 public class SuripuAppConfiguration extends Configuration {
@@ -184,9 +185,9 @@ public class SuripuAppConfiguration extends Configuration {
     public MessejiHttpClientConfiguration getMessejiHttpClientConfiguration() { return messejiHttpClientConfiguration; }
 
     @NotNull
-    @JsonProperty("taimurain_http_client")
-    private TaimurainHttpClientConfiguration taimurainHttpClientConfiguration;
-    public TaimurainHttpClientConfiguration getTaimurainHttpClientConfiguration() { return taimurainHttpClientConfiguration; }
+    @JsonProperty("taimurain_http_clients")
+    private List<TaimurainHttpClientConfiguration> taimurainHttpClientConfigurations;
+    public List<TaimurainHttpClientConfiguration> getTaimurainHttpClientConfigurations() { return taimurainHttpClientConfigurations; }
 
     @Valid
     @JsonProperty("sleep_sound_cache_seconds")

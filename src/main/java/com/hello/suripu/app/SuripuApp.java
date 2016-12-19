@@ -1,5 +1,7 @@
 package com.hello.suripu.app;
 
+import com.google.api.client.util.Lists;
+import com.google.api.client.util.Maps;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -81,6 +83,7 @@ import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
+import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
@@ -209,6 +212,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -546,10 +551,19 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new ProvisionResource(senseKeyStore, pillKeyStore, keyStoreUtils, pillProvisionDAO, amazonS3));
 
         /* Neural net endpoint information */
-        final TaimurainHttpClientConfiguration taimurainHttpClientConfiguration = configuration.getTaimurainHttpClientConfiguration();
-        final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
-                new HttpClientBuilder(environment).using(taimurainHttpClientConfiguration.getHttpClientConfiguration()).build("taimurain"),
-                taimurainHttpClientConfiguration.getEndpoint());
+        final List<TaimurainHttpClientConfiguration> taimurainHttpClientConfigurations = configuration.getTaimurainHttpClientConfigurations();
+
+        final Map<String,NeuralNetEndpoint> neuralNetEndpoints = Maps.newHashMap();
+
+        for (final TaimurainHttpClientConfiguration config : taimurainHttpClientConfigurations) {
+            final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
+                    new HttpClientBuilder(environment).using(config.getHttpClientConfiguration()).build("taimurain" + config.getAlgorithm()),
+                    config.getEndpoint());
+
+            neuralNetEndpoints.put(config.getAlgorithm(),taimurainHttpClient);
+        }
+
+
 
 
         final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = configuration.getTimelineAlgorithmConfiguration();
@@ -572,7 +586,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 defaultModelEnsembleDAO,
                 userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
-                taimurainHttpClient,
+                neuralNetEndpoints,
                 timelineAlgorithmConfiguration,
                 environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
