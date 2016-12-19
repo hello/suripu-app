@@ -155,7 +155,8 @@ public class TokenCheckerFactory {
                   .withAppId(expansion.id)
                   .withDeviceId(deviceId)
                   .withData("")
-                  .withEnabled(false);
+                  .withEnabled(false)
+                  .withAccountId(null);
           expansionDataStore.updateAppData(newDataBuilder.build());
         }
 
