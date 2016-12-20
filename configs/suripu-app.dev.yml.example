@@ -102,12 +102,12 @@ taimurain_http_clients:
     http_client_config:
       keepAlive: 0s
       timeout: 10000ms
-    algorithm: neural_net
-  - endpoint: http://internal-taimurain-230356525.us-east-1.elb.amazonaws.com:80
+    algorithm: NEURAL_NET
+  - endpoint: http://ec2-54-224-150-186.compute-1.amazonaws.com:5557
     http_client_config:
       keepAlive: 0s
       timeout: 10000ms
-    algorithm: neural_net_four_event
+    algorithm: NEURAL_NET_FOUR_EVENT
 
 question_configs:
   num_skips : 5
@@ -169,8 +169,8 @@ dynamodb:
     alarm: alarm
     alarm_info: alarm_info
     algorithm_test: algorithm_test
-    app_stats: app_stats
     analytics_tracking: analytics_tracking
+    app_stats: app_stats
     calibration: calibration
     device_data: sense_data
     feature_extraction_models: feature_extraction_models
@@ -237,16 +237,17 @@ dynamodb:
     profile_photo: http://localhost:7777
     push_notification_event: http://localhost:7777
     ring_time_history: http://localhost:7777
+    ring_time: http://localhost:7777
     sense_key_store: http://localhost:7777
     sense_last_seen: http://localhost:7777
+    sense_state: http://localhost:7777
     sleep_hmm: http://localhost:7777
     sense_metadata: http://localhost:7777
-    sense_state: http://localhost:7777
     sleep_score: http://localhost:7777
     sleep_score_parameters: http://localhost:7777
     sleep_stats: http://localhost:7777
     smart_alarm_log: http://localhost:7777
-    speech_commands: http://dynamodb.us-east-1.amazonaws.com
+    speech_commands: http://localhost:7777
     speech_results: http://localhost:7777
     speech_timeline: http://localhost:7777
     swap_intents: http://localhost:7777

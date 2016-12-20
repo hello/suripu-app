@@ -156,12 +156,12 @@ taimurain_http_clients:
     http_client_config:
       keepAlive: 0s
       timeout: 10000ms
-    algorithm: neural_net
+    algorithm: NEURAL_NET
   - endpoint: http://internal-taimurain-prod-1606459001.us-east-1.elb.amazonaws.com:80
     http_client_config:
       keepAlive: 0s
       timeout: 10000ms
-    algorithm: neural_net_four_event
+    algorithm: NEURAL_NET_FOUR_EVENT
 
 question_configs:
   num_skips : 5
