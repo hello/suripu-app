@@ -54,7 +54,7 @@ public class TriviaHandlerTest {
         );
 
         for(final TestCase testCase : testCases) {
-            final DateTime now = new DateTime(2017, 1,1, testCase.hourOfDay, 0, 0);
+            final DateTime now = new DateTime(2017, 1,1, testCase.hourOfDay, 0, 0, testCase.timeZone);
             final GenericResult result = TriviaHandler.greetings(Optional.of(testCase.timeZone.toTimeZone()), now);
 
             for(String greeting : testCase.expectedGreetings) {
