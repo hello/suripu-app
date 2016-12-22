@@ -3,6 +3,7 @@ package is.hello.supichi.commandhandlers;
 import com.google.common.base.Optional;
 import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.alarm.AlarmProcessor;
+import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -45,6 +46,7 @@ public class HandlerFactory {
     private final Optional<DatabaseReader> geoIpDatabase;
     private final SensorViewLogic sensorViewLogic;
     private final boolean isDebug;
+    private final AccountDAO accountDAO;
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
@@ -63,7 +65,8 @@ public class HandlerFactory {
                            final Optional<DatabaseReader> geoIpDatabase,
                            final SensorViewLogic sensorViewLogic,
                            final AccountPreferencesDAO accountPreferencesDAO,
-                           final boolean isDebug) {
+                           final boolean isDebug,
+                           final AccountDAO accountDAO) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -82,6 +85,7 @@ public class HandlerFactory {
         this.sensorViewLogic = sensorViewLogic;
         this.accountPreferencesDAO = accountPreferencesDAO;
         this.isDebug = isDebug;
+        this.accountDAO = accountDAO;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -101,13 +105,14 @@ public class HandlerFactory {
                                         final Optional<DatabaseReader> geoIPDatabase,
                                         final SensorViewLogic sensorViewLogic,
                                         final AccountPreferencesDAO accountPreferencesDAO,
-                                        final boolean isDebug) {
+                                        final boolean isDebug,
+                                        final AccountDAO accountDAO) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor,
                 timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
                 externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
-                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO, isDebug);
+                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO, isDebug, accountDAO);
     }
 
     public WeatherHandler weatherHandler() {
@@ -128,7 +133,7 @@ public class HandlerFactory {
     }
 
     public TriviaHandler triviaHandler() {
-        return new TriviaHandler(speechCommandDAO, isDebug);
+        return new TriviaHandler(speechCommandDAO, accountDAO, isDebug);
     }
 
     public TimelineHandler timelineHandler() {
