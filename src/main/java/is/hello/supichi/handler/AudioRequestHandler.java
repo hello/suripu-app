@@ -42,6 +42,7 @@ public class AudioRequestHandler {
     private static Logger LOGGER = LoggerFactory.getLogger(AudioRequestHandler.class);
     private static String SNOOZE_STRING = "snooze";
     private static String STOP_STRING = "stop";
+    private static String GOODNIGHT_STRING = "goodnight";
 
     private final InstrumentedSpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
@@ -197,7 +198,7 @@ public class AudioRequestHandler {
             final StringTokenizer tokenizer = new StringTokenizer(transcribedText);
             if (tokenizer.countTokens() == 1) {
                 final String singleWord = tokenizer.nextToken();
-                if (!singleWord.contains(SNOOZE_STRING) && !singleWord.contains(STOP_STRING)) {
+                if (!singleWord.contains(SNOOZE_STRING) && !singleWord.contains(STOP_STRING) && !singleWord.contains(GOODNIGHT_STRING)) {
                     this.commandRejectSingleWord.mark(1);
                     builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                             .withResponseText(GenericResponseText.COMMAND_REJECTED_TEXT)
