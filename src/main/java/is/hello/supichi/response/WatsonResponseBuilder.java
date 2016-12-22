@@ -1,5 +1,6 @@
 package is.hello.supichi.response;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Optional;
@@ -10,6 +11,7 @@ import is.hello.supichi.api.Speech;
 import is.hello.supichi.models.GenericResponseText;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.utils.AudioUtils;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,13 +29,16 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
 
     private final TextToSpeech watson;
     private final Voice watsonVoice;
-
+    private AmazonS3 amazonS3;
     private final Timer timer;
+    private final String s3BucketNameForMp3;
 
-    public WatsonResponseBuilder(final TextToSpeech watson, final String voice, final MetricRegistry metricRegistry) {
+    public WatsonResponseBuilder(final TextToSpeech watson, final String voice, final AmazonS3 amazonS3, final MetricRegistry metricRegistry, final String s3BucketNameForMp3) {
         this.watson = watson;
         this.watsonVoice = this.watson.getVoice(voice).execute();
         this.timer = metricRegistry.timer(name(WatsonResponseBuilder.class, "watson-timer"));
+        this.amazonS3 = amazonS3;
+        this.s3BucketNameForMp3 = s3BucketNameForMp3;
     }
 
     @Override
@@ -41,6 +46,17 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
                            final HandlerResult handlerResult,
                            final Speech.SpeechRequest request) {
 
+
+        if(handlerResult.optionalResult.isPresent() && handlerResult.optionalResult.get().url.isPresent()) {
+            final String url = handlerResult.optionalResult.get().url.get();
+            try (final InputStream in = amazonS3.getObject(s3BucketNameForMp3, url).getObjectContent()){
+                LOGGER.info("mp3_url={}", url);
+                return IOUtils.toByteArray(in);
+            } catch (IOException e) {
+                LOGGER.error("action=get-mp3-from-s3 key={} error={}", url, e.getMessage());
+                return new byte[]{0,0,0};
+            }
+        }
 
         final String text = (!handlerResult.responseText().isEmpty()) ? handlerResult.responseText() : GenericResponseText.UNKNOWN_TEXT;
 
@@ -83,6 +99,6 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
             LOGGER.error("action=watson-down-sample-fails error_msg={}", e.getMessage());
         }
 
-        return new byte[]{};
+        return new byte[]{0,0,0};
     }
 }
