@@ -1,5 +1,6 @@
 package is.hello.supichi.executors;
 
+import com.hello.suripu.core.db.AccountDAO;
 import is.hello.supichi.commandhandlers.TriviaHandler;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.HandlerResult;
@@ -24,7 +25,8 @@ public class UnigramHandlerExecutorTest {
     public void TestHandleSingleHandler() {
 
         final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
-        final TriviaHandler handler = new TriviaHandler(speechCommandDAO, false);
+        final AccountDAO accountDAO = mock(AccountDAO.class);
+        final TriviaHandler handler = new TriviaHandler(speechCommandDAO, accountDAO, true);
         final HandlerExecutor executor = new UnigramHandlerExecutor()
                 .register(HandlerType.TRIVIA, handler);
 

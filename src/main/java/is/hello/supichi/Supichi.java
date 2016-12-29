@@ -1,9 +1,5 @@
 package is.hello.supichi;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -13,11 +9,16 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.sensors.ScaleFactory;
 import com.hello.suripu.app.sensors.SensorViewFactory;
 import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
+import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -44,23 +45,6 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.maxmind.geoip2.DatabaseReader;
-
-import net.spy.memcached.AddrUtil;
-import net.spy.memcached.ConnectionFactoryBuilder;
-import net.spy.memcached.MemcachedClient;
-
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import is.hello.gaibu.core.db.ExpansionDataDAO;
@@ -95,7 +79,21 @@ import is.hello.supichi.response.SupichiResponseBuilder;
 import is.hello.supichi.response.SupichiResponseType;
 import is.hello.supichi.response.WatsonResponseBuilder;
 import is.hello.supichi.utils.GeoUtils;
+import net.spy.memcached.AddrUtil;
+import net.spy.memcached.ConnectionFactoryBuilder;
+import net.spy.memcached.MemcachedClient;
 import okhttp3.OkHttpClient;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Created by ksg on 10/18/16
@@ -185,6 +183,7 @@ public class Supichi
 
         final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
         final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
 
         // set up speech client
         final InstrumentedSpeechClient client;
@@ -222,7 +221,8 @@ public class Supichi
                 geoIPDatabase,
                 sensorViewLogic,
                 accountPreferencesDAO,
-                configuration.getDebug()
+                configuration.getDebug(),
+                accountDAO
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
@@ -281,7 +281,14 @@ public class Supichi
                 .build();
 
         final StaticResponseBuilder staticResponseBuilder = StaticResponseBuilder.create();
-        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName(), environment.metrics());
+        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(
+                watson,
+                watsonConfiguration.getVoiceName(),
+                amazonS3,
+                environment.metrics(),
+                speechBucket
+        );
+
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
         responseBuilders.put(SupichiResponseType.STATIC, staticResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);

@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
+import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
@@ -34,6 +35,7 @@ import is.hello.supichi.commandhandlers.RoomConditionsHandler;
 import is.hello.supichi.commandhandlers.SleepSoundHandler;
 import is.hello.supichi.commandhandlers.SleepSummaryHandler;
 import is.hello.supichi.commandhandlers.TimeHandler;
+import is.hello.supichi.commandhandlers.TriviaHandler;
 import is.hello.supichi.commandhandlers.results.Outcome;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
@@ -79,7 +81,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
     private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
-
+    private final AccountDAO accountDAO = mock(AccountDAO.class);
 
     private final String SENSE_ID = "123456789";
     private final Long ACCOUNT_ID = 99L;
@@ -176,7 +178,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 Optional.absent(), // geoip DatabaseReader
                 sensorViewLogic,
                 accountPreferenceDAO,
-                false
+                false,
+                accountDAO
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
@@ -253,6 +256,12 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestTextToHandler() {
         final List<HandlerTestData> dataList = Lists.newArrayList(
+                new HandlerTestData("how are the conditions", RoomConditionsHandler.class, true),
+                new HandlerTestData("what are the conditions in my room", RoomConditionsHandler.class, true),
+                new HandlerTestData("how's my room conditions", RoomConditionsHandler.class, true),
+
+                new HandlerTestData("turn off the alarm", AlarmHandler.class, true),
+
                 new HandlerTestData("What time did I fall asleep", TimeHandler.class, false),
                 new HandlerTestData("what time do I usually wake up", TimeHandler.class, false),
                 new HandlerTestData("that says I do it all the time", TimeHandler.class, false),
@@ -314,7 +323,11 @@ public class RegexAnnotationsHandlerExecutorTest {
                 new HandlerTestData("play Nocturne", SleepSoundHandler.class, true),
                 new HandlerTestData("play Ocean Waves", SleepSoundHandler.class, false),
                 new HandlerTestData("play shit storm", SleepSoundHandler.class, false),
-                new HandlerTestData("play ambient sounds", SleepSoundHandler.class, true)
+                new HandlerTestData("play ambient sounds", SleepSoundHandler.class, true),
+
+                new HandlerTestData("happy holidays", TriviaHandler.class, true),
+                new HandlerTestData("who is your father", TriviaHandler.class, true),
+                new HandlerTestData("who am i", TriviaHandler.class, true)
 
         );
 

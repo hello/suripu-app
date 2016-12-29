@@ -54,7 +54,7 @@ public class AlarmHandler extends BaseHandler {
     private static final int MIN_ALARM_MINUTES_FROM_NOW = 5;
     private static final int MAX_ALARM_MINUTES_FROM_NOW = 1439; // 24 hours
 
-    private static final String CANCEL_ALARM_REGEX = "(cancel|delete|remove|unset).*(?:alarm)(s?)";
+    private static final String CANCEL_ALARM_REGEX = "(cancel|delete|remove|unset|turn off).*(?:alarm)(s?)";
     private static final Pattern CANCEL_ALARM_PATTERN = Pattern.compile(CANCEL_ALARM_REGEX);
 
     private static final String SET_ALARM_REGEX = "((set).*(?:alarm))|(wake me)";

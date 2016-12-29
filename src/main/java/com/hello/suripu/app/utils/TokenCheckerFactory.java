@@ -1,12 +1,19 @@
 package com.hello.suripu.app.utils;
 
+import com.google.common.base.Optional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.google.common.base.Optional;
 import com.hello.suripu.app.configuration.ExpansionConfiguration;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExpansionDeviceData;
@@ -19,10 +26,6 @@ import is.hello.gaibu.homeauto.factories.HomeAutomationExpansionFactory;
 import is.hello.gaibu.homeauto.interfaces.HomeAutomationExpansion;
 import is.hello.gaibu.homeauto.models.ConfigurationResponse;
 import is.hello.gaibu.homeauto.models.ResponseStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Created by jnorgan on 12/9/16.
@@ -84,7 +87,7 @@ public class TokenCheckerFactory {
 
     @Override
     public void run() {
-      LOGGER.debug("message=token-checker-thread-start");
+      LOGGER.debug("message=token-checker-thread-start account_id={}", accountId);
       try {
         final Optional<Expansion> expansionOptional = expansionStore.getApplicationByName(Expansion.ServiceName.NEST.toString());
         if(!expansionOptional.isPresent()) {
@@ -164,7 +167,7 @@ public class TokenCheckerFactory {
       } catch (Exception exception) {
         LOGGER.error("error={}", exception.getMessage());
       } finally {
-        LOGGER.debug("message=token-checker-thread-end");
+        LOGGER.debug("message=token-checker-thread-end account_id={}", accountId);
       }
 
     }
