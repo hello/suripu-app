@@ -1,8 +1,5 @@
 package com.hello.suripu.app;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -23,6 +20,9 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.util.Maps;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
@@ -81,6 +81,7 @@ import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
+import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDAO;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
@@ -173,6 +174,7 @@ import com.hello.suripu.core.support.SupportDAO;
 import com.hello.suripu.core.swap.Swapper;
 import com.hello.suripu.core.swap.ddb.DynamoDBSwapper;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
+import com.hello.suripu.core.util.AlgorithmType;
 import com.hello.suripu.core.util.KeyStoreUtils;
 import com.hello.suripu.core.util.RequestRateLimiter;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
@@ -180,7 +182,6 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
-import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
 import com.hello.suripu.coredropwizard.db.AuthorizationCodeDAO;
@@ -200,18 +201,6 @@ import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
-
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -232,6 +221,18 @@ import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.supichi.Supichi;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -546,10 +547,16 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new ProvisionResource(senseKeyStore, pillKeyStore, keyStoreUtils, pillProvisionDAO, amazonS3));
 
         /* Neural net endpoint information */
-        final TaimurainHttpClientConfiguration taimurainHttpClientConfiguration = configuration.getTaimurainHttpClientConfiguration();
-        final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
-                new HttpClientBuilder(environment).using(taimurainHttpClientConfiguration.getHttpClientConfiguration()).build("taimurain"),
-                taimurainHttpClientConfiguration.getEndpoint());
+        final Map<AlgorithmType, URL> neuralNetEndpoints = configuration.getTaimurainConfiguration().getEndpoints();
+        final Map<AlgorithmType, NeuralNetEndpoint> neuralNetClients = Maps.newHashMap();
+        final HttpClientBuilder clientBuilder = new HttpClientBuilder(environment).using(configuration.getTaimurainConfiguration().getHttpClientConfiguration());
+
+        for (final AlgorithmType algorithmType : neuralNetEndpoints.keySet()) {
+            String url = neuralNetEndpoints.get(algorithmType).toExternalForm();
+            final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
+                    clientBuilder.build("taimurain" + algorithmType), url);
+            neuralNetClients.put(algorithmType,taimurainHttpClient);
+        }
 
 
         final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = configuration.getTimelineAlgorithmConfiguration();
@@ -572,7 +579,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 defaultModelEnsembleDAO,
                 userTimelineTestGroupDAO,
                 sleepScoreParametersDAO,
-                taimurainHttpClient,
+                neuralNetClients,
                 timelineAlgorithmConfiguration,
                 environment.metrics());
         environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));

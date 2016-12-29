@@ -9,8 +9,8 @@ import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfigurat
 import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
 import com.hello.suripu.coredropwizard.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
-import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TaimurainConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import is.hello.supichi.configuration.SpeechConfiguration;
@@ -184,9 +184,11 @@ public class SuripuAppConfiguration extends Configuration {
     public MessejiHttpClientConfiguration getMessejiHttpClientConfiguration() { return messejiHttpClientConfiguration; }
 
     @NotNull
-    @JsonProperty("taimurain_http_client")
-    private TaimurainHttpClientConfiguration taimurainHttpClientConfiguration;
-    public TaimurainHttpClientConfiguration getTaimurainHttpClientConfiguration() { return taimurainHttpClientConfiguration; }
+    @JsonProperty("taimurain_configuration")
+    private TaimurainConfiguration taimurainConfiguration;
+    public TaimurainConfiguration getTaimurainConfiguration() {
+        return taimurainConfiguration;
+    }
 
     @Valid
     @JsonProperty("sleep_sound_cache_seconds")
