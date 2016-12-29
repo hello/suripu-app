@@ -554,7 +554,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         for (final AlgorithmType algorithmType : neuralNetEndpoints.keySet()) {
             String url = neuralNetEndpoints.get(algorithmType).toExternalForm();
             final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
-                    clientBuilder.build("taimurain " + algorithmType), url);
+                    clientBuilder.build("taimurain" + algorithmType), url);
             neuralNetClients.put(algorithmType,taimurainHttpClient);
         }
 
