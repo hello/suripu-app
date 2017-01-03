@@ -202,6 +202,7 @@ public class DeviceResource extends BaseResource {
     public com.hello.suripu.core.swap.Response swap(@Auth final AccessToken accessToken,
                            @Valid final Request swapRequest){
 
+        LOGGER.info("action=swap-request sense_id={} account_id={}", swapRequest.senseId(), accessToken.accountId);
         // TODO: check that swaprequest.senseId() is provisioned before authorizing the swap.
         final IntentResult result = swapper.eligible(accessToken.accountId, swapRequest.senseId());
         if(result.intent().isPresent()) {
