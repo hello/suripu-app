@@ -1,21 +1,11 @@
 package is.hello.supichi.commandhandlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.models.ValueRange;
 import com.hello.suripu.core.preferences.TemperatureUnit;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
@@ -33,6 +23,13 @@ import is.hello.supichi.models.HandlerType;
 import is.hello.supichi.models.SpeechCommand;
 import is.hello.supichi.models.VoiceRequest;
 import is.hello.supichi.response.SupichiResponseType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static is.hello.supichi.commandhandlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.supichi.commandhandlers.ErrorText.EXPANSION_NOT_FOUND;
@@ -47,6 +44,7 @@ public class NestHandler extends BaseHandler {
 
     public static final String SET_TEMP_OK_RESPONSE = "Okay, done";
     public static final String SET_TEMP_ERROR_RESPONSE = "Sorry, your thermostat could not be reached";
+    public static final String SET_TEMP_ERROR_LOCKED_RESPONSE = "The temperature could not be adjusted because your thermostat is locked or off.";
     public static final String SET_TEMP_ERROR_AUTH = "Please connect your thermostat on the Sense app under Expansions";
     public static final String SET_TEMP_ERROR_CONFIG = "Please connect your thermostat on the Sense app under Expansions";
     public static final String SET_TEMP_ERROR_APPLICATION = "Sorry, your thermostat could not be reached";
@@ -110,6 +108,21 @@ public class NestHandler extends BaseHandler {
         return tempMap;
     }
 
+
+    private HandlerResult returnWithErrorMaybe(final SpeechCommand command, final AlarmActionStatus status, final Integer temperatureSum) {
+        final NestResult actualNestResult = new NestResult(temperatureSum.toString());
+        switch(status) {
+            case OK:
+                final GenericResult nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
+                return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
+            case OFF_OR_LOCKED:
+                final GenericResult lockedResult = GenericResult.ok(SET_TEMP_ERROR_LOCKED_RESPONSE);
+                return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), lockedResult, actualNestResult);
+        }
+
+        final GenericResult nestResult = GenericResult.failWithResponse("command failed", SET_TEMP_ERROR_RESPONSE);
+        return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
+    }
 
     @Override
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
@@ -198,15 +211,7 @@ public class NestHandler extends BaseHandler {
                 final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
 
                 final AlarmActionStatus status = nest.setTempFromValueRange(values, units);
-                if(AlarmActionStatus.OK.equals(status)) {
-                    final NestResult actualNestResult = new NestResult(temperatureSum.toString());
-                    nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
-                    return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
-                }
-
-                final NestResult actualNestResult = new NestResult(temperatureSum.toString());
-                nestResult = GenericResult.failWithResponse("command failed", SET_TEMP_ERROR_RESPONSE);
-                return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
+                return returnWithErrorMaybe(command, status, temperatureSum);
             }
 
             final Pattern numeric = Pattern.compile(TEMP_SET_PATTERN_NUMERIC);
@@ -218,9 +223,8 @@ public class NestHandler extends BaseHandler {
                 final ValueRange values = new ValueRange(temperatureSum - NestThermostat.TARGET_TEMP_RANGE_BUFFER, temperatureSum + NestThermostat.TARGET_TEMP_RANGE_BUFFER);
                 final AlarmActionStatus status = nest.setTempFromValueRange(values, units);
                 LOGGER.info("action=set-temperature-numeric status={} account_id={} sense_id={}", status, request.accountId, request.senseId);
-                final NestResult actualNestResult = new NestResult(temperatureSum.toString());
-                nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
-                return HandlerResult.withNestResult(HandlerType.NEST, command.getValue(), nestResult, actualNestResult);
+
+                return returnWithErrorMaybe(command, status, temperatureSum);
             }
         }
 
