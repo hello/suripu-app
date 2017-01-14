@@ -159,6 +159,8 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                 data.audioData.length);
 
         final SpeechResultsKinesis.SpeechResultsData.Builder builder = SpeechResultsKinesis.SpeechResultsData.newBuilder();
+        final Integer firmwareVersion = (data.speechResult.firmwareVersion.isPresent()) ? data.speechResult.firmwareVersion.get() : 0;
+
         if (data.audioData.length > 0) {
             // store audio path
             final SpeechResultsKinesis.AudioData audioData = SpeechResultsKinesis.AudioData.newBuilder()
@@ -167,6 +169,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                     .build();
 
             final Long accountId = (data.speechResult.accountId.isPresent()) ? data.speechResult.accountId.get() : 0L;
+
             return builder
                     .setAccountId(accountId)
                     .setSenseId(data.speechResult.senseId)
@@ -174,6 +177,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                     .setAudioUuid(data.speechResult.audioIdentifier)
                     .setAudio(audioData)
                     .setAction(data.action)
+                    .setFwVersion(firmwareVersion)
                     .build();
         }
 
@@ -189,7 +193,8 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                 .setWakeId(data.speechResult.wakeWord.getId())
 //                .setWakeConfidence(confidences)
                 .setResult(data.speechResult.result.toString())
-                .setAction(data.action);
+                .setAction(data.action)
+                .setFwVersion(firmwareVersion);
 
         if (data.speechResult.accountId.isPresent()) {
             builder.setAccountId(data.speechResult.accountId.get());

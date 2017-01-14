@@ -141,7 +141,8 @@ public class AudioRequestHandler {
         builder.withAccountId(accountId)
                 .withSenseId(rawRequest.senseId())
                 .withAudioIndentifier(audioUUID)
-                .withDateTimeUTC(speechCreated);
+                .withDateTimeUTC(speechCreated)
+                .withFirmwareVersion(uploadData.request.getVersion());
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         // return empty bytes for certain wakeword
