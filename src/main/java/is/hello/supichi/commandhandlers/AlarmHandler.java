@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SenseEventsDAO;
 import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
@@ -12,6 +13,7 @@ import com.hello.suripu.core.models.RingTime;
 import com.hello.suripu.core.models.UserInfo;
 import com.hello.suripu.core.processors.RingProcessor;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SenseEventsNullDAO;
 import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
@@ -89,11 +91,13 @@ public class AlarmHandler extends BaseHandler {
 
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
+    private final SenseEventsDAO senseEventsDAO;
 
     public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
         super("alarm", speechCommandDAO, getAvailableActions());
         this.alarmProcessor = alarmProcessor;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
+        this.senseEventsDAO = new SenseEventsNullDAO();
     }
 
 
@@ -182,7 +186,7 @@ public class AlarmHandler extends BaseHandler {
             return GenericResult.failWithResponse(NO_ALARM_SET_ERROR, NO_ALARM_TO_GET_RESPONSE);
         }
 
-        final RingTime nextRingTime = RingProcessor.getNextRingTimeForSense(senseId, Lists.newArrayList(userInfo), DateTime.now());
+        final RingTime nextRingTime = RingProcessor.getNextRingTimeForSense(senseId, Lists.newArrayList(userInfo), DateTime.now(), true, senseEventsDAO);
 
         final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
         final DateTime localRingTime = new DateTime(nextRingTime.actualRingTimeUTC, DateTimeZone.UTC).withZone(timezoneId);

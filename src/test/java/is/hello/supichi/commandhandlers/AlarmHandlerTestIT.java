@@ -181,18 +181,28 @@ public class AlarmHandlerTestIT {
 
             final DateTime localNow = DateTime.now(TIME_ZONE);
             final int currentHour = localNow.getHourOfDay();
+
             final String dayString;
             if (currentHour > 7) {
-                dayString = String.format(SET_ALARM_OK_RESPONSE, "07:00 AM tomorrow");
+                dayString = "07:00 AM tomorrow";
             } else {
-                dayString = String.format(SET_ALARM_OK_RESPONSE, "07:00 AM today");
+                dayString = "07:00 AM today";
             }
 
             final String response = result.optionalResult.get().responseText.get();
-            assertEquals(response, dayString);
+            assertEquals(response,  String.format(SET_ALARM_OK_RESPONSE, dayString));
+
+            final AnnotatedTranscript getTranscript = Annotator.get("when is my next alarm", Optional.of(TIME_ZONE.toTimeZone()));
+            final HandlerResult getResult = alarmHandler.executeCommand(getTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
+
+            final String getResponse = getResult.responseText();
+            assertEquals(getResponse.contains(dayString), true);
+
         } else {
             assertEquals(result.optionalResult.isPresent(), true);
         }
+
+
     }
 
     @Test
