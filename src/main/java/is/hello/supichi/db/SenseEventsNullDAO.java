@@ -28,6 +28,6 @@ public class SenseEventsNullDAO implements SenseEventsDAO {
 
     @Override
     public Integer write(List<DeviceEvents> list) {
-        return null;
+        return 0;
     }
 }
