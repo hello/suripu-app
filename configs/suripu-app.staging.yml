@@ -240,7 +240,6 @@ dynamodb:
     push_notification_event: push_notification_event
     ring_time: ring_time
     ring_time_history: ring_history_by_account
-    sense_events: event
     sense_key_store: key_store
     sense_last_seen: sense_last_seen
     sense_state: sense_state

@@ -234,7 +234,6 @@ dynamodb:
     push_notification_event: prod_push_notification_event
     ring_time: prod_ring_time
     ring_time_history: prod_ring_history_by_account
-    sense_events: prod_event
     sense_key_store: key_store
     sense_last_seen: prod_sense_last_seen
     sense_state: prod_sense_state
