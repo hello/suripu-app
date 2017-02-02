@@ -12,6 +12,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
+import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync;
+import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClient;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -79,6 +81,8 @@ import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.actions.ActionFirehoseDAO;
+import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -146,6 +150,7 @@ import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.logging.KinesisLoggerFactory;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
+import com.hello.suripu.core.notifications.MobilePushNotificationProcessorImpl;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
 import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
@@ -435,7 +440,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final RolloutClient rolloutClient = new RolloutClient(new DynamoDBAdapter(featureStore, 30));
 
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
+        final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
+
+        final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().getStream(), firehose);
+        final ActionProcessor actionProcessor = new ActionProcessor(firehoseDAO);
+
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
         ObjectGraphRoot.getInstance().init(module);
 
         ObjectMapper objectMapper = environment.getObjectMapper();
@@ -521,7 +531,16 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final PushNotificationEventDynamoDB pushNotificationEventDynamoDB = new PushNotificationEventDynamoDB(
                 pushNotificationDynamoDBClient,
                 tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
-        final MobilePushNotificationProcessor mobilePushNotificationProcessor = new MobilePushNotificationProcessor(snsClient, notificationSubscriptionsDAO, pushNotificationEventDynamoDB);
+
+        final MobilePushNotificationProcessorImpl.Builder pushBuilder = new MobilePushNotificationProcessorImpl.Builder();
+        final MobilePushNotificationProcessor mobilePushNotificationProcessor = pushBuilder.withSns(snsClient)
+                .withSubscriptionDAO(notificationSubscriptionsDAO)
+                .withPushNotificationEventDynamoDB(pushNotificationEventDynamoDB)
+                .withFeatureFlipper(rolloutClient)
+                .withAppStatsDAO(appStatsDAO)
+                .withAccountPreferencesDAO(accountPreferencesDAO)
+                .withTimeZoneHistory(timeZoneHistoryDAODynamoDB)
+                .build();
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
                 notificationSubscriptionsDAO,

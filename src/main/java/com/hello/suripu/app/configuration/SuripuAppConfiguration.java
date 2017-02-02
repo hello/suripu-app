@@ -3,6 +3,7 @@ package com.hello.suripu.app.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.coredropwizard.configuration.FirehoseConfiguration;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
@@ -246,5 +247,8 @@ public class SuripuAppConfiguration extends Configuration {
     private String s3Endpoint;
     public String s3Endpoint() { return s3Endpoint; }
 
+    @JsonProperty("firehose")
+    private FirehoseConfiguration firehoseConfiguration;
+    public FirehoseConfiguration firehoseConfiguration() { return firehoseConfiguration; }
 }
 

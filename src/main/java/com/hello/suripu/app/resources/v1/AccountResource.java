@@ -2,6 +2,7 @@ package com.hello.suripu.app.resources.v1;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.util.MatcherPatternsDB;
@@ -20,6 +21,7 @@ import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -41,6 +43,9 @@ public class AccountResource {
 
     @Context
     HttpServletRequest request;
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountResource.class);
     private final AccountDAO accountDAO;

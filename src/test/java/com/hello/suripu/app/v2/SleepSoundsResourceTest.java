@@ -5,11 +5,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
-
 import com.hello.suripu.api.input.FileSync;
 import com.hello.suripu.api.input.State;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FileInfoDAO;
@@ -31,7 +31,6 @@ import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-
 import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -40,12 +39,11 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,18 +72,20 @@ public class SleepSoundsResourceTest {
     private FileManifestDAO fileManifestDAO;
     private SleepSoundsResource sleepSoundsResource;
     private FeatureStore featureStore;
+    private ActionProcessor actionProcessor;
     private SleepSoundsProcessor sleepSoundsProcessor;
     private Optional<DeviceKeyStoreRecord> of;
 
     @Before
     public void setUp() {
         featureStore = Mockito.mock(FeatureStore.class);
+        actionProcessor = Mockito.mock(ActionProcessor.class);
         when(featureStore.getData())
                 .thenReturn(
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 100.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
         ObjectGraphRoot.getInstance().init(module);
 
         deviceDAO = Mockito.mock(DeviceDAO.class);
@@ -491,7 +491,7 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -558,7 +558,7 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
