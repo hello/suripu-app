@@ -218,6 +218,11 @@ public class SuripuAppConfiguration extends Configuration {
     }
 
     @Valid
+    @JsonProperty("photo_urls")
+    private PhotoUrlConfiguration photoUrlConfiguration;
+    public PhotoUrlConfiguration getPhotoUrlConfiguration() { return this.photoUrlConfiguration; }
+
+    @Valid
     @JsonProperty("alexa_app_ids")
     private Map<String, String> alexaAppIds = Maps.newHashMap();
     public ImmutableMap<String, String> getAlexaAppIds() {

@@ -25,12 +25,12 @@ public class VoiceCommandsResource {
         this.voiceCommandResponse = checkNotNull(voiceCommandResponse, "VoiceCommandsResource voiceCommandResponse can not be null.");
     }
 
-    @ScopesAllowed({OAuthScope.USER_BASIC})
+    //@ScopesAllowed({OAuthScope.USER_BASIC})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/commands")
-    public VoiceCommandResponse getVoiceCommands(@Auth final AccessToken accessToken) {
+    public VoiceCommandResponse getVoiceCommands(){//@Auth final AccessToken accessToken) {
         return voiceCommandResponse;
     }
 

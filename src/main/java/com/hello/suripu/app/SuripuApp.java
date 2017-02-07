@@ -36,6 +36,7 @@ import com.hello.suripu.app.cli.PopulateSleepScoreParametersDynamoDBTable;
 import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.KMSConfiguration;
+import com.hello.suripu.app.configuration.PhotoUrlConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.managed.AnalyticsManaged;
@@ -766,7 +767,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
         environment.jersey().register(new AlertsResource(alertsDAO, voiceMetadataDAO, deviceDAO, senseMetadataDAO));
-        environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands())));
+
+
+        PhotoUrlConfiguration photoUrlConfiguration = configuration.getPhotoUrlConfiguration();
+        environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
+                                                                                         photoUrlConfiguration.getEndpoint() + photoUrlConfiguration.getPaths().getVoicePath())));
 
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
