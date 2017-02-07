@@ -21,6 +21,8 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class SuripuAppConfiguration extends Configuration {
 
     @Valid
@@ -218,9 +220,10 @@ public class SuripuAppConfiguration extends Configuration {
     }
 
     @Valid
-    @JsonProperty("photo_urls")
-    private PhotoUrlConfiguration photoUrlConfiguration;
-    public PhotoUrlConfiguration getPhotoUrlConfiguration() { return this.photoUrlConfiguration; }
+    @JsonProperty("urls")
+    private Map<String, String> urlMap;
+    public Map<String, String> getUrlMap() { return this.urlMap; }
+    public String getUrl(final String key) { return this.urlMap.get(checkNotNull(key, "SuripuAppConfiguration#getUrl key can not be null")); }
 
     @Valid
     @JsonProperty("alexa_app_ids")

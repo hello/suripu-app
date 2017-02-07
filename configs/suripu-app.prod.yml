@@ -205,6 +205,9 @@ photo_upload:
   profile_prefix: photos/profile/
   max_upload_size_bytes: 5120000 # 5MB
 
+urls:
+    voice: https://hello-dev.s3.amazonaws.com/voice
+
 dynamodb:
   region: us-east-1
   tables:
