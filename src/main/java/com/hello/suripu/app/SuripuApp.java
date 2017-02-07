@@ -88,6 +88,7 @@ import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
+import com.hello.suripu.core.configuration.UrlName;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -768,7 +769,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new AlertsResource(alertsDAO, voiceMetadataDAO, deviceDAO, senseMetadataDAO));
 
         environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
-                                                                                         configuration.getUrl("voice"))));
+                                                                                         configuration.getUrl(UrlName.VOICE))));
 
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {

@@ -3,6 +3,7 @@ package com.hello.suripu.app.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.configuration.UrlName;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
@@ -20,8 +21,6 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class SuripuAppConfiguration extends Configuration {
 
@@ -221,9 +220,9 @@ public class SuripuAppConfiguration extends Configuration {
 
     @Valid
     @JsonProperty("urls")
-    private Map<String, String> urlMap;
-    public Map<String, String> getUrlMap() { return this.urlMap; }
-    public String getUrl(final String key) { return this.urlMap.get(checkNotNull(key, "SuripuAppConfiguration#getUrl key can not be null")); }
+    private Map<UrlName, String> urlMap = Maps.newHashMap();
+    public Map<UrlName, String> getUrlMap() { return this.urlMap; }
+    public String getUrl(@NotNull final UrlName key) { return this.urlMap.get(key);}
 
     @Valid
     @JsonProperty("alexa_app_ids")
