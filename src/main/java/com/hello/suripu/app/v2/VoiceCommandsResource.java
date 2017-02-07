@@ -35,7 +35,7 @@ public class VoiceCommandsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/commands")
     public VoiceCommandResponse getVoiceCommands(@Auth final AccessToken token) {
-        LOGGER.debug("action=get-voice-commands", token.accountId);
+        LOGGER.debug("action=get-voice-commands account_id={}", token.accountId);
         return voiceCommandResponse;
     }
 
