@@ -12,6 +12,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -19,18 +22,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 @Path("/v2/voice")
 public class VoiceCommandsResource {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VoiceCommandsResource.class);
     private final VoiceCommandResponse voiceCommandResponse;
 
     public VoiceCommandsResource(final VoiceCommandResponse voiceCommandResponse) {
         this.voiceCommandResponse = checkNotNull(voiceCommandResponse, "VoiceCommandsResource voiceCommandResponse can not be null.");
     }
 
-    //@ScopesAllowed({OAuthScope.USER_BASIC})
+    @ScopesAllowed({OAuthScope.USER_BASIC})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/commands")
-    public VoiceCommandResponse getVoiceCommands(){//@Auth final AccessToken accessToken) {
+    public VoiceCommandResponse getVoiceCommands(@Auth final AccessToken token) {
+        LOGGER.debug("action=get-voice-commands", token.accountId);
         return voiceCommandResponse;
     }
 
