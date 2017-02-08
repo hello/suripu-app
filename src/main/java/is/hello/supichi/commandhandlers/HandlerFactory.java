@@ -125,7 +125,10 @@ public class HandlerFactory {
 
     public AlarmHandler alarmHandler() {
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
-        return new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        if(!isDebug) {
+            AlarmHandler.create(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        }
+        return new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB, 2);
     }
 
     public TimeHandler timeHandler() {

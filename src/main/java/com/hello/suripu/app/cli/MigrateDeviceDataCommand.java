@@ -13,7 +13,8 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.opencsv.CSVReader;
-
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.joda.time.format.DateTimeFormat;
@@ -35,9 +36,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
-
-import io.dropwizard.cli.ConfiguredCommand;
-import io.dropwizard.setup.Bootstrap;
 
 public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrateDeviceDataCommand.class);
@@ -149,7 +147,7 @@ public class MigrateDeviceDataCommand extends ConfiguredCommand<SuripuAppConfigu
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = suripuAppConfiguration.dynamoDBConfiguration().tables();
         final AWSCredentialsProvider awsCredentialsProvider= new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider);
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, suripuAppConfiguration.dynamoDBConfiguration());
         final AmazonDynamoDB deviceDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.DEVICE_DATA);
         final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(deviceDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.DEVICE_DATA));
 

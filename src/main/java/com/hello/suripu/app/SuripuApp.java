@@ -147,6 +147,8 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
 import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
+import com.hello.suripu.core.notifications.settings.NotificationSettingsDAO;
+import com.hello.suripu.core.notifications.settings.NotificationSettingsDynamoDB;
 import com.hello.suripu.core.oauth.stores.PersistentApplicationStore;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
@@ -474,7 +476,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         // WARNING: Do not use async methods for anything but SensorsViewsDynamoDB for now
         final AmazonDynamoDBAsync senseLastSeenDynamoDBClient = new AmazonDynamoDBAsyncClient(awsCredentialsProvider, AmazonDynamoDBClientFactory.getDefaultClientConfiguration());
-        senseLastSeenDynamoDBClient.setEndpoint(configuration.dynamoDBConfiguration().endpoints().get(DynamoDBTableName.SENSE_LAST_SEEN));
+        senseLastSeenDynamoDBClient.setEndpoint(configuration.dynamoDBConfiguration().defaultEndpoint());
 
         final SensorsViewsDynamoDB sensorsViewsDynamoDB = new SensorsViewsDynamoDB(
                 senseLastSeenDynamoDBClient,
@@ -527,7 +529,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 snsClient,
                 arns
         );
-        environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, accountDAO));
+
+        final AmazonDynamoDB notificationSettingsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PUSH_NOTIFICATION_SETTINGS);
+        final NotificationSettingsDAO notificationSettingsDAO = NotificationSettingsDynamoDB.create(
+                new DynamoDB(notificationSettingsClient),
+                tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_SETTINGS)
+        );
+        environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, notificationSettingsDAO));
 
         final AmazonDynamoDB otaHistoryClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.OTA_HISTORY, OTAHistoryDAODynamoDB.class);
         final OTAHistoryDAODynamoDB otaHistoryDAODynamoDB = new OTAHistoryDAODynamoDB(otaHistoryClient, tableNames.get(DynamoDBTableName.OTA_HISTORY));
