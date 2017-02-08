@@ -1,9 +1,10 @@
 package com.hello.suripu.app.resources.v1;
 
 import com.codahale.metrics.annotation.Timed;
-import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.MobilePushRegistration;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
+import com.hello.suripu.core.notifications.settings.NotificationSetting;
+import com.hello.suripu.core.notifications.settings.NotificationSettingsDAO;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
@@ -14,9 +15,14 @@ import org.slf4j.LoggerFactory;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.stream.Collectors;
 
 ;
 
@@ -25,14 +31,15 @@ public class MobilePushRegistrationResource {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MobilePushRegistrationResource.class);
+
     private final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper;
-    private final AccountDAO accountDAO;
+    private final NotificationSettingsDAO notificationSettingsDAO;
 
     public MobilePushRegistrationResource(
             final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper,
-            final AccountDAO accountDAO) {
+            final NotificationSettingsDAO notificationSettingsDAO) {
         this.notificationSubscriptionDAOWrapper = notificationSubscriptionDAOWrapper;
-        this.accountDAO = accountDAO;
+        this.notificationSettingsDAO = notificationSettingsDAO;
     }
 
     @ScopesAllowed({OAuthScope.PUSH_NOTIFICATIONS})
@@ -61,5 +68,28 @@ public class MobilePushRegistrationResource {
         if(!deleted) {
             LOGGER.warn("{} Was not successfully deleted for account = {}", mobilePushRegistration.deviceToken, accessToken.accountId);
         }
+    }
+
+
+    @ScopesAllowed({OAuthScope.PUSH_NOTIFICATIONS})
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<NotificationSetting> getSettings(@Auth AccessToken accessToken) {
+        return notificationSettingsDAO.get(accessToken.accountId);
+    }
+
+    @ScopesAllowed({OAuthScope.PUSH_NOTIFICATIONS})
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<NotificationSetting> saveSettings(
+            @Auth AccessToken accessToken,
+            @Valid List<NotificationSetting> settings) {
+        final Long accountId = accessToken.accountId;
+        final List<NotificationSetting> withAccount = settings.stream()
+                .map(s -> NotificationSetting.withAccount(s,accountId))
+                .collect(Collectors.toList());
+        notificationSettingsDAO.save(withAccount);
+        return settings;
     }
 }

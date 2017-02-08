@@ -92,12 +92,22 @@ public class AlarmHandler extends BaseHandler {
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
     private final SenseEventsDAO senseEventsDAO;
+    private final Integer minAlarmMinutesFromNow;
+
+    public static AlarmHandler create(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+        return new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB, MIN_ALARM_MINUTES_FROM_NOW);
+    }
 
     public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+        this(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB, MIN_ALARM_MINUTES_FROM_NOW);
+    }
+
+    public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB, final Integer minAlarmMinutesFromNow) {
         super("alarm", speechCommandDAO, getAvailableActions());
         this.alarmProcessor = alarmProcessor;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
         this.senseEventsDAO = new SenseEventsNullDAO();
+        this.minAlarmMinutesFromNow = minAlarmMinutesFromNow;
     }
 
 
