@@ -239,6 +239,7 @@ dynamodb:
     preferences: preferences
     profile_photo: profile_photo
     push_notification_event: push_notification_event
+    push_notification_settings: push_notification_settings
     ring_time: ring_time
     ring_time_history: ring_history_by_account
     sense_key_store: key_store
