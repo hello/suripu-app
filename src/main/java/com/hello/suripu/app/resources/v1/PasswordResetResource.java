@@ -2,8 +2,10 @@ package com.hello.suripu.app.resources.v1;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
 import com.hello.suripu.app.configuration.EmailConfiguration;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.oauth.OAuthScope;
@@ -20,9 +22,12 @@ import com.microtripit.mandrillapp.lutung.MandrillApi;
 import com.microtripit.mandrillapp.lutung.model.MandrillApiError;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessage;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessageStatus;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -39,6 +44,9 @@ import java.util.UUID;
 
 @Path("/v1/password_reset")
 public class PasswordResetResource {
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PasswordResetResource.class);
 
@@ -99,11 +107,11 @@ public class PasswordResetResource {
         final Optional<PasswordReset> passwordResetOptional = passwordResetDB.get(uuid);
 
         if(!passwordResetOptional.isPresent()) {
-            LOGGER.warn("No password reset found for uuid = {}", uuid);
+            LOGGER.warn("warning=no-password-reset-found uuid={}", uuid);
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         if(!passwordResetOptional.get().state.equals(state)) {
-            LOGGER.warn("State stored ({}) does not match state sent ({})", passwordResetOptional.get().state, state);
+            LOGGER.warn("warning=state-store-does-not-match-sent stored_state={} sent_state={}", passwordResetOptional.get().state, state);
             return Response.status(Response.Status.CONFLICT).build();
         }
 
@@ -131,10 +139,12 @@ public class PasswordResetResource {
         final String state = updatePasswordRequestOptional.get().state;
         final Boolean updated = accountDAO.updatePasswordFromResetEmail(passwordReset.accountId, password, state);
         if(updated) {
-            LOGGER.warn("Password successfully updated for account: {}", passwordReset.accountId);
+            LOGGER.warn("warning=password-successfully-updated account_id={}", passwordReset.accountId);
             final Boolean deleted = passwordResetDB.delete(passwordReset.uuid, passwordReset.accountId);
-            LOGGER.debug("Password Request reset deleted");
+            LOGGER.debug("action=password-request-reset deleted={}", deleted);
         }
+        this.actionProcessor.add(new Action(accessToken.accountId, ActionType.PASSWORD_RESET, Optional.of(updated.toString()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
+
         return Response.ok().build();
     }
 
@@ -172,9 +182,9 @@ public class PasswordResetResource {
             final MandrillMessageStatus[] messageStatusReports = mandrillApi.messages().send(message, false);
             return Boolean.TRUE;
         } catch (MandrillApiError mandrillApiError) {
-            LOGGER.error("Failed sending email: {}", mandrillApiError.getMessage());
+            LOGGER.error("error=mandrill-failed-sending-email error_msg={}", mandrillApiError.getMessage());
         } catch (IOException e) {
-            LOGGER.error("Failed sending email: {}", e.getMessage());
+            LOGGER.error("error=failed-sending-email error_msg={}", e.getMessage());
         }
 
         return Boolean.FALSE;

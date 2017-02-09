@@ -1,8 +1,11 @@
 package com.hello.suripu.app.v2;
 
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.oauth.OAuthScope;
-
 import com.hello.suripu.core.trends.v2.TimeScale;
 import com.hello.suripu.core.trends.v2.TrendsProcessor;
 import com.hello.suripu.core.trends.v2.TrendsResult;
@@ -12,7 +15,8 @@ import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +39,9 @@ public class TrendsResource extends BaseResource {
     @Inject
     RolloutClient feature;
 
+    @Inject
+    ActionProcessor actionProcessor;
+
     public TrendsResource(final TrendsProcessor trendsProcessor) {
         this.trendsProcessor = trendsProcessor;
     }
@@ -50,6 +57,7 @@ public class TrendsResource extends BaseResource {
 
         try {
             final TimeScale timeScale = TimeScale.fromString(timeScaleString);
+            actionProcessor.add(new Action(accessToken.accountId, ActionType.getTrendsType(timeScale), Optional.absent(), DateTime.now(DateTimeZone.UTC), Optional.absent()));
             return trendsProcessor.getAllTrends(accessToken.accountId, timeScale);
         } catch (IllegalArgumentException iae) {
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)

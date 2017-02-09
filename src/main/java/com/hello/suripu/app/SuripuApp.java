@@ -41,7 +41,6 @@ import com.hello.suripu.app.configuration.KMSConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.managed.AnalyticsManaged;
-import com.hello.suripu.app.models.MetadataDAODynamoDB;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.app.resources.v1.AccountPreferencesResource;
 import com.hello.suripu.app.resources.v1.AccountResource;
@@ -83,6 +82,7 @@ import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionProcessorFirehose;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -149,8 +149,6 @@ import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.logging.KinesisLoggerFactory;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
-import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
-import com.hello.suripu.core.notifications.MobilePushNotificationProcessorImpl;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
 import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
@@ -165,6 +163,7 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.profile.ProfilePhotoStore;
 import com.hello.suripu.core.profile.ProfilePhotoStoreDynamoDB;
 import com.hello.suripu.core.provision.PillProvisionDAO;
+import com.hello.suripu.core.sense.metadata.MetadataDAODynamoDB;
 import com.hello.suripu.core.sense.metadata.SenseMetadataDAO;
 import com.hello.suripu.core.sense.voice.VoiceMetadataDAO;
 import com.hello.suripu.core.sense.voice.VoiceMetadataDAODynamoDB;
@@ -441,11 +440,10 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final RolloutClient rolloutClient = new RolloutClient(new DynamoDBAdapter(featureStore, 30));
 
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
+        final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
+        final ActionProcessor actionProcessor = new ActionProcessorFirehose(firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
 
-        final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().getStream(), firehose);
-        final ActionProcessor actionProcessor = new ActionProcessor(firehoseDAO);
-
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
         ObjectGraphRoot.getInstance().init(module);
 
         ObjectMapper objectMapper = environment.getObjectMapper();
@@ -455,6 +453,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             @Override
             protected void configure() {
                 bind(rolloutClient).to(RolloutClient.class);
+                bind(actionProcessor).to(ActionProcessor.class);
             }
         });
 
@@ -532,22 +531,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 pushNotificationDynamoDBClient,
                 tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
 
-        final MobilePushNotificationProcessorImpl.Builder pushBuilder = new MobilePushNotificationProcessorImpl.Builder();
-        final MobilePushNotificationProcessor mobilePushNotificationProcessor = pushBuilder.withSns(snsClient)
-                .withSubscriptionDAO(notificationSubscriptionsDAO)
-                .withPushNotificationEventDynamoDB(pushNotificationEventDynamoDB)
-                .withFeatureFlipper(rolloutClient)
-                .withAppStatsDAO(appStatsDAO)
-                .withAccountPreferencesDAO(accountPreferencesDAO)
-                .withTimeZoneHistory(timeZoneHistoryDAODynamoDB)
-                .build();
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
                 notificationSubscriptionsDAO,
                 snsClient,
                 arns
         );
-        environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, mobilePushNotificationProcessor, accountDAO));
+        environment.jersey().register(new MobilePushRegistrationResource(notificationSubscriptionDAOWrapper, accountDAO));
 
         final AmazonDynamoDB otaHistoryClient = dynamoDBClientFactory.getInstrumented(DynamoDBTableName.OTA_HISTORY, OTAHistoryDAODynamoDB.class);
         final OTAHistoryDAODynamoDB otaHistoryDAODynamoDB = new OTAHistoryDAODynamoDB(otaHistoryClient, tableNames.get(DynamoDBTableName.OTA_HISTORY));

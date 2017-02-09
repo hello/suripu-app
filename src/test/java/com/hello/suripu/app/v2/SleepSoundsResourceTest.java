@@ -9,7 +9,7 @@ import com.hello.suripu.api.input.FileSync;
 import com.hello.suripu.api.input.State;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.core.ObjectGraphRoot;
-import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FileInfoDAO;
@@ -56,6 +56,7 @@ import static org.mockito.Mockito.when;
 public class SleepSoundsResourceTest {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SleepSoundsResourceTest.class);
+    private final Integer bufferSize = 5;
     private final Long accountId = 1L;
     private final String senseId = "sense";
 
@@ -72,20 +73,20 @@ public class SleepSoundsResourceTest {
     private FileManifestDAO fileManifestDAO;
     private SleepSoundsResource sleepSoundsResource;
     private FeatureStore featureStore;
-    private ActionProcessor actionProcessor;
+    private ActionFirehoseDAO actionFirehoseDAO;
     private SleepSoundsProcessor sleepSoundsProcessor;
     private Optional<DeviceKeyStoreRecord> of;
 
     @Before
     public void setUp() {
         featureStore = Mockito.mock(FeatureStore.class);
-        actionProcessor = Mockito.mock(ActionProcessor.class);
+        actionFirehoseDAO = Mockito.mock(ActionFirehoseDAO.class);
         when(featureStore.getData())
                 .thenReturn(
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 100.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
 
         deviceDAO = Mockito.mock(DeviceDAO.class);
@@ -491,7 +492,7 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -558,7 +559,7 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionProcessor);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,

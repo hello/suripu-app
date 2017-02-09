@@ -3,13 +3,11 @@ package com.hello.suripu.app.resources.v1;
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.MobilePushRegistration;
-import com.hello.suripu.core.notifications.MobilePushNotificationProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,23 +18,18 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
-;
-
 @Path("/v1/notifications")
 public class MobilePushRegistrationResource {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MobilePushRegistrationResource.class);
     private final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper;
-    private final MobilePushNotificationProcessor pushNotificationProcessor;
     private final AccountDAO accountDAO;
 
     public MobilePushRegistrationResource(
             final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper,
-            final MobilePushNotificationProcessor pushNotificationProcessor,
             final AccountDAO accountDAO) {
         this.notificationSubscriptionDAOWrapper = notificationSubscriptionDAOWrapper;
-        this.pushNotificationProcessor = pushNotificationProcessor;
         this.accountDAO = accountDAO;
     }
 

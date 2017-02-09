@@ -1,12 +1,14 @@
 package com.hello.suripu.app.resources.v1;
 
 import com.amazonaws.AmazonServiceException;
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import com.codahale.metrics.annotation.Timed;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SensorsViewsDynamoDB;
@@ -18,14 +20,14 @@ import com.hello.suripu.core.models.UserInfo;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeat;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
-
 import com.hello.suripu.core.util.PillColorUtil;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.Transaction;
 import org.skife.jdbi.v2.TransactionIsolationLevel;
 import org.skife.jdbi.v2.TransactionStatus;
@@ -59,6 +61,9 @@ public class DeviceResources extends BaseResource {
 
     @Inject
     RolloutClient feature;
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     public DeviceResources(final DeviceDAO deviceDAO,
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
@@ -115,6 +120,7 @@ public class DeviceResources extends BaseResource {
 
         try {
             this.mergedUserInfoDynamoDB.deletePillColor(senseId, accessToken.accountId, externalPillId);
+            this.actionProcessor.add(new Action(accessToken.accountId, ActionType.PILL_UNPAIR, Optional.of(externalPillId), DateTime.now(DateTimeZone.UTC), Optional.absent()));
         }catch (Exception ex){
             LOGGER.error("Delete pill {}'s color from user info table for sense {} and account {} failed: {}",
                     externalPillId,
@@ -136,6 +142,8 @@ public class DeviceResources extends BaseResource {
         // WARNING: Shall we throw error if the dynamoDB unlink fail?
         if(numRows == 0) {
             LOGGER.warn("Did not find active sense to unregister");
+        } else {
+            this.actionProcessor.add(new Action(accessToken.accountId, ActionType.SENSE_UNPAIR, Optional.of(senseId), DateTime.now(DateTimeZone.UTC), Optional.absent()));
         }
 
         if(!alarmInfoOptional.isPresent()){
@@ -179,6 +187,7 @@ public class DeviceResources extends BaseResource {
             LOGGER.error("Failed to factory reset Sense {}, error {}", senseId, sqlExp.getMessage());
             throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
         }
+        this.actionProcessor.add(new Action(accessToken.accountId, ActionType.FACTORY_RESET_UNPAIR, Optional.of(senseId), DateTime.now(DateTimeZone.UTC), Optional.absent()));
     }
 
 
