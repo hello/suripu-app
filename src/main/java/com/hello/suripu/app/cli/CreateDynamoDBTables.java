@@ -113,9 +113,10 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
 
         createMetadataTable(configuration, awsCredentialsProvider);
         createPushNotificationEventsTable(configuration, awsCredentialsProvider);
+        createPushNotificationSettingsTable(configuration, awsCredentialsProvider);
     }
 
-    private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
+    private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
         final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
@@ -393,7 +394,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         }
     }
 
-    private void createRingTimeHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
+    private void createRingTimeHistoryTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider) {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
         final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
@@ -935,7 +936,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoints.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
         client.setEndpoint(endpoint);
 
-        for(final Integer year : Lists.newArrayList(2017,2018)) {
+        for (final Integer year : Lists.newArrayList(2017, 2018)) {
             final String yearlyTableName = String.format("%s_%d", tableName, year);
             try {
                 client.describeTable(yearlyTableName);
@@ -946,5 +947,23 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
                 System.out.println(String.format("%s created", yearlyTableName));
             }
         }
+    }
+
+    private void createPushNotificationSettingsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+        final String tableName = tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_SETTINGS);
+        final String endpoint = configuration.dynamoDBConfiguration().defaultEndpoint();
+
+        client.setEndpoint(endpoint);
+
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            VoiceMetadataDAODynamoDB.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
+        }
+
     }
 }

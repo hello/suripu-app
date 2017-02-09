@@ -207,6 +207,7 @@ photo_upload:
 
 dynamodb:
   region: us-east-1
+  default_endpoint: http://dynamodb.us-east-1.amazonaws.com
   tables:
     agg_stats: prod_agg_stats
     alarm: prod_alarm
@@ -232,6 +233,7 @@ dynamodb:
     preferences: prod_preferences
     profile_photo: prod_profile_photo
     push_notification_event: prod_push_notification_event
+    push_notification_settings: push_notification_settings
     ring_time: prod_ring_time
     ring_time_history: prod_ring_history_by_account
     sense_key_store: key_store
@@ -253,53 +255,7 @@ dynamodb:
     timeline_log: prod_timeline_log
     timezone_history: prod_timezone_history
     wifi_info: prod_wifi_info
-
-  endpoints:
-    agg_stats: http://dynamodb.us-east-1.amazonaws.com
-    alarm: http://dynamodb.us-east-1.amazonaws.com
-    alarm_info: http://dynamodb.us-east-1.amazonaws.com
-    algorithm_test: http://dynamodb.us-east-1.amazonaws.com
-    analytics_tracking: http://dynamodb.us-east-1.amazonaws.com
-    app_stats: http://dynamodb.us-east-1.amazonaws.com
-    calibration: http://dynamodb.us-east-1.amazonaws.com
-    device_data: http://dynamodb.us-east-1.amazonaws.com
-    feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
-    features: http://dynamodb.us-east-1.amazonaws.com
-    file_manifest: http://dynamodb.us-east-1.amazonaws.com
-    insights: http://dynamodb.us-east-1.amazonaws.com
-    insights_last_seen: http://dynamodb.us-east-1.amazonaws.com
-    marketing_insights_seen: http://dynamodb.us-east-1.amazonaws.com
-    notifications: http://dynamodb.us-east-1.amazonaws.com
-    online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
-    ota_history: http://dynamodb.us-east-1.amazonaws.com
-    password_reset: http://dynamodb.us-east-1.amazonaws.com
-    pill_data: http://dynamodb.us-east-1.amazonaws.com
-    pill_heartbeat: http://dynamodb.us-east-1.amazonaws.com
-    pill_key_store: http://dynamodb.us-east-1.amazonaws.com
-    preferences: http://dynamodb.us-east-1.amazonaws.com
-    profile_photo: http://dynamodb.us-east-1.amazonaws.com
-    push_notification_event: http://dynamodb.us-east-1.amazonaws.com
-    ring_time_history: http://dynamodb.us-east-1.amazonaws.com
-    ring_time: http://dynamodb.us-east-1.amazonaws.com
-    sense_key_store: http://dynamodb.us-east-1.amazonaws.com
-    sense_last_seen: http://dynamodb.us-east-1.amazonaws.com
-    sense_state: http://dynamodb.us-east-1.amazonaws.com
-    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
-    sense_metadata: http://dynamodb.us-east-1.amazonaws.com
-    sleep_score: http://dynamodb.us-east-1.amazonaws.com
-    sleep_score_parameters:  http://dynamodb.us-east-1.amazonaws.com
-    sleep_stats: http://dynamodb.us-east-1.amazonaws.com
-    smart_alarm_log: http://dynamodb.us-east-1.amazonaws.com
-    speech_commands: http://dynamodb.us-east-1.amazonaws.com
-    speech_results: http://dynamodb.us-east-1.amazonaws.com
-    speech_timeline: http://dynamodb.us-east-1.amazonaws.com
-    swap_intents: http://dynamodb.us-east-1.amazonaws.com
-    sync_response_commands: http://dynamodb.us-east-1.amazonaws.com
-    teams: http://dynamodb.us-east-1.amazonaws.com
-    timeline: http://dynamodb.us-east-1.amazonaws.com
-    timeline_log: http://dynamodb.us-east-1.amazonaws.com
-    timezone_history: http://dynamodb.us-east-1.amazonaws.com
-    wifi_info: http://dynamodb.us-east-1.amazonaws.com
+  endpoints: {}
 
 alexa_app_ids:
   hello_dev: amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963
