@@ -233,7 +233,7 @@ dynamodb:
     preferences: prod_preferences
     profile_photo: prod_profile_photo
     push_notification_event: prod_push_notification_event
-    push_notification_settings: push_notification_settings
+    push_notification_settings: prod_push_notification_settings
     ring_time: prod_ring_time
     ring_time_history: prod_ring_history_by_account
     sense_key_store: key_store
