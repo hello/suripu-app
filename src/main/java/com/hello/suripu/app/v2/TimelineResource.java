@@ -298,8 +298,12 @@ public class TimelineResource extends BaseResource {
             timelineLogDAO.putTimelineLog(accountId, logV2.getAsV1Log());
         }
 
+        // log actions
         final ActionResult actionResult = (timelineResult.timelines.get(0).score.equals(0)) ? ActionResult.NO_DATA : ActionResult.OKAY;
-        actionProcessor.add(new Action(accountId, ActionType.TIMELINE_V2, Optional.of(actionResult.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
+        final String actionResultString = String.format("%s_%s", night, actionResult.string());
+        final Optional<Integer> timeZoneOffset = (!timeline.events.isEmpty()) ? Optional.of(timeline.events.get(0).timezoneOffset): Optional.absent();
+        actionProcessor.add(new Action(accountId, ActionType.TIMELINE_V2, Optional.of(actionResultString), DateTime.now(DateTimeZone.UTC), timeZoneOffset));
+
         return timeline;
     }
 

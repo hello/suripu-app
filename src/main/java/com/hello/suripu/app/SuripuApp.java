@@ -83,6 +83,7 @@ import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.actions.ActionProcessorFirehose;
+import com.hello.suripu.core.actions.ActionProcessorNoop;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -443,7 +444,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
         final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
-        final ActionProcessor actionProcessor = new ActionProcessorFirehose(firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
+        final ActionProcessor actionProcessor;
+        if (configuration.firehoseConfiguration().debug()) {
+            actionProcessor = new ActionProcessorNoop();
+        } else {
+            actionProcessor = new ActionProcessorFirehose(firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
+        }
 
         final RolloutAppModule module = new RolloutAppModule(featureStore, 30, firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
         ObjectGraphRoot.getInstance().init(module);

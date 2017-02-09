@@ -255,3 +255,9 @@ speech:
   sense_upload_audio:  # bucket to save audio uploaded from Sense
     s3_bucket_name: hello-voice-upload-dev
     s3_audio_prefix: sense_1_5
+
+action_firehose:
+  debug: true
+  region: us-east-1
+  stream: dev_actions
+  max_buffer_size: 20

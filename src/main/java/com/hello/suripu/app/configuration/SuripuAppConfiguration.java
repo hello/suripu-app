@@ -247,7 +247,7 @@ public class SuripuAppConfiguration extends Configuration {
     private String s3Endpoint;
     public String s3Endpoint() { return s3Endpoint; }
 
-    @JsonProperty("firehose")
+    @JsonProperty("action_firehose")
     private FirehoseConfiguration firehoseConfiguration;
     public FirehoseConfiguration firehoseConfiguration() { return firehoseConfiguration; }
 }

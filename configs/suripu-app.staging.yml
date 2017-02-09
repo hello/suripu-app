@@ -311,3 +311,9 @@ speech:
 
   memcache_hosts:
       - localhost:11211
+
+action_firehose:
+  debug: true
+  region: us-east-1
+  stream: dev_actions
+  max_buffer_size: 20
