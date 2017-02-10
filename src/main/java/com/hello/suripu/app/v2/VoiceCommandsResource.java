@@ -29,7 +29,7 @@ public class VoiceCommandsResource {
         this.voiceCommandResponse = checkNotNull(voiceCommandResponse, "VoiceCommandsResource voiceCommandResponse can not be null.");
     }
 
-    @ScopesAllowed({OAuthScope.USER_BASIC})
+    @ScopesAllowed({OAuthScope.SPEECH_COMMAND})
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)

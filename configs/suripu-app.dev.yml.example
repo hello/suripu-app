@@ -152,7 +152,7 @@ photo_upload:
   max_upload_size_bytes: 5120000 # 5MB
 
 urls:
-    voice: https://hello-dev.s3.amazonaws.com/voice
+    voice: https://s3.amazonaws.com/hello-dev/images/voice # don't add trailing /
 
 keys_management_service:
   endpoint: https://kms.us-east-1.amazonaws.com
