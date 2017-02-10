@@ -163,6 +163,7 @@ keys_management_service:
 
 dynamodb:
   region: us-east-1
+  default_endpoint: http://localhost:7777
   tables:
     agg_stats: agg_stats
     alarm: alarm
@@ -209,52 +210,8 @@ dynamodb:
     timeline_log: timeline_log
     timezone_history: timezone_history
     wifi_info: wifi_info
-  endpoints:
-    agg_stats: http://localhost:7777
-    alarm: http://localhost:7777
-    alarm_info: http://localhost:7777
-    algorithm_test: http://localhost:7777
-    analytics_tracking: http://localhost:7777
-    app_stats: http://localhost:7777
-    calibration: http://localhost:7777
-    device_data: http://localhost:7777
-    feature_extraction_models: http://localhost:7777
-    features: http://localhost:7777
-    file_manifest: http://localhost:7777
-    insights: http://localhost:7777
-    insights_last_seen: http://localhost:7777
-    marketing_insights_seen: http://localhost:7777
-    notifications: http://localhost:7777
-    online_hmm_models: http://localhost:7777
-    ota_history: http://localhost:7777
-    password_reset: http://localhost:7777
-    pill_data: http://localhost:7777
-    pill_heartbeat: http://localhost:7777
-    pill_key_store: http://localhost:7777
-    preferences: http://localhost:7777
-    profile_photo: http://localhost:7777
-    push_notification_event: http://localhost:7777
-    ring_time_history: http://localhost:7777
-    ring_time: http://localhost:7777
-    sense_key_store: http://localhost:7777
-    sense_last_seen: http://localhost:7777
-    sleep_hmm: http://localhost:7777
-    sense_metadata: http://localhost:7777
-    sense_state: http://localhost:7777
-    sleep_score: http://localhost:7777
-    sleep_score_parameters: http://localhost:7777
-    sleep_stats: http://localhost:7777
-    smart_alarm_log: http://localhost:7777
-    speech_commands: http://dynamodb.us-east-1.amazonaws.com
-    speech_results: http://localhost:7777
-    speech_timeline: http://localhost:7777
-    swap_intents: http://localhost:7777
-    sync_response_commands: http://localhost:7777
-    teams: http://localhost:7777
-    timeline: http://localhost:7777
-    timeline_log: http://localhost:7777
-    timezone_history: http://localhost:7777
-    wifi_info: http://localhost:7777
+  endpoints: {}
+
 
 alexa_app_ids:
   hello_dev: amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963
