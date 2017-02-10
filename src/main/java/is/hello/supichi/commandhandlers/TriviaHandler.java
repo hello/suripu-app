@@ -88,7 +88,7 @@ public class TriviaHandler extends BaseHandler {
             } else if (text.contains("who am i") && account.isPresent()) {
                 result = GenericResult.ok(String.format("Hello %s!", account.get().firstname));
             } else if (text.contains("romantic")) {
-                result = GenericResult.withMP3("", "RomeoJuliet_Clip.mp3");
+                result = GenericResult.withMP3("", "RomeoJuliet_Clip_16k_c1.mp3");
             }
 
             if (isDebug) {
