@@ -124,7 +124,7 @@ public class SensorViewLogic {
         LOGGER.debug("Last device data in db = {}", deviceData);
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), 15, "c", calibrationOptional, (float) 35);
-        final CurrentRoomState roomStateWithDust = roomState.withDust(calibrationOptional.isPresent());
+        final CurrentRoomState roomStateWithDust = roomState.withDust(Boolean.TRUE);
         final List<SensorView> views = toView(
                 availableSensors.get(hardwareVersion),
                 sensorViewFactory,
