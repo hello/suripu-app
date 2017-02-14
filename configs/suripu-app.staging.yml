@@ -155,7 +155,6 @@ taimurain_configuration:
      keepAlive: 0s
      timeout: 10000ms
    endpoints:
-     neural_net : http://internal-taimurain-230356525.us-east-1.elb.amazonaws.com:80
      neural_net_four_event: http://ec2-54-224-150-186.compute-1.amazonaws.com:5557
 
 question_configs:
