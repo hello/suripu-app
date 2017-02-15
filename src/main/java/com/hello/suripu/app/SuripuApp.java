@@ -77,6 +77,7 @@ import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
+import com.hello.suripu.app.v2.VoiceCommandsResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
@@ -87,6 +88,7 @@ import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
+import com.hello.suripu.core.configuration.UrlName;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -133,6 +135,7 @@ import com.hello.suripu.core.db.TimelineLogDAO;
 import com.hello.suripu.core.db.TrendsInsightsDAO;
 import com.hello.suripu.core.db.UserTimelineTestGroupDAO;
 import com.hello.suripu.core.db.UserTimelineTestGroupDAOImpl;
+import com.hello.suripu.core.db.VoiceCommandsDAO;
 import com.hello.suripu.core.db.WifiInfoDAO;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
@@ -143,6 +146,7 @@ import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.logging.KinesisLoggerFactory;
+import com.hello.suripu.core.models.VoiceCommandResponse;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
@@ -296,6 +300,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
         final AlertsDAO alertsDAO = commonDB.onDemand(AlertsDAO.class);
+
+        final VoiceCommandsDAO voiceCommandsDAO = commonDB.onDemand(VoiceCommandsDAO.class);
 
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
@@ -769,6 +775,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
         environment.jersey().register(new AlertsResource(alertsDAO, voiceMetadataDAO, deviceDAO, senseMetadataDAO));
+
+        environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
+                                                                                         configuration.getUrl(UrlName.VOICE))));
 
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
