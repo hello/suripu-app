@@ -55,6 +55,18 @@ public class Annotator {
                 entities.add(new SleepSoundAnnotation(soundName.value, soundName));
             }
         }
+
+        // map similar-sounding words to correct sound-names
+        if (entities.isEmpty()) {
+            if (text.contains("play fireplace") || text.contains("play campfire")) {
+                entities.add(new SleepSoundAnnotation(SleepSoundHandler.SoundName.FIRESIDE.value, SleepSoundHandler.SoundName.FIRESIDE));
+            } else if (text.contains("play raindrops") || text.contains("play rain")) {
+                entities.add(new SleepSoundAnnotation(SleepSoundHandler.SoundName.RAINFALL.value, SleepSoundHandler.SoundName.RAINFALL));
+            }  else if (text.contains("aurora")) {
+                entities.add(new SleepSoundAnnotation(SleepSoundHandler.SoundName.AURA.value, SleepSoundHandler.SoundName.AURA));
+            }
+        }
+
         return entities;
     }
 

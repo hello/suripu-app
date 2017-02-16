@@ -256,6 +256,16 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestTextToHandler() {
         final List<HandlerTestData> dataList = Lists.newArrayList(
+                new HandlerTestData("play night sounds", SleepSoundHandler.class, true),
+                new HandlerTestData("play soothing sounds", SleepSoundHandler.class, true),
+                new HandlerTestData("play sleeping sounds", SleepSoundHandler.class, true),
+
+                new HandlerTestData("play raindrops", SleepSoundHandler.class, true),
+                new HandlerTestData("play rain", SleepSoundHandler.class, true),
+                new HandlerTestData("play Aurora", SleepSoundHandler.class, true),
+                new HandlerTestData("play fireplace", SleepSoundHandler.class, true),
+                new HandlerTestData("play campfire", SleepSoundHandler.class, true),
+
                 new HandlerTestData("how are the conditions", RoomConditionsHandler.class, true),
                 new HandlerTestData("what are the conditions in my room", RoomConditionsHandler.class, true),
                 new HandlerTestData("how's my room conditions", RoomConditionsHandler.class, true),
