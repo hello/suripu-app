@@ -150,7 +150,6 @@ import com.hello.suripu.core.models.VoiceCommandResponse;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
-import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
 import com.hello.suripu.core.notifications.settings.NotificationSettingsDAO;
 import com.hello.suripu.core.notifications.settings.NotificationSettingsDynamoDB;
 import com.hello.suripu.core.oauth.stores.PersistentApplicationStore;
@@ -523,11 +522,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
         }
-
-        final AmazonDynamoDB pushNotificationDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
-        final PushNotificationEventDynamoDB pushNotificationEventDynamoDB = new PushNotificationEventDynamoDB(
-                pushNotificationDynamoDBClient,
-                tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
 
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
