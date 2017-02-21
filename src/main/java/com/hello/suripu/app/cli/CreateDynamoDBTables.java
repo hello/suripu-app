@@ -7,7 +7,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
 import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
@@ -40,7 +39,6 @@ import com.hello.suripu.core.db.TeamStore;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.insights.InsightsLastSeenDynamoDB;
-import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
 import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
@@ -112,7 +110,6 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSwapIntentsTable(configuration, awsCredentialsProvider);
 
         createMetadataTable(configuration, awsCredentialsProvider);
-        createPushNotificationEventsTable(configuration, awsCredentialsProvider);
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -923,28 +920,6 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         } catch (AmazonServiceException exception) {
             VoiceMetadataDAODynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
-        }
-    }
-
-    private void createPushNotificationEventsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
-        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
-        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
-        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
-
-        final String tableName = tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
-        final String endpoint = endpoints.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
-        client.setEndpoint(endpoint);
-
-        for(final Integer year : Lists.newArrayList(2017,2018)) {
-            final String yearlyTableName = String.format("%s_%d", tableName, year);
-            try {
-                client.describeTable(yearlyTableName);
-                System.out.println(String.format("%s already exists.", yearlyTableName));
-            } catch (AmazonServiceException exception) {
-                final PushNotificationEventDynamoDB pushNotificationEventDynamoDB = new PushNotificationEventDynamoDB(client, tableName);
-                pushNotificationEventDynamoDB.createTable(yearlyTableName);
-                System.out.println(String.format("%s created", yearlyTableName));
-            }
         }
     }
 }
