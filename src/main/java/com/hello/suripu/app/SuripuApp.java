@@ -441,7 +441,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final RolloutClient rolloutClient = new RolloutClient(new DynamoDBAdapter(featureStore, 30));
 
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30);
+        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
+        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
+        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
+        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker);
         ObjectGraphRoot.getInstance().init(module);
 
         ObjectMapper objectMapper = environment.getObjectMapper();
@@ -451,6 +456,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             @Override
             protected void configure() {
                 bind(rolloutClient).to(RolloutClient.class);
+                bind(analyticsTracker).to(AnalyticsTracker.class);
             }
         });
 
@@ -624,12 +630,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SupportResource(supportDAO));
         environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB, timelineLogger));
 
-        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
-        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
-        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
-        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
 
         environment.lifecycle().manage(new AnalyticsManaged(analytics));
+
+
 
         final DurationDAO durationDAO = commonDB.onDemand(DurationDAO.class);
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = configuration.getMessejiHttpClientConfiguration();
