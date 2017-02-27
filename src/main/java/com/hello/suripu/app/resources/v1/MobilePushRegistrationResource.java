@@ -9,6 +9,7 @@ import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
+import com.hello.suripu.coredropwizard.resources.BaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Path("/v1/notifications")
-public class MobilePushRegistrationResource {
+public class MobilePushRegistrationResource extends BaseResource {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MobilePushRegistrationResource.class);
@@ -80,14 +81,15 @@ public class MobilePushRegistrationResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<NotificationSetting> saveSettings(
-            @Auth AccessToken accessToken,
-            @Valid List<NotificationSetting> settings) {
+    public List<NotificationSetting> saveSettings(@Auth AccessToken accessToken,
+                                                  @Valid List<NotificationSetting> settings) {
         final Long accountId = accessToken.accountId;
         final List<NotificationSetting> withAccount = settings.stream()
                 .map(s -> NotificationSetting.withAccount(s,accountId))
                 .collect(Collectors.toList());
+
         notificationSettingsDAO.save(withAccount);
+        analyticsTracker.trackPushNotificationSettings(withAccount, accountId);
         return settings;
     }
 }

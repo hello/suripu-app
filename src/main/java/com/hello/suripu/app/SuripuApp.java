@@ -79,6 +79,7 @@ import com.hello.suripu.app.v2.SleepSoundsResource;
 import com.hello.suripu.app.v2.StoreFeedbackResource;
 import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
+import com.hello.suripu.app.v2.VoiceCommandsResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
@@ -93,6 +94,7 @@ import com.hello.suripu.core.analytics.AnalyticsTrackingDynamoDB;
 import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
+import com.hello.suripu.core.configuration.UrlName;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
@@ -139,6 +141,7 @@ import com.hello.suripu.core.db.TimelineLogDAO;
 import com.hello.suripu.core.db.TrendsInsightsDAO;
 import com.hello.suripu.core.db.UserTimelineTestGroupDAO;
 import com.hello.suripu.core.db.UserTimelineTestGroupDAOImpl;
+import com.hello.suripu.core.db.VoiceCommandsDAO;
 import com.hello.suripu.core.db.WifiInfoDAO;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
@@ -149,10 +152,10 @@ import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.logging.KinesisLoggerFactory;
+import com.hello.suripu.core.models.VoiceCommandResponse;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
 import com.hello.suripu.core.notifications.NotificationSubscriptionsDAO;
-import com.hello.suripu.core.notifications.PushNotificationEventDynamoDB;
 import com.hello.suripu.core.notifications.settings.NotificationSettingsDAO;
 import com.hello.suripu.core.notifications.settings.NotificationSettingsDynamoDB;
 import com.hello.suripu.core.oauth.stores.PersistentApplicationStore;
@@ -303,6 +306,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
         final AlertsDAO alertsDAO = commonDB.onDemand(AlertsDAO.class);
 
+        final VoiceCommandsDAO voiceCommandsDAO = commonDB.onDemand(VoiceCommandsDAO.class);
+
         final PersistentApplicationStore applicationStore = new PersistentApplicationStore(applicationsDAO);
         final PersistentAccessTokenStore accessTokenStore = new PersistentAccessTokenStore(accessTokenDAO, applicationStore, authCodeDAO);
 
@@ -442,8 +447,10 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final RolloutClient rolloutClient = new RolloutClient(new DynamoDBAdapter(featureStore, 30));
 
+
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
         final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
+        final int firehoseMaxBufferSize = configuration.firehoseConfiguration().maxBufferSize();
         final ActionProcessor actionProcessor;
         if (configuration.firehoseConfiguration().debug()) {
             actionProcessor = new ActionProcessorNoop();
@@ -451,7 +458,13 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             actionProcessor = new ActionProcessorFirehose(firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
         }
 
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
+        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
+        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
+        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
+        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, firehoseDAO, firehoseMaxBufferSize);
+
         ObjectGraphRoot.getInstance().init(module);
 
         ObjectMapper objectMapper = environment.getObjectMapper();
@@ -462,6 +475,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             protected void configure() {
                 bind(rolloutClient).to(RolloutClient.class);
                 bind(actionProcessor).to(ActionProcessor.class);
+                bind(analyticsTracker).to(AnalyticsTracker.class);
             }
         });
 
@@ -533,11 +547,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             environment.jersey().register(new VersionResource());
             environment.jersey().register(new PingResource());
         }
-
-        final AmazonDynamoDB pushNotificationDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PUSH_NOTIFICATION_EVENT);
-        final PushNotificationEventDynamoDB pushNotificationEventDynamoDB = new PushNotificationEventDynamoDB(
-                pushNotificationDynamoDBClient,
-                tableNames.get(DynamoDBTableName.PUSH_NOTIFICATION_EVENT));
 
         final ImmutableMap<String, String> arns = ImmutableMap.copyOf(configuration.getPushNotificationsConfiguration().getArns());
         final NotificationSubscriptionDAOWrapper notificationSubscriptionDAOWrapper = NotificationSubscriptionDAOWrapper.create(
@@ -640,12 +649,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SupportResource(supportDAO));
         environment.jersey().register(new com.hello.suripu.app.v2.TimelineResource(timelineDAODynamoDB, timelineProcessor, timelineLogDAO, feedbackDAO, pillDataDAODynamoDB, sleepStatsDAODynamoDB, timelineLogger));
 
-        final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
-        final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
-        final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
-        final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
+
 
         environment.lifecycle().manage(new AnalyticsManaged(analytics));
+
+
 
         final DurationDAO durationDAO = commonDB.onDemand(DurationDAO.class);
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = configuration.getMessejiHttpClientConfiguration();
@@ -785,6 +793,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
         environment.jersey().register(new AlertsResource(alertsDAO, voiceMetadataDAO, deviceDAO, senseMetadataDAO));
+
+        environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
+                                                                                         configuration.getUrl(UrlName.VOICE))));
 
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {

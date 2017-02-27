@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.coredropwizard.configuration.FirehoseConfiguration;
+import com.hello.suripu.core.configuration.UrlName;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
@@ -217,6 +218,12 @@ public class SuripuAppConfiguration extends Configuration {
     public PhotoUploadConfiguration photoUploadConfiguration() {
         return photoUploadConfiguration;
     }
+
+    @Valid
+    @JsonProperty("urls")
+    private Map<UrlName, String> urlMap = Maps.newHashMap();
+    public Map<UrlName, String> getUrlMap() { return this.urlMap; }
+    public String getUrl(@NotNull final UrlName key) { return this.urlMap.get(key);}
 
     @Valid
     @JsonProperty("alexa_app_ids")

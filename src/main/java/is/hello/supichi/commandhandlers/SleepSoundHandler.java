@@ -61,6 +61,7 @@ public class SleepSoundHandler extends BaseHandler {
             }
             return SoundName.NONE;
         }
+
         public static String regexPattern() {
             final List<String> names = Lists.newArrayList();
             for (final SoundName soundName : SoundName.values()) {
@@ -72,7 +73,8 @@ public class SleepSoundHandler extends BaseHandler {
 
     }
 
-    private static final String PLAY_SLEEP_SOUND_PATTERN = "(play|begin|start)(\\splaying)?\\s?(a|some)?\\s?(sleep|ambient)?\\s(sound)";
+    // private static final String PLAY_SLEEP_SOUND_PATTERN = "(play|begin|start)(\\splaying)?\\s?(a|some)?\\s?(sleep|ambient)?\\s(sound)";
+    private static final String PLAY_SLEEP_SOUND_PATTERN = "(play|begin|start)(\\splaying)?\\s?(a|some)?\\s?(sleep(ing)?|ambient|night|soothing)?\\s(sound)";
 
     // TODO: need to get these info from somewhere
     private static final Duration DEFAULT_SLEEP_SOUND_DURATION = Duration.create(2L, "30 Minutes", 1800);
@@ -109,6 +111,11 @@ public class SleepSoundHandler extends BaseHandler {
 
         tempMap.put("okay play", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("play sleep", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play raindrops", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play rain", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play aurora", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play fireplace", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play campfire", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put(PLAY_SLEEP_SOUND_PATTERN, SpeechCommand.SLEEP_SOUND_PLAY);
 
         tempMap.put("stop", SpeechCommand.SLEEP_SOUND_STOP);

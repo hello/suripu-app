@@ -10,6 +10,7 @@ import com.hello.suripu.api.input.State;
 import com.hello.suripu.app.modules.RolloutAppModule;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
+import com.hello.suripu.core.analytics.AnalyticsTracker;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FileInfoDAO;
@@ -48,6 +49,7 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -63,6 +65,7 @@ public class SleepSoundsResourceTest {
     private final Optional<DeviceAccountPair> pair = Optional.of(new DeviceAccountPair(accountId, 1L, senseId, new DateTime()));
     private final DeviceKeyStoreRecord record = DeviceKeyStoreRecord.forSense("sense","key","sn", "", HardwareVersion.SENSE_ONE);
     private final AccessToken token = makeToken(accountId);
+    private AnalyticsTracker analyticsTracker = mock(AnalyticsTracker.class);
 
     private DeviceDAO deviceDAO;
     private SenseStateDynamoDB senseStateDynamoDB;
@@ -86,16 +89,16 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 100.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
 
-        deviceDAO = Mockito.mock(DeviceDAO.class);
-        senseStateDynamoDB = Mockito.mock(SenseStateDynamoDB.class);
-        keyStore = Mockito.mock(KeyStore.class);
-        durationDAO = Mockito.mock(DurationDAO.class);
-        messejiClient = Mockito.mock(MessejiClient.class);
-        fileInfoDAO = Mockito.mock(FileInfoDAO.class);
-        fileManifestDAO = Mockito.mock(FileManifestDAO.class);
+        deviceDAO = mock(DeviceDAO.class);
+        senseStateDynamoDB = mock(SenseStateDynamoDB.class);
+        keyStore = mock(KeyStore.class);
+        durationDAO = mock(DurationDAO.class);
+        messejiClient = mock(MessejiClient.class);
+        fileInfoDAO = mock(FileInfoDAO.class);
+        fileManifestDAO = mock(FileManifestDAO.class);
         sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -492,7 +495,8 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
+
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -559,7 +563,8 @@ public class SleepSoundsResourceTest {
                         ImmutableMap.of(
                                 FeatureFlipper.SLEEP_SOUNDS_ENABLED,
                                 new Feature("sleep_sounds_enabled", Collections.EMPTY_LIST, Collections.EMPTY_LIST, (float) 0.0)));
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, actionFirehoseDAO, bufferSize);
+
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, actionFirehoseDAO, bufferSize);
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -571,7 +576,7 @@ public class SleepSoundsResourceTest {
     public void testGetCombinedState() {
         when(deviceDAO.getMostRecentSensePairByAccountId(accountId)).thenReturn(pair);
 
-        final SleepSoundsProcessor mockedSleepSoundsProcessor = Mockito.mock(SleepSoundsProcessor.class);
+        final SleepSoundsProcessor mockedSleepSoundsProcessor = mock(SleepSoundsProcessor.class);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
                 messejiClient, mockedSleepSoundsProcessor, 1, 1);

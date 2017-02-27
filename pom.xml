@@ -16,11 +16,15 @@
         <metrics.version>3.1.2</metrics.version>
         <opencsv.version>3.3</opencsv.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gaibu.version>0.1.111</gaibu.version>
+        <gaibu.version>0.1.112</gaibu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
         <google-speech-api-version>0.6.0</google-speech-api-version>
+<<<<<<< HEAD
         <suripu.version>0.8.5978-SNAPSHOT</suripu.version>
+=======
+        <suripu.version>0.8.6029</suripu.version>
+>>>>>>> master
     </properties>
 
     <distributionManagement>
@@ -418,6 +422,11 @@
                 <!--</exclusion>-->
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>2.8.1</version>
+        </dependency>
         <!-- START               -->
         <!-- speech dependencies -->
         <dependency>
@@ -479,11 +488,6 @@
             <artifactId>netty-tcnative-boringssl-static</artifactId>
             <version>1.1.33.Fork19</version>
             <classifier>${tcnative.classifier}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.maxmind.geoip2</groupId>
-            <artifactId>geoip2</artifactId>
-            <version>2.8.0</version>
         </dependency>
         <dependency>
             <groupId>net.spy</groupId>

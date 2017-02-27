@@ -53,7 +53,7 @@ public class InsightsResource {
     public List<InsightCard> getInsights(@Auth final AccessToken accessToken) {
 
         final Boolean chronological = false; // reverse chronological
-        final DateTime queryDate = DateTime.now(DateTimeZone.UTC).plusDays(1);
+        final DateTime queryDate = DateTime.now(DateTimeZone.UTC);
         LOGGER.debug("action=get_insight account_id={} querydate={}", accessToken.accountId, queryDate);
         final ImmutableList<InsightCard> cards = insightsDAODynamoDB.getInsightsByDate(accessToken.accountId,
                 queryDate, chronological, MAX_INSIGHTS_NUM);

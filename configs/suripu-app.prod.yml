@@ -141,8 +141,8 @@ score_threshold : 15 # minutes bucket for sleep-scores
 
 push_notifications:
   arns:
-    ios: arn:aws:sns:us-east-1:053216739513:app/APNS/hello-sense-ios-dev
-    android: arn:aws:sns:us-east-1:053216739513:app/GCM/hello-sense-android-dev
+    ios: arn:aws:sns:us-east-1:053216739513:app/APNS/hello-sense-ios-prod
+    android: arn:aws:sns:us-east-1:053216739513:app/GCM/hello-sense-android-prod
 
   table_name: notifications #deprecate later
 
@@ -156,7 +156,6 @@ taimurain_configuration:
      keepAlive: 0s
      timeout: 10000ms
    endpoints:
-     neural_net : http://internal-taimurain-prod-1606459001.us-east-1.elb.amazonaws.com:80
      neural_net_four_event: http://internal-taimurain-2-prod-1610962562.us-east-1.elb.amazonaws.com:80
 
 question_configs:
@@ -205,6 +204,9 @@ photo_upload:
   profile_prefix: photos/profile/
   max_upload_size_bytes: 5120000 # 5MB
 
+urls:
+    voice: https://s3.amazonaws.com/hello-data/images/voice # don't add trailing /
+
 dynamodb:
   region: us-east-1
   default_endpoint: http://dynamodb.us-east-1.amazonaws.com
@@ -233,7 +235,7 @@ dynamodb:
     preferences: prod_preferences
     profile_photo: prod_profile_photo
     push_notification_event: prod_push_notification_event
-    push_notification_settings: push_notification_settings
+    push_notification_settings: prod_push_notification_settings
     ring_time: prod_ring_time
     ring_time_history: prod_ring_history_by_account
     sense_key_store: key_store
