@@ -450,12 +450,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
         final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
         final int actionProcessorBufferSize = configuration.firehoseConfiguration().maxBufferSize();
-        final ActionProcessor actionProcessor;
-        if (configuration.firehoseConfiguration().debug()) {
-            actionProcessor = new ActionProcessorLog(actionProcessorBufferSize);
-        } else {
-            actionProcessor = new ActionProcessorLog(actionProcessorBufferSize);
-        }
+        final ActionProcessor actionProcessor = new ActionProcessorLog(actionProcessorBufferSize);
 
         final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
         final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
