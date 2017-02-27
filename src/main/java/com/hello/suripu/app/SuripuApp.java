@@ -83,7 +83,7 @@ import com.hello.suripu.app.v2.VoiceCommandsResource;
 import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
-import com.hello.suripu.core.actions.ActionProcessorFirehose;
+import com.hello.suripu.core.actions.ActionProcessorLog;
 import com.hello.suripu.core.actions.ActionProcessorNoop;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
@@ -450,12 +450,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
         final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
-        final int firehoseMaxBufferSize = configuration.firehoseConfiguration().maxBufferSize();
+        final int actionalProcessorBufferSize = configuration.firehoseConfiguration().maxBufferSize();
         final ActionProcessor actionProcessor;
         if (configuration.firehoseConfiguration().debug()) {
             actionProcessor = new ActionProcessorNoop();
         } else {
-            actionProcessor = new ActionProcessorFirehose(firehoseDAO, configuration.firehoseConfiguration().maxBufferSize());
+            actionProcessor = new ActionProcessorLog(actionalProcessorBufferSize);
         }
 
         final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
@@ -463,7 +463,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AnalyticsTrackingDAO analyticsTrackingDAO = AnalyticsTrackingDynamoDB.create(analyticsTrackingClient, tableNames.get(DynamoDBTableName.ANALYTICS_TRACKING));
         final AnalyticsTracker analyticsTracker = new SegmentAnalyticsTracker(analyticsTrackingDAO, analytics);
 
-        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, firehoseDAO, firehoseMaxBufferSize);
+        final RolloutAppModule module = new RolloutAppModule(featureStore, 30, analyticsTracker, firehoseDAO, actionalProcessorBufferSize);
 
         ObjectGraphRoot.getInstance().init(module);
 

@@ -20,11 +20,7 @@
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
         <google-speech-api-version>0.6.0</google-speech-api-version>
-<<<<<<< HEAD
-        <suripu.version>0.8.5978-SNAPSHOT</suripu.version>
-=======
-        <suripu.version>0.8.6029</suripu.version>
->>>>>>> master
+        <suripu.version>0.8.6032-SNAPSHOT</suripu.version>
     </properties>
 
     <distributionManagement>
