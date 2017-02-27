@@ -3,6 +3,10 @@ package com.hello.suripu.app.v2;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionResult;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.PillDataDAODynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
@@ -58,6 +62,9 @@ public class TimelineResource extends BaseResource {
 
     @Inject
     RolloutClient feature;
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     private final InstrumentedTimelineProcessor timelineProcessor;
     private final TimelineDAODynamoDB timelineDAODynamoDB;
@@ -128,6 +135,7 @@ public class TimelineResource extends BaseResource {
         //if we made it this far, insert
         feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
 
+        actionProcessor.add(new Action(accessToken.accountId, ActionType.TIMELINE_FEEDBACK, Optional.of(ActionResult.OKAY.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
         return timeline;
     }
 
@@ -186,6 +194,8 @@ public class TimelineResource extends BaseResource {
 
         //if we made it this far, insert
         feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
+
+        actionProcessor.add(new Action(accessToken.accountId, ActionType.TIMELINE_CORRECT, Optional.of(ActionResult.OKAY.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
 
         return Response.status(Response.Status.ACCEPTED).build();
     }
@@ -287,6 +297,12 @@ public class TimelineResource extends BaseResource {
             //TODO deprecate this sometime soon
             timelineLogDAO.putTimelineLog(accountId, logV2.getAsV1Log());
         }
+
+        // log actions
+        final ActionResult actionResult = (timelineResult.timelines.get(0).score.equals(0)) ? ActionResult.NO_DATA : ActionResult.OKAY;
+        final String actionResultString = String.format("%s_%s", night, actionResult.string());
+        final Optional<Integer> timeZoneOffset = (!timeline.events.isEmpty()) ? Optional.of(timeline.events.get(0).timezoneOffset): Optional.absent();
+        actionProcessor.add(new Action(accountId, ActionType.TIMELINE_V2, Optional.of(actionResultString), DateTime.now(DateTimeZone.UTC), timeZoneOffset));
 
         return timeline;
     }

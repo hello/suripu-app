@@ -4,6 +4,9 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 
 import com.codahale.metrics.annotation.Timed;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.Account;
@@ -45,6 +48,9 @@ public class QuestionsResource extends BaseResource {
     @Inject
     RolloutClient feature;
 
+    @Inject
+    ActionProcessor actionProcessor;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestionsResource.class);
 
     private final AccountDAO accountDAO;
@@ -79,7 +85,8 @@ public class QuestionsResource extends BaseResource {
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
 
-        final DateTime todayLocal = DateTime.now(DateTimeZone.UTC).plusMillis(timeZoneOffset).withTimeAtStartOfDay();
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+        final DateTime todayLocal = now.plusMillis(timeZoneOffset).withTimeAtStartOfDay();
         final String todayLocalString = todayLocal.toString("yyyy-MM-dd");
         LOGGER.debug("today_local={}", todayLocalString);
         
@@ -89,11 +96,16 @@ public class QuestionsResource extends BaseResource {
         }
 
         // get question
-        List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        final List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
         if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
             return questionProcessorQuestions;
         }
-        return this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, questionProcessorQuestions, timeZoneOffset);
+
+        final List<Question> questions = this.questionSurveyProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, questionProcessorQuestions, timeZoneOffset);
+
+        actionProcessor.add(new Action(accessToken.accountId, ActionType.QUESTION_GET, Optional.of(String.valueOf(questions.size())), now, Optional.of(timeZoneOffset)));
+
+        return questions;
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_READ})
@@ -138,6 +150,7 @@ public class QuestionsResource extends BaseResource {
         }
 
         this.questionProcessor.saveResponse(accessToken.accountId, questionId, accountQuestionId, choice);
+        this.actionProcessor.add(new Action(accessToken.accountId, ActionType.QUESTION_SAVE, Optional.of(String.valueOf(questionId)), DateTime.now(DateTimeZone.UTC), Optional.absent()));
     }
 
     @ScopesAllowed({OAuthScope.QUESTIONS_WRITE})
@@ -152,6 +165,7 @@ public class QuestionsResource extends BaseResource {
 
         final int timeZoneOffset = this.getTimeZoneOffsetMillis(accessToken.accountId);
         this.questionProcessor.skipQuestion(accessToken.accountId, questionId, accountQuestionId, timeZoneOffset);
+        this.actionProcessor.add(new Action(accessToken.accountId, ActionType.QUESTION_SKIP, Optional.of(String.valueOf(questionId)), DateTime.now(DateTimeZone.UTC), Optional.of(timeZoneOffset)));
     }
 
     // keeping these for backward compatibility

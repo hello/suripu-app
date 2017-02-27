@@ -17,6 +17,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
 @Path("/v1/feedback")
+@Deprecated
 public class FeedbackResource {
 
     private final FeedbackDAO feedbackDAO;

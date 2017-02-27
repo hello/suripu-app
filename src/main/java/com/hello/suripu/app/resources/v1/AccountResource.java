@@ -2,6 +2,10 @@ package com.hello.suripu.app.resources.v1;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionResult;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.util.MatcherPatternsDB;
@@ -16,10 +20,13 @@ import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -41,6 +48,9 @@ public class AccountResource {
 
     @Context
     HttpServletRequest request;
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountResource.class);
     private final AccountDAO accountDAO;
@@ -69,6 +79,7 @@ public class AccountResource {
         LOGGER.info("level=info action=show-last-modified last_modified={}", accountOptional.get().lastModified);
         final Account account = accountOptional.get();
 
+        actionProcessor.add(new Action(accessToken.accountId, ActionType.LOGIN, Optional.of(ActionResult.OKAY.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
 
         return maybeAddProfilePhoto(account, includePhoto);
 

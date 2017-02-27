@@ -1,11 +1,15 @@
 package com.hello.suripu.app.v2;
 
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.app.sensors.BatchQuery;
+import com.hello.suripu.app.sensors.BatchQueryResponse;
 import com.hello.suripu.app.sensors.SensorResponse;
 import com.hello.suripu.app.sensors.SensorViewLogic;
-import com.hello.suripu.app.sensors.BatchQueryResponse;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
@@ -38,6 +42,9 @@ public class SensorsResource extends BaseResource {
     @Inject
     RolloutClient flipper;
 
+    @Inject
+    ActionProcessor actionProcessor;
+
     public SensorsResource(final SensorViewLogic viewLogic) {
         this.viewLogic = viewLogic;
     }
@@ -52,8 +59,12 @@ public class SensorsResource extends BaseResource {
         }
 
         LOGGER.debug("action=list-sensors account_id={}", token.accountId);
-        final SensorResponse response = viewLogic.list(token.accountId, DateTime.now(DateTimeZone.UTC));
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+        final SensorResponse response = viewLogic.list(token.accountId, now);
         LOGGER.debug("action=list-sensors account_id={} sensors={}", token.accountId, response.availableSensors());
+
+        this.actionProcessor.add(new Action(token.accountId, ActionType.ROOM_CONDITIONS_CURRENT, Optional.of(response.status().toString()), now, Optional.absent()));
+
         return response;
     }
 
@@ -69,6 +80,8 @@ public class SensorsResource extends BaseResource {
         LOGGER.debug("action=get-sensors-data account_id={}", token.accountId);
         final BatchQueryResponse response = viewLogic.data(token.accountId, query);
         LOGGER.debug("action=get-sensors-data account_id={} sensors={}", token.accountId, response.sensors().keySet());
+        this.actionProcessor.add(new Action(token.accountId, ActionType.ROOM_CONDITIONS_CURRENT, Optional.absent(), DateTime.now(DateTimeZone.UTC), Optional.absent()));
+
         return response;
     }
 }

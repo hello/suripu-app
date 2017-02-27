@@ -1,11 +1,11 @@
 package com.hello.suripu.app.resources.v1;
 
 
-import com.google.common.base.Optional;
-
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.base.Optional;
+import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
@@ -26,19 +26,12 @@ import com.hello.suripu.coredropwizard.oauth.AuthCookie;
 import com.hello.suripu.coredropwizard.oauth.ClientAuthRequest;
 import com.hello.suripu.coredropwizard.oauth.GrantTypeParam;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
-
+import io.dropwizard.views.View;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -46,6 +39,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -63,14 +57,17 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
-
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-
-import io.dropwizard.views.View;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
 @Path("/v1/oauth2")
 public class OAuthResource {

@@ -25,8 +25,6 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.stream.Collectors;
 
-;
-
 @Path("/v1/notifications")
 public class MobilePushRegistrationResource extends BaseResource {
 

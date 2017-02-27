@@ -1,9 +1,11 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-
-import com.codahale.metrics.annotation.Timed;
+import com.hello.suripu.core.actions.Action;
+import com.hello.suripu.core.actions.ActionProcessor;
+import com.hello.suripu.core.actions.ActionType;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.OTAHistoryDAODynamoDB;
 import com.hello.suripu.core.db.ResponseCommandsDAODynamoDB;
@@ -20,14 +22,10 @@ import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
 import com.librato.rollout.RolloutClient;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -37,6 +35,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.Map;
 
 @Path("/v1/ota")
 public class OTAResource extends BaseResource {
@@ -52,6 +52,9 @@ public class OTAResource extends BaseResource {
 
     @Inject
     RolloutClient feature;
+
+    @Inject
+    ActionProcessor actionProcessor;
 
     public OTAResource(final DeviceDAO deviceDAO,
                        final SensorsViewsDynamoDB sensorsViewsDynamoDB,
@@ -146,6 +149,8 @@ public class OTAResource extends BaseResource {
         final Map<ResponseCommandsDAODynamoDB.ResponseCommand, String> issuedCommands = new ImmutableMap.Builder<ResponseCommandsDAODynamoDB.ResponseCommand, String>()
             .put(ResponseCommandsDAODynamoDB.ResponseCommand.FORCE_OTA, "true")
             .build();
+
+        this.actionProcessor.add(new Action(accessToken.accountId, ActionType.FORCE_OTA, Optional.of(deviceId), DateTime.now(DateTimeZone.UTC), Optional.absent()));
 
         responseCommandsDAODynamoDB.insertResponseCommands(deviceId, fwVersion, issuedCommands);
     }
