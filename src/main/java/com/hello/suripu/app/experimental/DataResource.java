@@ -45,7 +45,7 @@ public class DataResource extends BaseResource {
     this.deviceProcessor = deviceProcessor;
   }
 
-  @ScopesAllowed({OAuthScope.USER_BASIC})
+  @ScopesAllowed({OAuthScope.VIVINT_READ})
   @GET
   @Timed
   @Path("/pill/latest")
