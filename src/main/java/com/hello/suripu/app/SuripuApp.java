@@ -84,7 +84,6 @@ import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.actions.ActionProcessorLog;
-import com.hello.suripu.core.actions.ActionProcessorNoop;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.alerts.AlertsDAO;
 import com.hello.suripu.core.algorithmintegration.NeuralNetEndpoint;
@@ -451,12 +450,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final AmazonKinesisFirehoseAsync firehose = new AmazonKinesisFirehoseAsyncClient(awsCredentialsProvider, clientConfiguration);
         final ActionFirehoseDAO firehoseDAO = new ActionFirehoseDAO(configuration.firehoseConfiguration().stream(), firehose);
         final int actionProcessorBufferSize = configuration.firehoseConfiguration().maxBufferSize();
-        final ActionProcessor actionProcessor;
-        if (configuration.firehoseConfiguration().debug()) {
-            actionProcessor = new ActionProcessorNoop();
-        } else {
-            actionProcessor = new ActionProcessorLog(actionProcessorBufferSize);
-        }
+        final ActionProcessor actionProcessor = new ActionProcessorLog(actionProcessorBufferSize);
 
         final AmazonDynamoDB analyticsTrackingClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.ANALYTICS_TRACKING);
         final Analytics analytics = Analytics.builder(configuration.segmentWriteKey()).build();
