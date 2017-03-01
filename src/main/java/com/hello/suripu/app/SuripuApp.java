@@ -677,6 +677,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withPillHeartbeatDAO(pillHeartBeatDAODynamoDB)
                 .withAnalyticsTracker(analyticsTracker)
                 .withVoiceMetadataDAO(voiceMetadataDAO)
+                .withKeyStore(pillKeyStore)
                 .build();
 
 
