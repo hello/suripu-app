@@ -182,7 +182,7 @@ public class Supichi
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
 
         final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
-        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory, configuration.availableSensors());
         final AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
 
         // set up speech client

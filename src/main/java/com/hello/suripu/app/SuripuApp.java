@@ -1,9 +1,5 @@
 package com.hello.suripu.app;
 
-import com.google.api.client.util.Maps;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import com.amazon.speech.Sdk;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -26,6 +22,9 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.util.Maps;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
@@ -40,6 +39,7 @@ import com.hello.suripu.app.cli.RecreatePillColorCommand;
 import com.hello.suripu.app.clients.TaimurainHttpClient;
 import com.hello.suripu.app.configuration.KMSConfiguration;
 import com.hello.suripu.app.configuration.SuripuAppConfiguration;
+import com.hello.suripu.app.experimental.DataResource;
 import com.hello.suripu.app.filters.RateLimitingByIPFilter;
 import com.hello.suripu.app.managed.AnalyticsManaged;
 import com.hello.suripu.app.modules.RolloutAppModule;
@@ -48,7 +48,6 @@ import com.hello.suripu.app.resources.v1.AccountResource;
 import com.hello.suripu.app.resources.v1.AlarmResource;
 import com.hello.suripu.app.resources.v1.AppCheckinResource;
 import com.hello.suripu.app.resources.v1.AppStatsResource;
-import com.hello.suripu.app.experimental.DataResource;
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.FeedbackResource;
 import com.hello.suripu.app.resources.v1.InsightsResource;
@@ -212,20 +211,6 @@ import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
-
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -246,6 +231,18 @@ import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.supichi.Supichi;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 
 public class SuripuApp extends Application<SuripuAppConfiguration> {
@@ -786,8 +783,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
+
+
         final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory(), freshnessThresholdInMinutes);
-        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO,
+                senseColorDAO, calibrationDAO, sensorViewFactory, configuration.availableSensors());
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));

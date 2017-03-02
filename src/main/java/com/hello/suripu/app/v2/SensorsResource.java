@@ -2,7 +2,6 @@ package com.hello.suripu.app.v2;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
-import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.app.sensors.BatchQuery;
 import com.hello.suripu.app.sensors.BatchQueryResponse;
 import com.hello.suripu.app.sensors.SensorResponse;
@@ -28,9 +27,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
 
 @Path("/v2/sensors")
 public class SensorsResource extends BaseResource {
@@ -54,9 +51,6 @@ public class SensorsResource extends BaseResource {
     @ScopesAllowed({OAuthScope.SENSORS_BASIC})
     @Timed
     public SensorResponse list(@Auth final AccessToken token) {
-        if(!flipper.userFeatureActive(AppFeatureFlipper.SENSORS_V2_ENABLED, token.accountId, new ArrayList<>())) {
-            throw new WebApplicationException(404);
-        }
 
         LOGGER.debug("action=list-sensors account_id={}", token.accountId);
         final DateTime now = DateTime.now(DateTimeZone.UTC);
@@ -73,10 +67,6 @@ public class SensorsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public BatchQueryResponse data(@Auth final AccessToken token, @Valid final BatchQuery query) {
-        if(!flipper.userFeatureActive(AppFeatureFlipper.SENSORS_V2_ENABLED, token.accountId, new ArrayList<>())) {
-            throw new WebApplicationException(404);
-        }
-
         LOGGER.debug("action=get-sensors-data account_id={}", token.accountId);
         final BatchQueryResponse response = viewLogic.data(token.accountId, query);
         LOGGER.debug("action=get-sensors-data account_id={} sensors={}", token.accountId, response.sensors().keySet());

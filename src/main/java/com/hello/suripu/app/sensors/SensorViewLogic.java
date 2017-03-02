@@ -1,5 +1,6 @@
 package com.hello.suripu.app.sensors;
 
+import com.google.api.client.util.Sets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -28,9 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,24 +46,7 @@ public class SensorViewLogic {
     private final CalibrationDAO calibrationDAO;
     private final SensorViewFactory sensorViewFactory;
 
-    private static ImmutableMap<HardwareVersion, List<Sensor>> availableSensors;
-    static {
-        final Map<HardwareVersion, List<Sensor>> temp = new HashMap<>();
-        final List<Sensor> senseOneSensors = Lists.newArrayList(
-                Sensor.TEMPERATURE, Sensor.HUMIDITY, Sensor.LIGHT, Sensor.PARTICULATES, Sensor.SOUND
-        );
-
-        final List<Sensor> senseOneFiveSensors = Lists.newArrayList(senseOneSensors);
-        senseOneFiveSensors.addAll(
-                Lists.newArrayList(
-//                        Sensor.CO2,
-                        Sensor.TVOC, Sensor.UV, Sensor.PRESSURE
-                ));
-
-        temp.put(HardwareVersion.SENSE_ONE, senseOneSensors);
-        temp.put(HardwareVersion.SENSE_ONE_FIVE, senseOneFiveSensors);
-        availableSensors = ImmutableMap.copyOf(temp);
-    }
+    private final Map<HardwareVersion, List<Sensor>> availableSensors;
 
     /**
      * Turns an Optional<T> into a Stream<T> of length zero or one depending upon
@@ -76,13 +60,16 @@ public class SensorViewLogic {
     }
 
 
-    public SensorViewLogic(DeviceDataDAODynamoDB deviceDataDAODynamoDB, KeyStore keyStore, DeviceDAO deviceDAO, SenseColorDAO senseColorDAO, CalibrationDAO calibrationDAO, SensorViewFactory sensorViewFactory) {
+    public SensorViewLogic(DeviceDataDAODynamoDB deviceDataDAODynamoDB, KeyStore keyStore, DeviceDAO deviceDAO,
+                           SenseColorDAO senseColorDAO, CalibrationDAO calibrationDAO, SensorViewFactory sensorViewFactory,
+                           Map<HardwareVersion, List<Sensor>> availableSensors) {
         this.deviceDataDAODynamoDB = deviceDataDAODynamoDB;
         this.keyStore = keyStore;
         this.deviceDAO = deviceDAO;
         this.senseColorDAO = senseColorDAO;
         this.calibrationDAO = calibrationDAO;
         this.sensorViewFactory = sensorViewFactory;
+        this.availableSensors = ImmutableMap.copyOf(availableSensors);
     }
 
     public SensorResponse list(final Long accountId, final DateTime asOfUTC) {
@@ -191,8 +178,9 @@ public class SensorViewLogic {
             return BatchQueryResponse.noSense();
         }
 
-        final List<Sensor> sensors = availableSensors.get(record.get().hardwareVersion);
+        final List<Sensor> sensors = availableSensors.getOrDefault(record.get().hardwareVersion, Lists.newArrayList());
         final SensorQueryParameters queryParameters = SensorQueryParameters.from(query.scope(), DateTime.now(DateTimeZone.UTC));
+
         final AllSensorSampleList timeSeries = deviceDataDAODynamoDB.generateTimeSeriesByUTCTimeAllSensors(
                 queryParameters.start().getMillis(), queryParameters.end().getMillis(), accountId, senseId,
                 queryParameters.slotDuration(), -1, color, calibrationOptional, true);
@@ -200,14 +188,16 @@ public class SensorViewLogic {
         if (timeSeries.isEmpty()) {
             return BatchQueryResponse.noData();
         }
-
         return convert(timeSeries, query, sensors);
     }
 
     public static BatchQueryResponse convert(final AllSensorSampleList timeSeries, final BatchQuery query, final List<Sensor> availableSensors) {
         final Map<Sensor, SensorData> map = Maps.newHashMap();
+        final Set<Sensor> sensors = Sets.newHashSet();
+        sensors.addAll(availableSensors);
+
         for(final Sensor sensor: query.sensors()) {
-            if(availableSensors.contains(sensor)) {
+            if(sensors.contains(sensor)) {
                 final List<Sample> samples = timeSeries.get(sensor);
                 if(samples != null && !samples.isEmpty()) {
                     final SensorData sensorData = SensorData.from(samples);

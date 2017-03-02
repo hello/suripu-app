@@ -325,3 +325,21 @@ action_firehose:
   region: us-east-1
   stream: prod_actions
   max_buffer_size: 100
+
+available_sensors:
+  # careful not to add new sensors here
+  SENSE_ONE:
+    - temperature
+    - humidity
+    - light
+    - particulates
+    - sound
+  SENSE_ONE_FIVE:
+    - temperature
+    - humidity
+    - light
+    - particulates
+    - sound
+    - tvoc
+    - uv
+    - pressure
