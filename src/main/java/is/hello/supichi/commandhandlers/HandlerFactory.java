@@ -9,6 +9,7 @@ import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
@@ -30,6 +31,7 @@ public class HandlerFactory {
     private final SpeechCommandDAO speechCommandDAO;
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
+    private final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB;
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
     private final String forecastio;
     private final AccountLocationDAO accountLocationDAO;
@@ -51,6 +53,7 @@ public class HandlerFactory {
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
                            final SleepSoundsProcessor sleepSoundsProcessor,
+                           final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoD,
                            final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                            final String forecastio,
                            final AccountLocationDAO accountLocationDAO,
@@ -70,6 +73,7 @@ public class HandlerFactory {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
+        this.sleepSoundSettingsDynamoDB = sleepSoundSettingsDynamoD;
         this.timeZoneHistoryDAODynamoDB = timeZoneHistoryDAODynamoDB;
         this.forecastio = forecastio;
         this.accountLocationDAO = accountLocationDAO;
@@ -91,6 +95,7 @@ public class HandlerFactory {
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
                                         final MessejiClient messejiClient,
                                         final SleepSoundsProcessor sleepSoundsProcessor,
+                                        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoD,
                                         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                                         final String forecastio,
                                         final AccountLocationDAO accountLocationDAO,
@@ -108,7 +113,7 @@ public class HandlerFactory {
                                         final boolean isDebug,
                                         final AccountDAO accountDAO) {
 
-        return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor,
+        return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoD,
                 timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
                 externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
@@ -148,7 +153,7 @@ public class HandlerFactory {
     }
 
     public SleepSoundHandler sleepSoundHandler() {
-        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor, 5);
+        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor, sleepSoundSettingsDynamoDB, 5);
     }
 
     public HueHandler hueHandler(final String appName) {

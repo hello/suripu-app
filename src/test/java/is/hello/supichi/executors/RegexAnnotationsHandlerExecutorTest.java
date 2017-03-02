@@ -11,6 +11,7 @@ import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
@@ -78,6 +79,7 @@ public class RegexAnnotationsHandlerExecutorTest {
 
     private final MessejiClient messejiClient = mock(MessejiClient.class);
     private final SleepSoundsProcessor sleepSoundsProcessor = mock(SleepSoundsProcessor.class);
+    private final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = mock(SleepSoundSettingsDynamoDB.class);
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
     private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
@@ -164,6 +166,7 @@ public class RegexAnnotationsHandlerExecutorTest {
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
+                sleepSoundSettingsDynamoDB,
                 timeZoneHistoryDAODynamoDB,
                 "BLAH", // forecastio
                 accountLocationDAO,

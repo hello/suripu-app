@@ -1,19 +1,19 @@
 package com.hello.suripu.app.v2;
 
+import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-
-import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.api.input.State;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.DeviceAccountPair;
@@ -21,6 +21,7 @@ import com.hello.suripu.core.models.DeviceKeyStoreRecord;
 import com.hello.suripu.core.models.SenseStateAtTime;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.DurationMap;
+import com.hello.suripu.core.models.sleep_sounds.SleepSoundSetting;
 import com.hello.suripu.core.models.sleep_sounds.SleepSoundStatus;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.models.sleep_sounds.SoundMap;
@@ -32,14 +33,10 @@ import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
-
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
@@ -53,6 +50,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 @Path("/v2/sleep_sounds")
 public class SleepSoundsResource extends BaseResource {
@@ -71,6 +72,7 @@ public class SleepSoundsResource extends BaseResource {
     private final DeviceDAO deviceDAO;
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
+    private final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB;
 
     /*
     Why do we want to cache these two calls?
@@ -86,6 +88,7 @@ public class SleepSoundsResource extends BaseResource {
                                 final DeviceDAO deviceDAO,
                                 final MessejiClient messejiClient,
                                 final SleepSoundsProcessor sleepSoundsProcessor,
+                                final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB,
                                 final LoadingCache<String, Optional<Sound>> soundByFilePathCache,
                                 final LoadingCache<Integer, Optional<Duration>> durationBySecondsCache)
     {
@@ -95,6 +98,7 @@ public class SleepSoundsResource extends BaseResource {
         this.deviceDAO = deviceDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
+        this.sleepSoundSettingsDynamoDB = sleepSoundSettingsDynamoDB;
         this.soundByFilePathCache = soundByFilePathCache;
         this.durationBySecondsCache = durationBySecondsCache;
     }
@@ -105,6 +109,7 @@ public class SleepSoundsResource extends BaseResource {
                                              final DeviceDAO deviceDAO,
                                              final MessejiClient messejiClient,
                                              final SleepSoundsProcessor sleepSoundsProcessor,
+                                             final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB,
                                              final Integer soundCacheExpirationSeconds,
                                              final Integer durationCacheExpirationSeconds)
     {
@@ -124,7 +129,8 @@ public class SleepSoundsResource extends BaseResource {
                         return durationDAO.getDurationBySeconds(durationSeconds);
                     }
                 });
-        return new SleepSoundsResource(durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient, sleepSoundsProcessor,
+        return new SleepSoundsResource(durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient,
+                sleepSoundsProcessor, sleepSoundSettingsDynamoDB,
                 soundByFilePathCache, durationBySecondsCache);
     }
 
@@ -205,6 +211,9 @@ public class SleepSoundsResource extends BaseResource {
 
         if (messageId.isPresent()) {
             LOGGER.debug("messeji-status=success message-id={} sense-id={}", messageId.get(), senseId);
+            final SleepSoundSetting soundSetting = SleepSoundSetting.create(senseId, accountId, DateTime.now(DateTimeZone.UTC), soundOptional.get(), durationOptional.get(), volumeScalingFactor);
+            sleepSoundSettingsDynamoDB.update(soundSetting);
+
             return Response.status(Response.Status.ACCEPTED).entity("").build();
         } else {
             LOGGER.error("messeji-status=failure sense-id={}", senseId);

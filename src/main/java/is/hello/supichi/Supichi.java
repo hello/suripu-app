@@ -35,6 +35,7 @@ import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
@@ -159,6 +160,9 @@ public class Supichi
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
+        final AmazonDynamoDB sleepSoundSettingsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_SOUND_SETTINGS);
+        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = new SleepSoundSettingsDynamoDB(sleepSoundSettingsClient, tableNames.get(DynamoDBTableName.SLEEP_SOUND_SETTINGS));
+
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
 
@@ -207,6 +211,7 @@ public class Supichi
                 speechCommandDAO,
                 messejiClient,
                 sleepSoundsProcessor,
+                sleepSoundSettingsDynamoDB,
                 timeZoneHistoryDAODynamoDB,
                 speechConfiguration.forecastio(),
                 accountLocationDAO,

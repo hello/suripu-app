@@ -146,6 +146,7 @@ import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.flipper.DynamoDBAdapter;
@@ -654,8 +655,14 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final MessejiClient messejiClient = MessejiHttpClient.create(
                 new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
                 messejiHttpClientConfiguration.getEndpoint());
+
+        final AmazonDynamoDB sleepSoundSettingsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_SOUND_SETTINGS);
+        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = new SleepSoundSettingsDynamoDB(sleepSoundSettingsClient, tableNames.get(DynamoDBTableName.SLEEP_SOUND_SETTINGS));
+
         environment.jersey().register(SleepSoundsResource.create(
-                durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient, SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient,
+                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                sleepSoundSettingsDynamoDB,
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
 
         final AmazonDynamoDB senseMetadataClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_METADATA);
