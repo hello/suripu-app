@@ -198,6 +198,7 @@ dynamodb:
     sense_metadata: sense_metadata
     sleep_score: sleep_score
     sleep_score_parameters: sleep_score_parameters
+    sleep_sound_settings: sleep_sound_settings
     sleep_stats: sleep_stats
     smart_alarm_log: smart_alarm_log
     speech_commands: speech_commands
