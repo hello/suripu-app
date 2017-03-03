@@ -53,7 +53,7 @@ public class HandlerFactory {
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
                            final SleepSoundsProcessor sleepSoundsProcessor,
-                           final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoD,
+                           final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB,
                            final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                            final String forecastio,
                            final AccountLocationDAO accountLocationDAO,
@@ -73,7 +73,7 @@ public class HandlerFactory {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
-        this.sleepSoundSettingsDynamoDB = sleepSoundSettingsDynamoD;
+        this.sleepSoundSettingsDynamoDB = sleepSoundSettingsDynamoDB;
         this.timeZoneHistoryDAODynamoDB = timeZoneHistoryDAODynamoDB;
         this.forecastio = forecastio;
         this.accountLocationDAO = accountLocationDAO;
