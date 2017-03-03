@@ -889,7 +889,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         }
     }
 
-    private void createSleepSoundSettingsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) {
+    private void createSleepSoundSettingsTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
 
@@ -897,14 +897,12 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         final String endpoint = endpoint(DynamoDBTableName.SLEEP_SOUND_SETTINGS, configuration);
         client.setEndpoint(endpoint);
 
-        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = new SleepSoundSettingsDynamoDB(client, tableName);
         try {
             client.describeTable(tableName);
             System.out.println(String.format("%s already exists.", tableName));
         } catch (AmazonServiceException exception) {
-            final CreateTableResult result = sleepSoundSettingsDynamoDB.createTable(1L, 1L);
-            final TableDescription description = result.getTableDescription();
-            System.out.println(description.getTableStatus());
+            SleepSoundSettingsDynamoDB.createTable(client, tableName);
+            System.out.println(String.format("%s created", tableName));
         }
     }
 }

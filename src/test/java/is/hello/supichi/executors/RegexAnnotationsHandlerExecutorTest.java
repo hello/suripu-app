@@ -159,6 +159,7 @@ public class RegexAnnotationsHandlerExecutorTest {
         Mockito.when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
 
         Mockito.when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString())).thenReturn(Optional.of(DEFAULT_SOUND));
+        Mockito.when(sleepSoundSettingsDynamoDB.get(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
     }
 
     private HandlerExecutor getExecutor() {

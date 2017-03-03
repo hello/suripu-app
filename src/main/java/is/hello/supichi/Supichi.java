@@ -161,7 +161,7 @@ public class Supichi
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
 
         final AmazonDynamoDB sleepSoundSettingsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_SOUND_SETTINGS);
-        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = new SleepSoundSettingsDynamoDB(sleepSoundSettingsClient, tableNames.get(DynamoDBTableName.SLEEP_SOUND_SETTINGS));
+        final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB = SleepSoundSettingsDynamoDB.create(sleepSoundSettingsClient, tableNames.get(DynamoDBTableName.SLEEP_SOUND_SETTINGS));
 
         final AmazonDynamoDB prefsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PREFERENCES);
         final AccountPreferencesDAO accountPreferencesDAO = AccountPreferencesDynamoDB.create(prefsClient, tableNames.get(DynamoDBTableName.PREFERENCES));
