@@ -625,10 +625,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withCheckSkipsNum(configuration.getQuestionConfigs().getNumSkips())
                 .withQuestions(questionResponseDAO)
                 .build();
-        final QuestionCoreProcessor questionCoreProcessor = new QuestionCoreProcessor.Builder()
-                .withQuestionResponseDAO(questionResponseReadDAO, questionResponseDAO)
-                .withQuestions(questionResponseReadDAO)
-                .build();
+        final QuestionCoreProcessor questionCoreProcessor = QuestionCoreProcessor.create(questionResponseReadDAO, questionResponseDAO);
         final QuestionSurveyProcessor questionSurveyProcessor = new QuestionSurveyProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseReadDAO, questionResponseDAO)
                 .withQuestions(questionResponseReadDAO)
