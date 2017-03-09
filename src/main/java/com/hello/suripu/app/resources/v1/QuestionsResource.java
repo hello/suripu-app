@@ -1,5 +1,6 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.google.api.client.util.Lists;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 
@@ -100,11 +101,11 @@ public class QuestionsResource extends BaseResource {
         }
 
         // get question
-        List<Question> questionProcessorQuestions;
+        final List<Question> questionProcessorQuestions = Lists.newArrayList();
         if (hasQuestionCoreProcessorEnabled( accessToken.accountId )) {
-            questionProcessorQuestions = this.questionCoreProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal);
+            questionProcessorQuestions.addAll(this.questionCoreProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal));
         } else {
-            questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+            questionProcessorQuestions.addAll(questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true));
         }
 
         if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
