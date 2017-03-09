@@ -245,6 +245,7 @@ dynamodb:
     sense_metadata: prod_sense_metadata
     sleep_score: prod_sleep_score
     sleep_score_parameters: prod_sleep_score_parameters
+    sleep_sound_settings: prod_sleep_sound_settings
     sleep_stats: prod_sleep_stats
     smart_alarm_log: prod_smart_alarm_log
     speech_commands: prod_speech_commands

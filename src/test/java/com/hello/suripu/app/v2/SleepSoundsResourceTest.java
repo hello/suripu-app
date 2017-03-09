@@ -18,6 +18,7 @@ import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.db.SenseStateDynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.flipper.FeatureFlipper;
 import com.hello.suripu.core.models.DeviceAccountPair;
@@ -78,6 +79,7 @@ public class SleepSoundsResourceTest {
     private FeatureStore featureStore;
     private ActionFirehoseDAO actionFirehoseDAO;
     private SleepSoundsProcessor sleepSoundsProcessor;
+    private SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB;
     private Optional<DeviceKeyStoreRecord> of;
 
     @Before
@@ -100,9 +102,10 @@ public class SleepSoundsResourceTest {
         fileInfoDAO = mock(FileInfoDAO.class);
         fileManifestDAO = mock(FileManifestDAO.class);
         sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
+        sleepSoundSettingsDynamoDB = mock(SleepSoundSettingsDynamoDB.class);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
-                messejiClient, sleepSoundsProcessor, 1, 1);
+                messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoDB, 1, 1);
     }
 
     private void assertEmpty(final SleepSoundStatus status) {
@@ -500,7 +503,7 @@ public class SleepSoundsResourceTest {
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
-                messejiClient, sleepSoundsProcessor, 1, 1);
+                messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoDB, 1, 1);
         sleepSoundsResource.getSounds(token);
     }
 
@@ -568,7 +571,7 @@ public class SleepSoundsResourceTest {
         ObjectGraphRoot.getInstance().init(module);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
-                messejiClient, sleepSoundsProcessor, 1, 1);
+                messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoDB, 1, 1);
         sleepSoundsResource.getCombinedState(token);
     }
 
@@ -579,7 +582,7 @@ public class SleepSoundsResourceTest {
         final SleepSoundsProcessor mockedSleepSoundsProcessor = mock(SleepSoundsProcessor.class);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
-                messejiClient, mockedSleepSoundsProcessor, 1, 1);
+                messejiClient, mockedSleepSoundsProcessor, sleepSoundSettingsDynamoDB, 1, 1);
 
         final List<Sound> sounds = ImmutableList.of(Sound.create(1L, "preview", "name", "filePath", "url"));
         when(mockedSleepSoundsProcessor.getSounds(senseId, HardwareVersion.SENSE_ONE)).thenReturn(new SleepSoundsProcessor.SoundResult(sounds, SleepSoundsProcessor.SoundResult.State.OK));
