@@ -3,8 +3,10 @@ package is.hello.supichi.commandhandlers;
 import com.google.api.client.util.Lists;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
+import com.hello.suripu.core.models.sleep_sounds.SleepSoundSetting;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
@@ -92,15 +94,17 @@ public class SleepSoundHandler extends BaseHandler {
 
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
+    private final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB;
     private Map<String, Sound> availableSounds = Maps.newConcurrentMap();
 
     final ScheduledThreadPoolExecutor executor;
 
 
-    public SleepSoundHandler(final MessejiClient messejiClient, final SpeechCommandDAO speechCommandDAO, final SleepSoundsProcessor sleepSoundsProcessor, final int numThreads) {
+    public SleepSoundHandler(final MessejiClient messejiClient, final SpeechCommandDAO speechCommandDAO, final SleepSoundsProcessor sleepSoundsProcessor, final SleepSoundSettingsDynamoDB sleepSoundSettingsDynamoDB, final int numThreads) {
         super("sleep_sound", speechCommandDAO, getAvailableActions());
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
+        this.sleepSoundSettingsDynamoDB = sleepSoundSettingsDynamoDB;
         executor = new ScheduledThreadPoolExecutor(numThreads);
     }
 
@@ -159,9 +163,21 @@ public class SleepSoundHandler extends BaseHandler {
 
         // TODO: get most recently played sleep_sound_id, order, volume, etc...
 
+        final Duration duration;
+        final Integer volumeScalingFactor;
+
+        final Optional<SleepSoundSetting> soundSettingOptional = sleepSoundSettingsDynamoDB.get(senseId, accountId);
+        if (soundSettingOptional.isPresent()) {
+            duration = soundSettingOptional.get().duration;
+            volumeScalingFactor = soundSettingOptional.get().volumeScalingFactor;
+        } else {
+            duration = DEFAULT_SLEEP_SOUND_DURATION;
+            volumeScalingFactor = convertToSenseVolumePercent(SENSE_MAX_DECIBELS, DEFAULT_SLEEP_SOUND_VOLUME_PERCENT);
+        }
+
         final String soundName;
         if (annotatedTranscript.sleepSounds.isEmpty()) {
-            soundName = DEFAULT_SOUND_NAME;
+            soundName = (soundSettingOptional.isPresent()) ? soundSettingOptional.get().sound.name : DEFAULT_SOUND_NAME;
         } else {
             final SleepSoundAnnotation sleepSound = annotatedTranscript.sleepSounds.get(0);
             soundName = sleepSound.sound().value;
@@ -179,14 +195,12 @@ public class SleepSoundHandler extends BaseHandler {
             return GenericResult.fail("invalid sound name");
         }
 
-        final Integer volumeScalingFactor = convertToSenseVolumePercent(SENSE_MAX_DECIBELS, DEFAULT_SLEEP_SOUND_VOLUME_PERCENT);
-
         executor.schedule((Runnable) () -> {
             final Optional<Long> messageId = messejiClient.playAudio(
                     senseId,
                     Sender.fromAccountId(accountId),
                     System.nanoTime(),
-                    DEFAULT_SLEEP_SOUND_DURATION,
+                    duration,
                     availableSounds.get(soundName),
                     FADE_IN, FADE_OUT,
                     volumeScalingFactor,
