@@ -281,7 +281,7 @@ public class OAuthResource {
         final Optional<UUID> optionalExternalId = accountOptional.get().externalId;
         if (optionalExternalId.isPresent()) {
             LOGGER.debug("action=login account_id={} external_id={}", accessToken.accountId, optionalExternalId.get());
-//            return AccessToken.createWithExternalId(accessToken, optionalExternalId.get());
+            return AccessToken.createWithExternalId(accessToken, optionalExternalId.get());
         }
 
         return accessToken;
