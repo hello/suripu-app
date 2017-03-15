@@ -9,6 +9,7 @@ import com.hello.suripu.core.models.device.v2.DeviceProcessor;
 import com.hello.suripu.core.models.device.v2.DeviceQueryInfo;
 import com.hello.suripu.core.models.device.v2.Devices;
 import com.hello.suripu.core.models.device.v2.Pill;
+import com.hello.suripu.core.models.motion.MaskUtils;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
@@ -76,16 +77,32 @@ public class DataResource extends BaseResource {
       LOGGER.error("error=no-pill-data account_id={}", accessToken.accountId);
       throw new WebApplicationException(Response.Status.NOT_FOUND);
     }
+
     final List<SanitizedPillData> sanitizedData = Lists.newArrayList();
     for(final TrackerMotion motionData : pillData) {
-      final SanitizedPillData data = new SanitizedPillData.Builder()
+      final SanitizedPillData.Builder builder = new SanitizedPillData.Builder()
           .withTimestamp(motionData.timestamp)
           .withOffsetMillis(motionData.offsetMillis)
-          .withOnDurationInSeconds(motionData.onDurationInSeconds)
-          .build();
+          .withOnDurationInSeconds(motionData.onDurationInSeconds);
+
+
+      if(motionData.motionMask.isPresent()) {
+        builder.withMotionMask(getMaskString(motionData.motionMask.get()));
+      }
+
+      final SanitizedPillData data = builder.build();
       sanitizedData.add(data);
     }
 
     return sanitizedData;
+  }
+
+  private String getMaskString(final Long motionMask) {
+    final List<Boolean> bools = MaskUtils.toBooleans(motionMask);
+    final StringBuilder maskBools = new StringBuilder();
+    for(final Boolean b : bools) {
+      maskBools.append((b ? "1":"0"));
+    }
+    return maskBools.toString();
   }
 }

@@ -15,12 +15,17 @@ public class SanitizedPillData {
   @JsonProperty("on_duration_seconds")
   public final Long onDurationInSeconds;
 
+  @JsonProperty("motion_mask")
+  public final String motionMask;
+
   private SanitizedPillData(final long timestamp,
                             final int offsetMillis,
-                            final Long onDurationInSeconds) {
+                            final Long onDurationInSeconds,
+                            final String motionMask) {
     this.timestamp = timestamp;
     this.offsetMillis = offsetMillis;
     this.onDurationInSeconds = onDurationInSeconds;
+    this.motionMask = motionMask;
   }
 
   public static class Builder{
@@ -28,6 +33,7 @@ public class SanitizedPillData {
     private long timestamp;
     private int offsetMillis;
     private Long onDurationInSeconds = 0L;
+    private String motionMask = "";
 
     public Builder(){
 
@@ -48,8 +54,13 @@ public class SanitizedPillData {
       return this;
     }
 
+    public Builder withMotionMask(final String motionMask) {
+      this.motionMask = motionMask;
+      return this;
+    }
+
     public SanitizedPillData build() {
-      return new SanitizedPillData(timestamp, offsetMillis, onDurationInSeconds);
+      return new SanitizedPillData(timestamp, offsetMillis, onDurationInSeconds, motionMask);
     }
   }
 }
