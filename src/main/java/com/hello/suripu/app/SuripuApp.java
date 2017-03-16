@@ -165,6 +165,7 @@ import com.hello.suripu.core.passwordreset.PasswordResetDB;
 import com.hello.suripu.core.pill.heartbeat.PillHeartBeatDAODynamoDB;
 import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
+import com.hello.suripu.core.processors.QuestionCoreProcessor;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -629,11 +630,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 .withCheckSkipsNum(configuration.getQuestionConfigs().getNumSkips())
                 .withQuestions(questionResponseDAO)
                 .build();
+        final QuestionCoreProcessor questionCoreProcessor = QuestionCoreProcessor.create(questionResponseReadDAO, questionResponseDAO);
         final QuestionSurveyProcessor questionSurveyProcessor = new QuestionSurveyProcessor.Builder()
                 .withQuestionResponseDAO(questionResponseReadDAO, questionResponseDAO)
                 .withQuestions(questionResponseReadDAO)
                 .build();
-        environment.jersey().register(new QuestionsResource(accountDAO, timeZoneHistoryDAODynamoDB, questionProcessor, questionSurveyProcessor));
+        environment.jersey().register(new QuestionsResource(accountDAO, timeZoneHistoryDAODynamoDB, questionProcessor, questionCoreProcessor, questionSurveyProcessor));
         environment.jersey().register(new FeedbackResource(feedbackDAO, timelineDAODynamoDB));
         environment.jersey().register(new AppCheckinResource(2015000000));
 

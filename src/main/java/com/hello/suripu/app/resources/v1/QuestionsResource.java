@@ -1,5 +1,6 @@
 package com.hello.suripu.app.resources.v1;
 
+import com.google.api.client.util.Lists;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 
@@ -14,6 +15,7 @@ import com.hello.suripu.core.models.Choice;
 import com.hello.suripu.core.models.Question;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.oauth.OAuthScope;
+import com.hello.suripu.core.processors.QuestionCoreProcessor;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.QuestionSurveyProcessor;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
@@ -56,15 +58,18 @@ public class QuestionsResource extends BaseResource {
     private final AccountDAO accountDAO;
     private final TimeZoneHistoryDAODynamoDB tzHistoryDAO;
     private final QuestionProcessor questionProcessor;
+    private final QuestionCoreProcessor questionCoreProcessor;
     private final QuestionSurveyProcessor questionSurveyProcessor;
 
     public QuestionsResource(final AccountDAO accountDAO,
                              final TimeZoneHistoryDAODynamoDB tzHistoryDAO,
                              final QuestionProcessor questionProcessor,
+                             final QuestionCoreProcessor questionCoreProcessor,
                              final QuestionSurveyProcessor questionSurveyProcessor) {
         this.accountDAO = accountDAO;
         this.tzHistoryDAO = tzHistoryDAO;
         this.questionProcessor = questionProcessor;
+        this.questionCoreProcessor = questionCoreProcessor;
         this.questionSurveyProcessor = questionSurveyProcessor;
     }
 
@@ -96,7 +101,13 @@ public class QuestionsResource extends BaseResource {
         }
 
         // get question
-        final List<Question> questionProcessorQuestions = this.questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true);
+        final List<Question> questionProcessorQuestions = Lists.newArrayList();
+        if (hasQuestionCoreProcessorEnabled( accessToken.accountId )) {
+            questionProcessorQuestions.addAll(this.questionCoreProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal));
+        } else {
+            questionProcessorQuestions.addAll(questionProcessor.getQuestions(accessToken.accountId, accountAgeInDays.get(), todayLocal, QuestionProcessor.DEFAULT_NUM_QUESTIONS, true));
+        }
+
         if (!hasQuestionSurveyProcessorEnabled( accessToken.accountId )) {
             return questionProcessorQuestions;
         }
