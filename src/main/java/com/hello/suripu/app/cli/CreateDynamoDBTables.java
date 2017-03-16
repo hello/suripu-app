@@ -913,21 +913,18 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
     private void createMainEventTimesTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
         final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
         final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
-        final ImmutableMap<DynamoDBTableName, String> endpoints = configuration.dynamoDBConfiguration().endpoints();
 
         final String tableName = tableNames.get(DynamoDBTableName.MAIN_EVENT_TIMES);
-        final String endpoint = endpoints.get(DynamoDBTableName.MAIN_EVENT_TIMES);
+        final String endpoint = endpoint(DynamoDBTableName.MAIN_EVENT_TIMES, configuration);
         client.setEndpoint(endpoint);
 
-
-            try {
-                client.describeTable(tableName);
-                System.out.println(String.format("%s already exists.", tableName));
-            } catch (AmazonServiceException exception) {
-                final MainEventTimesDynamoDB mainEventTimesDynamoDB = new MainEventTimesDynamoDB(client, tableName);
-                mainEventTimesDynamoDB.createTable(tableName);
-                System.out.println(String.format("%s created", tableName));
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            final MainEventTimesDynamoDB mainEventTimesDynamoDB = new MainEventTimesDynamoDB(client, tableName);
+            mainEventTimesDynamoDB.createTable(tableName);
+            System.out.println(String.format("%s created", tableName));
             }
-
     }
 }
