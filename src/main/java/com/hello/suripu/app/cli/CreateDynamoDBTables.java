@@ -22,6 +22,7 @@ import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.KeyStoreDynamoDB;
+import com.hello.suripu.core.db.MainEventTimesDynamoDB;
 import com.hello.suripu.core.db.MarketingInsightsSeenDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.OTAHistoryDAODynamoDB;
@@ -111,6 +112,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
         createSwapIntentsTable(configuration, awsCredentialsProvider);
 
         createMetadataTable(configuration, awsCredentialsProvider);
+        createMainEventTimesTable(configuration, awsCredentialsProvider);
         createSleepSoundSettingsTable(configuration, awsCredentialsProvider);
     }
 
@@ -119,6 +121,7 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             return configuration.dynamoDBConfiguration().endpoints().get(table);
         }
         return configuration.dynamoDBConfiguration().defaultEndpoint();
+
     }
 
     private void createSmartAlarmLogTable(final SuripuAppConfiguration configuration, final AWSCredentialsProvider awsCredentialsProvider){
@@ -904,5 +907,24 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             SleepSoundSettingsDynamoDB.createTable(client, tableName);
             System.out.println(String.format("%s created", tableName));
         }
+    }
+
+
+    private void createMainEventTimesTable(SuripuAppConfiguration configuration, AWSCredentialsProvider awsCredentialsProvider) throws InterruptedException {
+        final AmazonDynamoDBClient client = new AmazonDynamoDBClient(awsCredentialsProvider);
+        final ImmutableMap<DynamoDBTableName, String> tableNames = configuration.dynamoDBConfiguration().tables();
+
+        final String tableName = tableNames.get(DynamoDBTableName.MAIN_EVENT_TIMES);
+        final String endpoint = endpoint(DynamoDBTableName.MAIN_EVENT_TIMES, configuration);
+        client.setEndpoint(endpoint);
+
+        try {
+            client.describeTable(tableName);
+            System.out.println(String.format("%s already exists.", tableName));
+        } catch (AmazonServiceException exception) {
+            final MainEventTimesDynamoDB mainEventTimesDynamoDB = new MainEventTimesDynamoDB(client, tableName);
+            mainEventTimesDynamoDB.createTable(tableName);
+            System.out.println(String.format("%s created", tableName));
+            }
     }
 }

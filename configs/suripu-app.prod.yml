@@ -224,6 +224,7 @@ dynamodb:
     file_manifest: prod_file_manifest
     insights: prod_insights
     insights_last_seen: prod_insights_last_seen
+    main_event_times: prod_main_event_times
     marketing_insights_seen: prod_marketing_insights_seen
     notifications: prod_notifications
     online_hmm_models: prod_online_hmm_models

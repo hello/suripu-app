@@ -177,6 +177,7 @@ dynamodb:
     file_manifest: file_manifest
     insights: insights
     insights_last_seen: insights_last_seen
+    main_event_times: main_event_times
     marketing_insights_seen: marketing_insights_seen
     notifications: notifications
     online_hmm_models: online_hmm_models

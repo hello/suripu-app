@@ -119,6 +119,7 @@ import com.hello.suripu.core.db.HistoricalPairingDAO;
 import com.hello.suripu.core.db.InsightsDAODynamoDB;
 import com.hello.suripu.core.db.KeyStore;
 import com.hello.suripu.core.db.KeyStoreDynamoDB;
+import com.hello.suripu.core.db.MainEventTimesDynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.OTAHistoryDAODynamoDB;
 import com.hello.suripu.core.db.OnlineHmmModelsDAO;
@@ -350,6 +351,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB dynamoDBStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = new SleepStatsDAODynamoDB(dynamoDBStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), configuration.getSleepStatsVersion());
+
+        final AmazonDynamoDB mainEventTimesDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.MAIN_EVENT_TIMES);
+        final MainEventTimesDynamoDB mainEventTimesDAO = new MainEventTimesDynamoDB(
+                mainEventTimesDynamoDBClient,
+                tableNames.get(DynamoDBTableName.MAIN_EVENT_TIMES));
 
         final AmazonDynamoDB ringTimeHistoryDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.RING_TIME_HISTORY);
         final RingTimeHistoryDAODynamoDB ringTimeHistoryDAODynamoDB = new RingTimeHistoryDAODynamoDB(ringTimeHistoryDynamoDBClient, tableNames.get(DynamoDBTableName.RING_TIME_HISTORY));
@@ -601,6 +607,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepHmmDAODynamoDB,
                 accountDAO,
                 sleepStatsDAODynamoDB,
+                mainEventTimesDAO,
                 senseDataDAO,
                 timeZoneHistoryDAODynamoDB,
                 onlineHmmModelsDAO,
