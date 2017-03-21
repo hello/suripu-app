@@ -5,7 +5,6 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Optional;
-import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.notifications.NotificationSubscriptionDAOWrapper;
@@ -39,7 +38,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Inject;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -68,6 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.UUID;
 
 @Path("/v1/oauth2")
 public class OAuthResource {
@@ -131,6 +130,7 @@ public class OAuthResource {
 
 
         ClientDetails details;
+        Optional<Account> accountOptional = Optional.absent();
 
         if (grantType.getType().equals(GrantType.AUTHORIZATION_CODE)) {
 
@@ -191,7 +191,7 @@ public class OAuthResource {
             final String normalizedUsername = username.toLowerCase();
             LOGGER.debug("normalized username {}", normalizedUsername);
 
-            final Optional<Account> accountOptional = accountDAO.exists(normalizedUsername, password);
+            accountOptional = accountDAO.exists(normalizedUsername, password);
             if(!accountOptional.isPresent()) {
                 LOGGER.error("Account wasn't found: {}, {}", normalizedUsername, PasswordUtil.obfuscate(password));
                 throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
@@ -257,6 +257,16 @@ public class OAuthResource {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
 
+        // get account info if not available
+        if (!accountOptional.isPresent()) {
+            final Long accountId = details.accountId;
+            accountOptional = accountDAO.getById(accountId);
+            if (!accountOptional.isPresent()) {
+                LOGGER.error("error=account-not-found account_id={}", accountId);
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+            }
+        }
+
         AccessToken accessToken = null;
         try {
             accessToken = tokenStore.storeAccessToken(details);
@@ -267,6 +277,13 @@ public class OAuthResource {
 
         LOGGER.debug("AccessToken {}", accessToken);
         LOGGER.debug("email {}", username);
+
+        final Optional<UUID> optionalExternalId = accountOptional.get().externalId;
+        if (optionalExternalId.isPresent()) {
+            LOGGER.debug("action=login account_id={} external_id={}", accessToken.accountId, optionalExternalId.get());
+            return AccessToken.createWithExternalId(accessToken, optionalExternalId.get());
+        }
+
         return accessToken;
     }
 
