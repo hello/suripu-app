@@ -800,8 +800,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
+
+
         final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory(), freshnessThresholdInMinutes);
-        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO,
+                senseColorDAO, calibrationDAO, sensorViewFactory, configuration.availableSensors());
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
