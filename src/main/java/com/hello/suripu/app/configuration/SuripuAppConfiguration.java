@@ -3,16 +3,18 @@ package com.hello.suripu.app.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.hello.suripu.coredropwizard.configuration.FirehoseConfiguration;
 import com.hello.suripu.core.configuration.UrlName;
+import com.hello.suripu.core.firmware.HardwareVersion;
+import com.hello.suripu.core.models.Sensor;
+import com.hello.suripu.coredropwizard.configuration.FirehoseConfiguration;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.KinesisConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
 import com.hello.suripu.coredropwizard.configuration.PushNotificationsConfiguration;
 import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
-import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import com.hello.suripu.coredropwizard.configuration.TaimurainConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import is.hello.supichi.configuration.SpeechConfiguration;
@@ -21,6 +23,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Map;
 
 public class SuripuAppConfiguration extends Configuration {
@@ -257,5 +260,12 @@ public class SuripuAppConfiguration extends Configuration {
     @JsonProperty("action_firehose")
     private FirehoseConfiguration firehoseConfiguration;
     public FirehoseConfiguration firehoseConfiguration() { return firehoseConfiguration; }
+
+
+    @JsonProperty("available_sensors")
+    private Map<HardwareVersion, List<Sensor>> availableSensors = Maps.newHashMap();
+    public Map<HardwareVersion, List<Sensor>> availableSensors() {
+        return availableSensors;
+    }
 }
 

@@ -113,6 +113,7 @@ import com.hello.suripu.core.db.FeatureExtractionModelsDAODynamoDB;
 import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
+import com.hello.suripu.core.db.FileInfoSenseOneDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.HistoricalPairingDAO;
@@ -306,7 +307,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final FeedbackDAO feedbackDAO = commonDB.onDemand(FeedbackDAO.class);
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
-        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final FileInfoDAO fileInfoSenseOneDAO = commonDB.onDemand(FileInfoSenseOneDAO.class);
         final AlertsDAO alertsDAO = commonDB.onDemand(AlertsDAO.class);
 
         final VoiceCommandsDAO voiceCommandsDAO = commonDB.onDemand(VoiceCommandsDAO.class);
@@ -671,7 +672,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient,
-                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileManifestDAO),
                 sleepSoundSettingsDynamoDB,
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
 
@@ -735,7 +736,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 deviceDataDAODynamoDB,
                 timelineDAODynamoDB,
                 messejiClient,
-                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileManifestDAO),
                 durationDAO,
                 timelineProcessor,
                 accountPreferencesDAO,
@@ -799,8 +800,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SpeechResource(speechTimelineReadDAO, speechResultReadDAO, deviceDAO));
         environment.jersey().register(new UserFeaturesResource(deviceDAO, senseKeyStore));
 
+
+
         final SensorViewFactory sensorViewFactory = new SensorViewFactory(new ScaleFactory(), freshnessThresholdInMinutes);
-        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO,
+                senseColorDAO, calibrationDAO, sensorViewFactory, configuration.availableSensors());
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));

@@ -26,6 +26,7 @@ import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.FileInfoDAO;
+import com.hello.suripu.core.db.FileInfoSenseOneDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.KeyStore;
@@ -178,7 +179,7 @@ public class Supichi
         final ExpansionDataDAO expansionsDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
         final PersistentExpansionDataStore expansionsDataStore = new PersistentExpansionDataStore(expansionsDataDAO);
 
-        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoSenseOneDAO.class);
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
@@ -186,7 +187,7 @@ public class Supichi
         final SleepSoundsProcessor sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
 
         final SensorViewFactory sensorViewFactory = SensorViewFactory.build(new ScaleFactory());
-        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory);
+        final SensorViewLogic sensorViewLogic = new SensorViewLogic(deviceDataDAODynamoDB, senseKeyStore, deviceDAO, senseColorDAO, calibrationDAO, sensorViewFactory, configuration.availableSensors());
         final AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
 
         // set up speech client
