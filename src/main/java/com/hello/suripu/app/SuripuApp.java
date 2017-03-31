@@ -148,6 +148,7 @@ import com.hello.suripu.core.db.WifiInfoDAO;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
+import com.hello.suripu.core.db.colors.SenseColorDynamoDBDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
@@ -506,8 +507,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         );
 
 
-        final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
-
         // WARNING: Do not use async methods for anything but SensorsViewsDynamoDB for now
         final AmazonDynamoDBAsync senseLastSeenDynamoDBClient = new AmazonDynamoDBAsyncClient(awsCredentialsProvider, AmazonDynamoDBClientFactory.getDefaultClientConfiguration());
         senseLastSeenDynamoDBClient.setEndpoint(configuration.dynamoDBConfiguration().endpoints().getOrDefault(DynamoDBTableName.SENSE_LAST_SEEN, configuration.dynamoDBConfiguration().defaultEndpoint()));
@@ -546,6 +545,12 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final AmazonDynamoDB profilePhotoClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PROFILE_PHOTO);
         final ProfilePhotoStore profilePhotoStore = ProfilePhotoStoreDynamoDB.create(profilePhotoClient, tableNames.get(DynamoDBTableName.PROFILE_PHOTO));
+
+        final AmazonDynamoDB senseMetadataClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_METADATA);
+        final SenseMetadataDAO senseMetadataDAO = MetadataDAODynamoDB.create(senseKeyStore);
+        final VoiceMetadataDAO voiceMetadataDAO = VoiceMetadataDAODynamoDB.create(senseMetadataClient, tableNames.get(DynamoDBTableName.SENSE_METADATA), senseStateDynamoDB);
+
+        final SenseColorDAO senseColorDAO = new SenseColorDynamoDBDAO(senseMetadataDAO);
 
         if (configuration.getDebug()) {
             environment.jersey().register(new VersionResource());
@@ -676,9 +681,6 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 sleepSoundSettingsDynamoDB,
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
 
-        final AmazonDynamoDB senseMetadataClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_METADATA);
-        final SenseMetadataDAO senseMetadataDAO = MetadataDAODynamoDB.create(senseKeyStore);
-        final VoiceMetadataDAO voiceMetadataDAO = VoiceMetadataDAODynamoDB.create(senseMetadataClient, tableNames.get(DynamoDBTableName.SENSE_METADATA), senseStateDynamoDB);
 
 
         final DeviceProcessor deviceProcessor = new DeviceProcessor.Builder()
