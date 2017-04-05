@@ -38,7 +38,6 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static is.hello.supichi.commandhandlers.ErrorText.ERROR_NO_PAIRED_SENSE;
 
 public class AudioRequestHandler {
-
     private static Logger LOGGER = LoggerFactory.getLogger(AudioRequestHandler.class);
     private static String SNOOZE_STRING = "snooze";
     private static String STOP_STRING = "stop";

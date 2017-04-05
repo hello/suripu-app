@@ -8,8 +8,9 @@ import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TimelineUtils;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-import is.hello.supichi.db.SpeechCommandDAO;
+import com.librato.rollout.RolloutClient;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
@@ -42,11 +43,15 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private final SleepStatsDAODynamoDB sleepStatsDAO;
     private final InstrumentedTimelineProcessor timelineProcessor;
+    private final RolloutClient feature;
 
-    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO, final InstrumentedTimelineProcessor timelineProcessor) {
+    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO,
+                               final InstrumentedTimelineProcessor timelineProcessor,
+                               final RolloutClient feature) {
         super("sleep-summary", speechCommandDAO, getAvailableActions());
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
+        this.feature = feature;
     }
 
 

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
  * Created by ksg on 6/20/16
  */
 public abstract class BaseHandler {
+
     public static final int NO_ANNOTATION_SCORE = 0;
 
     private final String handlerName;

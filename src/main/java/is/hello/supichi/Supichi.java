@@ -46,6 +46,7 @@ import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
+import com.librato.rollout.RolloutClient;
 import com.maxmind.geoip2.DatabaseReader;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
@@ -115,7 +116,8 @@ public class Supichi
             final InstrumentedTimelineProcessor timelineProcessor,
             final MessejiClient messejiClient,
             final Vault tokenKMSVault,
-            final DeviceProcessor deviceProcessor) throws IOException {
+            final DeviceProcessor deviceProcessor,
+            final RolloutClient rolloutClient) throws IOException {
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -228,7 +230,8 @@ public class Supichi
                 sensorViewLogic,
                 accountPreferencesDAO,
                 configuration.getDebug(),
-                accountDAO
+                accountDAO,
+                rolloutClient
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
