@@ -104,7 +104,6 @@ public class AlarmHandler extends BaseHandler {
 
     public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB, final Integer minAlarmMinutesFromNow) {
         super("alarm", speechCommandDAO, getAvailableActions());
-
         this.alarmProcessor = alarmProcessor;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
         this.senseEventsDAO = new SenseEventsNullDAO();
