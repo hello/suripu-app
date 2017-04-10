@@ -342,6 +342,7 @@ available_sensors:
     - light
     - particulates
     - sound
+    - co2
     - tvoc
     - uv
     - pressure
