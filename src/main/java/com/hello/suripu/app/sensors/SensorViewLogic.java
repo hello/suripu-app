@@ -105,6 +105,8 @@ public class SensorViewLogic {
 
         final Optional<Device.Color> colorOptional = senseColorDAO.getColorForSense(senseId);
         final Device.Color color = colorOptional.or(Device.DEFAULT_COLOR);
+        LOGGER.debug("function=sensor-view-logic-list account_id={} sense_id={} color_optional={} color={}", accountId, senseId, colorOptional.toString(), color.toString());
+
         //default -- return the usual
         final DeviceData deviceData = data.get();
 
