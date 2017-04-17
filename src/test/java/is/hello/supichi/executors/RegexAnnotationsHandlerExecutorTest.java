@@ -20,6 +20,7 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -76,6 +77,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final MergedUserInfoDynamoDB mergedUserDAO = mock(MergedUserInfoDynamoDB.class);
     private final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = mock(SleepStatsDAODynamoDB.class);
     private final InstrumentedTimelineProcessor timelineProcessor = mock(InstrumentedTimelineProcessor.class);
+    private final InstrumentedTimelineProcessorV3 timelineProcessorV3 = mock(InstrumentedTimelineProcessorV3.class);
 
     private final MessejiClient messejiClient = mock(MessejiClient.class);
     private final SleepSoundsProcessor sleepSoundsProcessor = mock(SleepSoundsProcessor.class);
@@ -179,11 +181,13 @@ public class RegexAnnotationsHandlerExecutorTest {
                 mergedUserDAO,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
+                timelineProcessorV3,
                 Optional.absent(), // geoip DatabaseReader
                 sensorViewLogic,
                 accountPreferenceDAO,
                 false,
-                accountDAO
+                accountDAO,
+                null
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)

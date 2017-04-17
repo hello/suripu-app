@@ -14,6 +14,7 @@ import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -34,15 +35,18 @@ public class ScoreIntentHandler extends IntentHandler {
   private final AccountDAO accountDAO;
   private final TimelineDAODynamoDB timelineDAODynamoDB;
   private final InstrumentedTimelineProcessor timelineProcessor;
+  private final InstrumentedTimelineProcessorV3 timelineProcessorV3;
   private final SleepStatsDAO sleepStatsDAO;
 
   public ScoreIntentHandler(final AccountDAO accountDAO,
                             final TimelineDAODynamoDB timelineDAODynamoDB,
                             final InstrumentedTimelineProcessor timelineProcessor,
+                            final InstrumentedTimelineProcessorV3 timelineProcessorV3,
                             final SleepStatsDAO sleepStatsDAO) {
     this.accountDAO = accountDAO;
     this.timelineDAODynamoDB = timelineDAODynamoDB;
     this.timelineProcessor = timelineProcessor;
+    this.timelineProcessorV3 = timelineProcessorV3;
     this.sleepStatsDAO = sleepStatsDAO;
   }
 

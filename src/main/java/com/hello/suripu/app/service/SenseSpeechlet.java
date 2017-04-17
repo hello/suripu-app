@@ -30,6 +30,7 @@ import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class SenseSpeechlet implements Speechlet {
       final SleepSoundsProcessor sleepSoundsProcessor,
       final DurationDAO durationDAO,
       final InstrumentedTimelineProcessor timelineProcessor,
+      final InstrumentedTimelineProcessorV3 timelineProcessorV3,
       final AccountPreferencesDAO preferencesDAO,
       final CalibrationDAO calibrationDAO,
       final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
@@ -76,7 +78,7 @@ public class SenseSpeechlet implements Speechlet {
     this.accessTokenDAO = accessTokenDAO;
     intentHandlers.add(new TemperatureIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, voiceResponsesDAO));
     intentHandlers.add(new NameIntentHandler(accountDAO));
-    intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor, sleepStatsDAO));
+    intentHandlers.add(new ScoreIntentHandler(accountDAO, timelineDAODynamoDB, timelineProcessor, timelineProcessorV3, sleepStatsDAO));
     intentHandlers.add(new SleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new LastSleepSoundIntentHandler(deviceReadDAO, sleepSoundsProcessor, durationDAO, messejiClient));
     intentHandlers.add(new ConditionIntentHandler(deviceReadDAO, deviceDataDAO, preferencesDAO, calibrationDAO, voiceResponsesDAO));

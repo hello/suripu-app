@@ -17,9 +17,7 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-
-
-import java.io.IOException;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -29,6 +27,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 
 /**
  * Created by jnorgan on 6/16/16.
@@ -56,6 +55,7 @@ public class SkillResource extends SpeechletServlet {
                        final SleepSoundsProcessor sleepSoundsProcessor,
                        final DurationDAO durationDAO,
                        final InstrumentedTimelineProcessor timelineProcessor,
+                       final InstrumentedTimelineProcessorV3 timelineProcessorV3,
                        final AccountPreferencesDAO preferencesDAO,
                        final CalibrationDAO calibrationDAO,
                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
@@ -71,6 +71,7 @@ public class SkillResource extends SpeechletServlet {
         sleepSoundsProcessor,
         durationDAO,
         timelineProcessor,
+        timelineProcessorV3,
         preferencesDAO,
         calibrationDAO,
         mergedUserInfoDynamoDB,

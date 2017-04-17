@@ -1,30 +1,29 @@
 package com.hello.suripu.app.resources.v1;
 
 import com.amazonaws.AmazonServiceException;
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
-import com.hello.suripu.core.logging.DataLogger;
-import com.hello.suripu.core.models.TimelineFeedback;
-import com.hello.suripu.core.models.timeline.v2.TimelineLog;
-import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.core.db.TimelineLogDAO;
+import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.Timeline;
+import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
+import com.hello.suripu.core.models.timeline.v2.TimelineLog;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.core.translations.English;
+import com.hello.suripu.core.util.DateTimeUtil;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
-import com.hello.suripu.core.translations.English;
-import com.hello.suripu.core.util.DateTimeUtil;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 import com.librato.rollout.RolloutClient;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +48,7 @@ public class TimelineResource extends BaseResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimelineResource.class);
 
     private final InstrumentedTimelineProcessor timelineProcessor;
+    private final InstrumentedTimelineProcessorV3 timelineProcessorV3;
     private final AccountDAO accountDAO;
     private final TimelineDAODynamoDB timelineDAODynamoDB;
     private final TimelineLogDAO timelineLogDAOV1;
@@ -58,9 +58,11 @@ public class TimelineResource extends BaseResource {
                             final TimelineDAODynamoDB timelineDAODynamoDB,
                             final TimelineLogDAO timelineLogDAOV1,
                             final DataLogger timelineLogDAOV2,
-                            final InstrumentedTimelineProcessor timelineProcessor) {
+                            final InstrumentedTimelineProcessor timelineProcessor,
+                            final InstrumentedTimelineProcessorV3 timelineProcessorV3) {
         this.accountDAO = accountDAO;
         this.timelineProcessor = timelineProcessor;
+        this.timelineProcessorV3 = timelineProcessorV3;
         this.timelineDAODynamoDB = timelineDAODynamoDB;
         this.timelineLogDAOV1 = timelineLogDAOV1;
         this.timelineLogDAOV2 = timelineLogDAOV2;
@@ -100,6 +102,7 @@ public class TimelineResource extends BaseResource {
     private TimelineResult getTimelinesFromCacheOrReprocess(final UUID sessionUUID, final Long accountId, final String targetDateString){
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(targetDateString);
         final InstrumentedTimelineProcessor timelineProcessor = this.timelineProcessor.copyMeWithNewUUID(sessionUUID);
+        final InstrumentedTimelineProcessorV3 timelineProcessorV3 = this.timelineProcessorV3.copyMeWithNewUUID(sessionUUID);
         //if no update forced (i.e. no HMM)
 
         //first try to get a cached result
@@ -125,8 +128,12 @@ public class TimelineResource extends BaseResource {
             LOGGER.info("{} No cached timeline, reprocess timeline for account {}, date {}",sessionUUID, accountId, targetDate);
 
             //generate timeline from one of our many algorithms
-            final TimelineResult result = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.<TimelineFeedback>absent());
-
+            final TimelineResult result;
+            if ((hasTimelineProcessorV3(accountId))){
+                result = timelineProcessorV3.retrieveTimelinesFast(accountId,targetDate, Optional.absent(),Optional.<TimelineFeedback>absent());
+            }else {
+                result = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.<TimelineFeedback>absent());
+            }
             // Timeline result could be present but no timeline if not enough data for the night
             if(result.timelines.isEmpty()) {
                 return result;
@@ -187,7 +194,12 @@ public class TimelineResource extends BaseResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
 
-        final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(accountId.get(), DateTimeUtil.ymdStringToDateTime(date), Optional.<TimelineFeedback>absent());
+        final TimelineResult timelineResult;
+        if (hasTimelineProcessorV3(accountId.get())){
+            timelineResult = timelineProcessorV3.retrieveTimelinesFast(accountId.get(), DateTimeUtil.ymdStringToDateTime(date),Optional.<Integer>absent(),Optional.<TimelineFeedback>absent());
+        }else {
+            timelineResult = timelineProcessor.retrieveTimelinesFast(accountId.get(),  DateTimeUtil.ymdStringToDateTime(date), Optional.<TimelineFeedback>absent());
+        }
 
         return timelineResult.timelines;
     }

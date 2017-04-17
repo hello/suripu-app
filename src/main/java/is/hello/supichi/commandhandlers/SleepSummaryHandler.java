@@ -8,8 +8,10 @@ import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TimelineUtils;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-import is.hello.supichi.db.SpeechCommandDAO;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.librato.rollout.RolloutClient;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
@@ -21,6 +23,7 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,11 +45,18 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private final SleepStatsDAODynamoDB sleepStatsDAO;
     private final InstrumentedTimelineProcessor timelineProcessor;
+    private final InstrumentedTimelineProcessorV3 timelineProcessorV3;
+    private final RolloutClient feature;
 
-    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO, final InstrumentedTimelineProcessor timelineProcessor) {
+
+    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO,
+                               final InstrumentedTimelineProcessor timelineProcessor, final InstrumentedTimelineProcessorV3 timelineProcessorV3,
+                               final RolloutClient feature) {
         super("sleep-summary", speechCommandDAO, getAvailableActions());
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
+        this.timelineProcessorV3 =  timelineProcessorV3;
+        this.feature = feature;
     }
 
 
@@ -104,6 +114,8 @@ public class SleepSummaryHandler extends BaseHandler {
 
 
     private HandlerResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
+
+
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-sleep-score reason=no-timezone account_id={}", accountId);
             return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE));
@@ -121,7 +133,9 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private Optional<AggregateSleepStats> getSleepStat(final Long accountId, final DateTimeZone timezoneId) {
         final DateTime localToday = DateTime.now(timezoneId).withTimeAtStartOfDay();
+        final Integer localHour = DateTime.now(timezoneId).getHourOfDay();
         final String lastNightDate = DateTimeUtil.dateToYmdString(localToday.minusDays(1));
+        final String localCurrentDate = DateTimeUtil.dateToYmdString(localToday);
 
         LOGGER.debug("action=get-sleep-stats-from-ddb account_id={} night_date={}", accountId, lastNightDate);
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
@@ -136,10 +150,19 @@ public class SleepSummaryHandler extends BaseHandler {
         }
 
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(lastNightDate);
+        final DateTime queryDate = DateTimeUtil.ymdStringToDateTime(localCurrentDate);
         LOGGER.debug("action=compute-timeline-for-stats account_id={} target_date={}", accountId, targetDate);
 
         final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
-        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.absent());
+        final InstrumentedTimelineProcessorV3 newTimelineProcessorV3 = timelineProcessorV3.copyMeWithNewUUID(UUID.randomUUID());
+
+        final TimelineResult result;
+        if (this.feature.userFeatureActive("timeline_processor_v3_enabled", accountId.longValue(), Collections.EMPTY_LIST)){
+            result = newTimelineProcessorV3.retrieveTimelinesFast(accountId, queryDate, Optional.of(localHour), Optional.absent());
+        } else {
+            result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.absent());
+        }
+        ///NEED TO HAVE FF to chose v2 or v3
 
         if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
             final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
@@ -162,4 +185,5 @@ public class SleepSummaryHandler extends BaseHandler {
     public SupichiResponseType responseType() {
         return SupichiResponseType.WATSON;
     }
+
 }

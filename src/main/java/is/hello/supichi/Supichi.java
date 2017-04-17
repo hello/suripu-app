@@ -45,7 +45,9 @@ import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
+import com.librato.rollout.RolloutClient;
 import com.maxmind.geoip2.DatabaseReader;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
@@ -108,11 +110,13 @@ public class Supichi
 
     public Supichi(
             final Environment environment,
+            final RolloutClient rolloutClient,
             final SuripuAppConfiguration configuration,
             final AmazonDynamoDBClientFactory dynamoDBClientFactory,
             final ImmutableMap<DynamoDBTableName, String> tableNames,
             final DBI commonDB,
             final InstrumentedTimelineProcessor timelineProcessor,
+            final InstrumentedTimelineProcessorV3 timelineProcessorV3,
             final MessejiClient messejiClient,
             final Vault tokenKMSVault,
             final DeviceProcessor deviceProcessor) throws IOException {
@@ -224,11 +228,13 @@ public class Supichi
                 mergedUserInfoDynamoDB,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
+                timelineProcessorV3,
                 geoIPDatabase,
                 sensorViewLogic,
                 accountPreferencesDAO,
                 configuration.getDebug(),
-                accountDAO
+                accountDAO,
+                rolloutClient
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
@@ -332,7 +338,6 @@ public class Supichi
                 speechKinesisProducer, responseBuilders, handlersToBuilders,
                 deviceProcessor,
                 environment.metrics());
-
     }
 
     public UploadResource uploadResource() {
@@ -344,6 +349,6 @@ public class Supichi
     }
 
     public PingResource pingResource() {
-        return new PingResource();
+        return new PingResource(audioRequestHandler);
     }
 }

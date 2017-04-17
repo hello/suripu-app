@@ -15,6 +15,8 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.librato.rollout.RolloutClient;
 import com.maxmind.geoip2.DatabaseReader;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
@@ -23,10 +25,14 @@ import is.hello.gaibu.weather.clients.DarkSky;
 import is.hello.gaibu.weather.interfaces.WeatherReport;
 import is.hello.supichi.db.SpeechCommandDAO;
 
+import javax.inject.Inject;
+
 /**
  * Created by ksg on 6/17/16
  */
 public class HandlerFactory {
+    @Inject
+    RolloutClient feature;
 
     private final SpeechCommandDAO speechCommandDAO;
     private final MessejiClient messejiClient;
@@ -45,10 +51,12 @@ public class HandlerFactory {
     private final AccountPreferencesDAO accountPreferencesDAO;
 
     private final InstrumentedTimelineProcessor timelineProcessor;
+    private final InstrumentedTimelineProcessorV3 timelineProcessorV3;
     private final Optional<DatabaseReader> geoIpDatabase;
     private final SensorViewLogic sensorViewLogic;
     private final boolean isDebug;
     private final AccountDAO accountDAO;
+    private final RolloutClient rolloutClient;
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
@@ -65,11 +73,13 @@ public class HandlerFactory {
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                            final SleepStatsDAODynamoDB sleepStatsDAO,
                            final InstrumentedTimelineProcessor timelineProcessor,
+                           final InstrumentedTimelineProcessorV3 timelineProcessorV3,
                            final Optional<DatabaseReader> geoIpDatabase,
                            final SensorViewLogic sensorViewLogic,
                            final AccountPreferencesDAO accountPreferencesDAO,
                            final boolean isDebug,
-                           final AccountDAO accountDAO) {
+                           final AccountDAO accountDAO,
+                           final RolloutClient rolloutClient) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -85,11 +95,13 @@ public class HandlerFactory {
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
+        this.timelineProcessorV3 = timelineProcessorV3;
         this.geoIpDatabase = geoIpDatabase;
         this.sensorViewLogic = sensorViewLogic;
         this.accountPreferencesDAO = accountPreferencesDAO;
         this.isDebug = isDebug;
         this.accountDAO = accountDAO;
+        this.rolloutClient = rolloutClient;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -107,17 +119,19 @@ public class HandlerFactory {
                                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                                         final SleepStatsDAODynamoDB sleepStatsDAO,
                                         final InstrumentedTimelineProcessor timelineProcessor,
+                                        final InstrumentedTimelineProcessorV3 timelineProcessorV3,
                                         final Optional<DatabaseReader> geoIPDatabase,
                                         final SensorViewLogic sensorViewLogic,
                                         final AccountPreferencesDAO accountPreferencesDAO,
                                         final boolean isDebug,
-                                        final AccountDAO accountDAO) {
+                                        final AccountDAO accountDAO,
+                                        final RolloutClient rolloutClient) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoD,
                 timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
                 externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
                 alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
-                timelineProcessor, geoIPDatabase, sensorViewLogic, accountPreferencesDAO, isDebug, accountDAO);
+                timelineProcessor, timelineProcessorV3, geoIPDatabase, sensorViewLogic, accountPreferencesDAO, isDebug, accountDAO, rolloutClient);
     }
 
     public WeatherHandler weatherHandler() {
@@ -169,6 +183,7 @@ public class HandlerFactory {
     }
 
     public SleepSummaryHandler sleepSummaryHandler() {
-        return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO, timelineProcessor);
+        return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO, timelineProcessor, timelineProcessorV3, rolloutClient);
+
     }
 }
