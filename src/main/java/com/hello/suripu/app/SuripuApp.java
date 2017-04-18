@@ -643,7 +643,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 timelineAlgorithmConfiguration,
                 environment.metrics());
 
-        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor, timelineProcessorV3));
+        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
 
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);

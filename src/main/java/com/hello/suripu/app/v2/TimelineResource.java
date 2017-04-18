@@ -99,11 +99,18 @@ public class TimelineResource extends BaseResource {
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date}")
+    @Path("/{datetime}")
     public Timeline getTimelineForNight(@Auth final AccessToken accessToken,
-                                        @PathParam("date") final String night) {
-
-        return getTimelineForDateAndHourInternal(accessToken.accountId, night,Optional.absent(), Optional.<TimelineFeedback>absent());
+                                        @PathParam("datetime") final String datetime) {
+        final String date;
+        Optional<Integer> hourOptional = Optional.absent();
+        if (datetime.length() > 10){
+            date = datetime.substring(0,10);
+            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
+        }else{
+            date = datetime;
+        }
+        return getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.<TimelineFeedback>absent());
     }
 
  @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
@@ -111,14 +118,20 @@ public class TimelineResource extends BaseResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date}/events/{type}/{timestamp}")
+    @Path("/{datetime}/events/{type}/{timestamp}")
     public Timeline amendTimeOfEvent(@Auth final AccessToken accessToken,
-                                     @PathParam("date") String date,
+                                     @PathParam("datetime") String datetime,
                                      @PathParam("type") String type,
                                      @PathParam("timestamp") long timestamp,
                                      @Valid TimelineEvent.TimeAmendment timeAmendment) {
-
-
+        final String date;
+        Optional<Integer> hourOptional = Optional.absent();
+        if (datetime.length() > 10){
+            date = datetime.substring(0,10);
+            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
+        }else{
+            date = datetime;
+        }
         final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
         final DateTime oldEventDateTime = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
         final String hourMinute = oldEventDateTime.toString(DateTimeFormat.forPattern("HH:mm"));
@@ -132,7 +145,7 @@ public class TimelineResource extends BaseResource {
         timelineDAODynamoDB.invalidateCache(accessToken.accountId, timelineFeedback.dateOfNight, DateTime.now());
 
         //get the updated timeline
-        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.absent(), Optional.of(timelineFeedback));
+        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.of(timelineFeedback));
 
         //make sure the feedback did not screw up the timeline
         checkValidTimelineOrThrow(accessToken.accountId,timeline);
@@ -148,11 +161,20 @@ public class TimelineResource extends BaseResource {
     @DELETE
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date}/events/{type}/{timestamp}")
+    @Path("/{datetime}/events/{type}/{timestamp}")
     public Response deleteEvent(@Auth final AccessToken accessToken,
-                                @PathParam("date") String date,
+                                @PathParam("datetime") String datetime,
                                 @PathParam("type") String type,
                                 @PathParam("timestamp") long timestamp) {
+
+        final String date;
+        Optional<Integer> hourOptional = Optional.absent();
+        if (datetime.length() > 10){
+            date = datetime.substring(0,10);
+            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
+        }else{
+            date = datetime;
+        }
 
         final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
 
@@ -168,7 +190,7 @@ public class TimelineResource extends BaseResource {
         //TODO in the future, if we delete an intermediate event (bathroom break at night), we will have to change the internal API to let retrieveTimelinesFast know that an event was removed
         return Response.status(Response.Status.ACCEPTED)
                 //might have an hour
-                       .entity(getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.absent(), Optional.<TimelineFeedback>absent()))
+                       .entity(getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.<TimelineFeedback>absent()))
                 .build();
     }
 
@@ -176,12 +198,19 @@ public class TimelineResource extends BaseResource {
     @PUT
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date}/events/{type}/{timestamp}")
+    @Path("/{datetime}/events/{type}/{timestamp}")
     public Response validateEvent(@Auth final AccessToken accessToken,
-                                  @PathParam("date") String date,
+                                  @PathParam("datetime") String datetime,
                                   @PathParam("type") String type,
                                   @PathParam("timestamp") long timestamp) {
-
+        final String date;
+        Optional<Integer> hourOptional = Optional.absent();
+        if (datetime.length() > 10){
+            date = datetime.substring(0,10);
+            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
+        }else{
+            date = datetime;
+        }
         final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
 
         final DateTime correctEvent = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
@@ -205,128 +234,6 @@ public class TimelineResource extends BaseResource {
 
         return Response.status(Response.Status.ACCEPTED).build();
     }
-
-
-
-    @ScopesAllowed({OAuthScope.SLEEP_TIMELINE})
-    @GET
-    @Timed
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date_hour}")
-    public Timeline getTimelineForCurrentDay(@Auth final AccessToken accessToken,
-                                             @PathParam("date_hour") final String dateAndHour) {
-        final String date = dateAndHour.substring(0,9);
-        final int hour = Integer.parseInt(dateAndHour.substring(10));
-        return getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.of(hour), Optional.<TimelineFeedback>absent());
-    }
-
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
-    @PATCH
-    @Timed
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date_hour}/events/{type}/{timestamp}")
-    public Timeline amendTimeOfEventCurrentDay(@Auth final AccessToken accessToken,
-                                     @PathParam("date_hour") String dateAndHour,
-                                     @PathParam("type") String type,
-                                     @PathParam("timestamp") long timestamp,
-                                     @Valid TimelineEvent.TimeAmendment timeAmendment) {
-
-        final String date = dateAndHour.substring(0,9);
-        final int hour = Integer.parseInt(dateAndHour.substring(10));
-
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
-        final DateTime oldEventDateTime = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
-        final String hourMinute = oldEventDateTime.toString(DateTimeFormat.forPattern("HH:mm"));
-        final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
-
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createTimeAmendedFeedback(date, hourMinute, timeAmendment.newEventTime, eventType, accessToken.accountId);
-
-        //make sure the feedback event order and times make sense
-        checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback, offsetMillis);
-
-        timelineDAODynamoDB.invalidateCache(accessToken.accountId, timelineFeedback.dateOfNight, DateTime.now());
-
-        //get the updated timeline
-        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.of(hour), Optional.of(timelineFeedback));
-
-        //make sure the feedback did not screw up the timeline
-        checkValidTimelineOrThrow(accessToken.accountId,timeline);
-
-        //if we made it this far, insert
-        feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
-
-        actionProcessor.add(new Action(accessToken.accountId, ActionType.TIMELINE_FEEDBACK, Optional.of(ActionResult.OKAY.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
-        return timeline;
-    }
-
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
-    @DELETE
-    @Timed
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date_hour}/events/{type}/{timestamp}")
-    public Response deleteEventCurrentDay(@Auth final AccessToken accessToken,
-                                @PathParam("date_hour") String dateAndHour,
-                                @PathParam("type") String type,
-                                @PathParam("timestamp") long timestamp) {
-
-        final String date = dateAndHour.substring(0,9);
-        final int hour = Integer.parseInt(dateAndHour.substring(10));
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
-
-        final DateTime incorrectEvent = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
-        final String hourMinute = incorrectEvent.toString(DateTimeFormat.forPattern("HH:mm"));
-        final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
-
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedIncorrect(date, hourMinute, eventType, accessToken.accountId);
-        checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback,offsetMillis);
-
-        feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
-
-        //TODO in the future, if we delete an intermediate event (bathroom break at night), we will have to change the internal API to let retrieveTimelinesFast know that an event was removed
-        return Response.status(Response.Status.ACCEPTED)
-                .entity(getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.of(hour), Optional.<TimelineFeedback>absent()))
-                .build();
-    }
-
-    @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
-    @PUT
-    @Timed
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{date_hour}/events/{type}/{timestamp}")
-    public Response validateEventCurrentDay(@Auth final AccessToken accessToken,
-                                  @PathParam("date_hour") String dateAndHour,
-                                  @PathParam("type") String type,
-                                  @PathParam("timestamp") long timestamp) {
-
-        final String date = dateAndHour.substring(0,9);
-        final int hour = Integer.parseInt(dateAndHour.substring(10));
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
-
-        final DateTime correctEvent = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
-        final String hourMinute = correctEvent.toString(DateTimeFormat.forPattern("HH:mm"));
-        final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
-
-        // Correct event means feedback = prediction
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedCorrect(date, hourMinute, eventType, accessToken.accountId);
-        checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback,offsetMillis);
-
-        //recalculate with feedback and check
-        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.of(hour), Optional.of(timelineFeedback));
-
-        //check to make sure sleep score did not get screwed up
-        checkValidTimelineOrThrow(accessToken.accountId,timeline);
-
-        //if we made it this far, insert
-        feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
-
-        actionProcessor.add(new Action(accessToken.accountId, ActionType.TIMELINE_CORRECT, Optional.of(ActionResult.OKAY.string()), DateTime.now(DateTimeZone.UTC), Optional.absent()));
-
-        return Response.status(Response.Status.ACCEPTED).build();
-    }
-
-
-
 
     private Integer getOffsetMillis(final Long accountId, final String date, final Long timestamp) {
         final Optional<AggregateSleepStats> aggregateSleepStatsOptional = sleepStatsDAODynamoDB.getSingleStat(accountId, date);
@@ -409,7 +316,7 @@ public class TimelineResource extends BaseResource {
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(night);
 
         final TimelineResult timelineResult;
-            if (hasTimelineProcessorV3(accountId)){
+            if (hourOptional.isPresent() && hasTimelineProcessorV3(accountId)){
             timelineResult = timelineProcessorv3.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
         } else {
             timelineResult = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
