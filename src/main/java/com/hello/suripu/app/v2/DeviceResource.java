@@ -3,6 +3,9 @@ package com.hello.suripu.app.v2;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
+import com.hello.suripu.core.accounts.pairings.PairedAccount;
+import com.hello.suripu.core.accounts.pairings.PairedAccounts;
+import com.hello.suripu.core.accounts.pairings.UnpairingStatus;
 import com.hello.suripu.core.actions.Action;
 import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.actions.ActionType;
@@ -48,6 +51,7 @@ import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -56,6 +60,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Path("/v2/devices")
@@ -76,6 +81,7 @@ public class DeviceResource extends BaseResource {
     private final VoiceMetadataDAO voiceMetadataDAO;
     private final MessejiApi messejiClient;
     private final ExternalOAuthTokenStore<ExternalToken> externalTokenStore;
+    private final PairedAccounts pairedAccounts;
 
     public DeviceResource(final DeviceProcessor deviceProcessor,
                           final Swapper swapper,
@@ -83,7 +89,8 @@ public class DeviceResource extends BaseResource {
                           final SenseMetadataDAO senseMetadataDAO,
                           final VoiceMetadataDAO voiceMetadataDAO,
                           final MessejiClient messejiClient,
-                          final ExternalOAuthTokenStore<ExternalToken> externalTokenStore) {
+                          final ExternalOAuthTokenStore<ExternalToken> externalTokenStore,
+                          final PairedAccounts pairedAccounts) {
         this.deviceProcessor = deviceProcessor;
         this.swapper = swapper;
         this.accountDAO = accountDAO;
@@ -91,6 +98,7 @@ public class DeviceResource extends BaseResource {
         this.voiceMetadataDAO = voiceMetadataDAO;
         this.messejiClient = messejiClient;
         this.externalTokenStore = externalTokenStore;
+        this.pairedAccounts = pairedAccounts;
     }
 
     @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
@@ -138,6 +146,29 @@ public class DeviceResource extends BaseResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
         return pairingInfoOptional.get();
+    }
+
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_READ})
+    @GET
+    @Timed
+    @Path("/paired")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<PairedAccount> pairedAccounts(@Auth final AccessToken accessToken) {
+        return pairedAccounts.to(accessToken.accountId);
+    }
+
+    @ScopesAllowed({OAuthScope.DEVICE_INFORMATION_WRITE})
+    @POST
+    @Timed
+    @Path("/unpair")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response unpairAccounts(@Auth final AccessToken accessToken, @Valid List<PairedAccount> accountsToUnpair) {
+        final UnpairingStatus status = pairedAccounts.remove(accessToken.accountId, accountsToUnpair);
+        if(UnpairingStatus.OK.equals(status)) {
+            return Response.noContent().build();
+        }
+        throw new WebApplicationException(status.toString(), Response.Status.BAD_REQUEST);
     }
 
 
