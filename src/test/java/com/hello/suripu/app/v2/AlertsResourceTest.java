@@ -15,10 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 public class AlertsResourceTest {
 
@@ -36,7 +33,7 @@ public class AlertsResourceTest {
     }
 
     @Test
-    public void getSenseNotPairedAlert() throws Exception {
+    public void getSenseAlert() throws Exception {
         doReturn(getMockAlertOptional(AlertCategory.SENSE_NOT_PAIRED))
                 .when(mockAlertsProcessor)
                 .getSenseAlertOptional(MOCK_ACCOUNT_ID);
@@ -44,7 +41,9 @@ public class AlertsResourceTest {
         final List<Alert> alerts = alertsResource.get(accessToken);
 
         assertFalse(alerts.isEmpty());
-        assertThat(alerts.get(0).category(), equalTo(AlertCategory.SENSE_NOT_PAIRED));
+        verify(mockAlertsProcessor, times(1)).getSenseAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(0)).getSystemAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(0)).getPillAlertOptional(MOCK_ACCOUNT_ID);
     }
 
     @Test
@@ -60,11 +59,13 @@ public class AlertsResourceTest {
         final List<Alert> alerts = alertsResource.get(accessToken);
 
         assertFalse(alerts.isEmpty());
-        assertThat(alerts.get(0).category(), equalTo(AlertCategory.EXPANSION_UNREACHABLE));
+        verify(mockAlertsProcessor, times(1)).getSenseAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(1)).getSystemAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(0)).getPillAlertOptional(MOCK_ACCOUNT_ID);
     }
 
     @Test
-    public void getSleepPillNotPairedAlert() throws Exception {
+    public void getSleepPillAlert() throws Exception {
         doReturn(Optional.absent())
                 .when(mockAlertsProcessor)
                 .getSenseAlertOptional(MOCK_ACCOUNT_ID);
@@ -80,7 +81,9 @@ public class AlertsResourceTest {
         final List<Alert> alerts = alertsResource.get(accessToken);
 
         assertFalse(alerts.isEmpty());
-        assertThat(alerts.get(0).category(), equalTo(AlertCategory.SLEEP_PILL_NOT_PAIRED));
+        verify(mockAlertsProcessor, times(1)).getSenseAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(1)).getSystemAlertOptional(MOCK_ACCOUNT_ID);
+        verify(mockAlertsProcessor, times(1)).getPillAlertOptional(MOCK_ACCOUNT_ID);
     }
 
     private static Optional<Alert> getMockAlertOptional(@NotNull final AlertCategory alertCategory) {
