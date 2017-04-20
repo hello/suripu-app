@@ -187,26 +187,22 @@ public class TimelineResource extends BaseResource {
                                   @PathParam("datetime") String datetime,
                                   @PathParam("type") String type,
                                   @PathParam("timestamp") long timestamp) {
-        final String date;
-        Optional<Integer> hourOptional = Optional.absent();
-        if (datetime.length() > 10){
-            date = datetime.substring(0,10);
-            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
-        }else{
-            date = datetime;
-        }
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
+
+        final String queryDate =  getQueryDate(datetime);
+        final Optional<Integer> queryHourOptional = getOptionalQueryHour(datetime);
+
+        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, queryDate, timestamp);
 
         final DateTime correctEvent = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
         final String hourMinute = correctEvent.toString(DateTimeFormat.forPattern("HH:mm"));
         final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
 
         // Correct event means feedback = prediction
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedCorrect(date, hourMinute, eventType, accessToken.accountId);
+        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedCorrect(queryDate, hourMinute, eventType, accessToken.accountId);
         checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback,offsetMillis);
 
         //recalculate with feedback and check
-        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,Optional.absent(), Optional.of(timelineFeedback));
+        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, queryDate,queryHourOptional, Optional.of(timelineFeedback));
 
         //check to make sure sleep score did not get screwed up
         checkValidTimelineOrThrow(accessToken.accountId,timeline);
