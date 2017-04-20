@@ -1,7 +1,7 @@
 package com.hello.suripu.app.modules;
 
-import com.hello.suripu.app.resources.v1.AccountResource;
 import com.hello.suripu.app.experimental.DataResource;
+import com.hello.suripu.app.resources.v1.AccountResource;
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.InsightsResource;
 import com.hello.suripu.app.resources.v1.MobilePushRegistrationResource;
@@ -25,11 +25,11 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
-
-import javax.inject.Singleton;
-
 import dagger.Module;
 import dagger.Provides;
+import is.hello.supichi.commandhandlers.SleepSummaryHandler;
+
+import javax.inject.Singleton;
 
 @Module(injects = {
         TimelineResource.class,
@@ -49,7 +49,8 @@ import dagger.Provides;
         ExpansionsResource.class,
         AccountResource.class,
         MobilePushRegistrationResource.class,
-        DataResource.class
+        DataResource.class,
+        SleepSummaryHandler.class
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;

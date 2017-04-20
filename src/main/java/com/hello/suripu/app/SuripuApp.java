@@ -820,7 +820,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
             // speech resources
-            final Supichi supichi = new Supichi(environment, configuration, dynamoDBClientFactory, tableNames, commonDB, timelineProcessor, messejiClient, tokenKMSVault, deviceProcessor);
+            final Supichi supichi = new Supichi(environment, configuration, dynamoDBClientFactory, tableNames, commonDB, timelineProcessor, messejiClient, tokenKMSVault, deviceProcessor, rolloutClient);
 
             environment.jersey().register(supichi.demoUploadResource());
             environment.jersey().register(supichi.uploadResource());

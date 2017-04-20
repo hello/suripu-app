@@ -183,7 +183,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 sensorViewLogic,
                 accountPreferenceDAO,
                 false,
-                accountDAO
+                accountDAO,
+                null
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
