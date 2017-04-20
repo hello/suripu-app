@@ -21,6 +21,7 @@ import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.librato.rollout.RolloutClient;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -86,6 +87,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
     private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
     private final AccountDAO accountDAO = mock(AccountDAO.class);
+    private final RolloutClient rolloutClient = mock(RolloutClient.class);
 
     private final String SENSE_ID = "123456789";
     private final Long ACCOUNT_ID = 99L;
@@ -187,7 +189,7 @@ public class RegexAnnotationsHandlerExecutorTest {
                 accountPreferenceDAO,
                 false,
                 accountDAO,
-                null
+                rolloutClient
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)

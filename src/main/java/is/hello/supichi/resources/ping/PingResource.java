@@ -2,7 +2,6 @@ package is.hello.supichi.resources.ping;
 
 import com.hello.suripu.core.util.HelloHttpHeader;
 import com.librato.rollout.RolloutClient;
-import is.hello.supichi.handler.AudioRequestHandler;
 import is.hello.supichi.utils.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +21,9 @@ public class PingResource {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PingResource.class);
-    private final AudioRequestHandler audioRequestHandler;
 
 
-    public PingResource(final AudioRequestHandler audioRequestHandler) {
-        this.audioRequestHandler = audioRequestHandler;
+    public PingResource() {
     }
 
     @Context

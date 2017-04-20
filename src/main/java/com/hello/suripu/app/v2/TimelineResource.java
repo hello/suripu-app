@@ -39,6 +39,8 @@ import io.dropwizard.jersey.PATCH;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,15 +104,9 @@ public class TimelineResource extends BaseResource {
     @Path("/{datetime}")
     public Timeline getTimelineForNight(@Auth final AccessToken accessToken,
                                         @PathParam("datetime") final String datetime) {
-        final String date;
-        Optional<Integer> hourOptional = Optional.absent();
-        if (datetime.length() > 10){
-            date = datetime.substring(0,10);
-            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
-        }else{
-            date = datetime;
-        }
-        return getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.<TimelineFeedback>absent());
+        final String queryDate =  getQueryDate(datetime);
+        final Optional<Integer> queryHourOptional = getOptionalQueryHour(datetime);
+        return getTimelineForDateAndHourInternal(accessToken.accountId, queryDate, Optional.absent(), Optional.<TimelineFeedback>absent());
     }
 
  @ScopesAllowed({OAuthScope.SLEEP_FEEDBACK})
@@ -124,20 +120,14 @@ public class TimelineResource extends BaseResource {
                                      @PathParam("type") String type,
                                      @PathParam("timestamp") long timestamp,
                                      @Valid TimelineEvent.TimeAmendment timeAmendment) {
-        final String date;
-        Optional<Integer> hourOptional = Optional.absent();
-        if (datetime.length() > 10){
-            date = datetime.substring(0,10);
-            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
-        }else{
-            date = datetime;
-        }
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
+        final String queryDate = getQueryDate(datetime);
+        Optional<Integer> hourOptional = getOptionalQueryHour(datetime);
+        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, queryDate, timestamp);
         final DateTime oldEventDateTime = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
         final String hourMinute = oldEventDateTime.toString(DateTimeFormat.forPattern("HH:mm"));
         final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
 
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createTimeAmendedFeedback(date, hourMinute, timeAmendment.newEventTime, eventType, accessToken.accountId);
+        final TimelineFeedback timelineFeedback = TimelineFeedback.createTimeAmendedFeedback(queryDate, hourMinute, timeAmendment.newEventTime, eventType, accessToken.accountId);
 
         //make sure the feedback event order and times make sense
         checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback, offsetMillis);
@@ -145,7 +135,7 @@ public class TimelineResource extends BaseResource {
         timelineDAODynamoDB.invalidateCache(accessToken.accountId, timelineFeedback.dateOfNight, DateTime.now());
 
         //get the updated timeline
-        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.of(timelineFeedback));
+        final Timeline timeline = getTimelineForDateAndHourInternal(accessToken.accountId, queryDate, hourOptional, Optional.of(timelineFeedback));
 
         //make sure the feedback did not screw up the timeline
         checkValidTimelineOrThrow(accessToken.accountId,timeline);
@@ -167,22 +157,16 @@ public class TimelineResource extends BaseResource {
                                 @PathParam("type") String type,
                                 @PathParam("timestamp") long timestamp) {
 
-        final String date;
-        Optional<Integer> hourOptional = Optional.absent();
-        if (datetime.length() > 10){
-            date = datetime.substring(0,10);
-            hourOptional = Optional.of(Integer.parseInt(datetime.substring(11,12)));
-        }else{
-            date = datetime;
-        }
+        final String queryDate = getQueryDate(datetime);
+        Optional<Integer> hourOptional = getOptionalQueryHour(datetime);
 
-        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, date, timestamp);
+        final Integer offsetMillis = getOffsetMillis(accessToken.accountId, queryDate, timestamp);
 
         final DateTime incorrectEvent = new DateTime(timestamp, DateTimeZone.UTC).plusMillis(offsetMillis);
         final String hourMinute = incorrectEvent.toString(DateTimeFormat.forPattern("HH:mm"));
         final Event.Type eventType = Event.Type.fromInteger(EventType.fromString(type).value);
 
-        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedIncorrect(date, hourMinute, eventType, accessToken.accountId);
+        final TimelineFeedback timelineFeedback = TimelineFeedback.createMarkedIncorrect(queryDate, hourMinute, eventType, accessToken.accountId);
         checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback,offsetMillis);
 
         feedbackDAO.insertTimelineFeedback(accessToken.accountId, timelineFeedback);
@@ -190,7 +174,7 @@ public class TimelineResource extends BaseResource {
         //TODO in the future, if we delete an intermediate event (bathroom break at night), we will have to change the internal API to let retrieveTimelinesFast know that an event was removed
         return Response.status(Response.Status.ACCEPTED)
                 //might have an hour
-                       .entity(getTimelineForDateAndHourInternal(accessToken.accountId, date,hourOptional, Optional.<TimelineFeedback>absent()))
+                       .entity(getTimelineForDateAndHourInternal(accessToken.accountId, queryDate,hourOptional, Optional.<TimelineFeedback>absent()))
                 .build();
     }
 
@@ -316,7 +300,7 @@ public class TimelineResource extends BaseResource {
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(night);
 
         final TimelineResult timelineResult;
-            if (hourOptional.isPresent() && hasTimelineProcessorV3(accountId)){
+        if (hourOptional.isPresent() && hasTimelineProcessorV3(accountId)){
             timelineResult = timelineProcessorv3.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
         } else {
             timelineResult = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
@@ -337,13 +321,30 @@ public class TimelineResource extends BaseResource {
             timelineLogDAO.putTimelineLog(accountId, logV2.getAsV1Log());
         }
 
-    // log actions
-    final ActionResult actionResult = (timelineResult.timelines.get(0).score.equals(0)) ? ActionResult.NO_DATA : ActionResult.OKAY;
-    final String actionResultString = String.format("%s_%s", night, actionResult.string());
-    final Optional<Integer> timeZoneOffset = (!timeline.events.isEmpty()) ? Optional.of(timeline.events.get(0).timezoneOffset): Optional.absent();
+        // log actions
+        final ActionResult actionResult = (timelineResult.timelines.get(0).score.equals(0)) ? ActionResult.NO_DATA : ActionResult.OKAY;
+        final String actionResultString = String.format("%s_%s", night, actionResult.string());
+        final Optional<Integer> timeZoneOffset = (!timeline.events.isEmpty()) ? Optional.of(timeline.events.get(0).timezoneOffset): Optional.absent();
         actionProcessor.add(new Action(accountId, ActionType.TIMELINE_V2, Optional.of(actionResultString), DateTime.now(DateTimeZone.UTC), timeZoneOffset));
 
         return timeline;
+    }
+
+    private static final String getQueryDate(final String queryDateTimeString){
+        if (queryDateTimeString.length() == 10){
+            return queryDateTimeString;
+        }
+        final String queryDateString= queryDateTimeString.substring(0, 10);
+        return queryDateString;
+    }
+
+    private static final Optional<Integer>  getOptionalQueryHour(final String queryDateTimeString){
+        if (queryDateTimeString.length() == 10){
+            return Optional.absent();
+        }
+        final DateTimeFormatter dateTimeFormatter= ISODateTimeFormat.dateOptionalTimeParser();
+        final DateTime queryDateTime = dateTimeFormatter.parseDateTime(queryDateTimeString);
+        return Optional.of(queryDateTime.getHourOfDay());
     }
 
 }

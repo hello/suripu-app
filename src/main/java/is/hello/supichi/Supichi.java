@@ -349,6 +349,6 @@ public class Supichi
     }
 
     public PingResource pingResource() {
-        return new PingResource(audioRequestHandler);
+        return new PingResource();
     }
 }
