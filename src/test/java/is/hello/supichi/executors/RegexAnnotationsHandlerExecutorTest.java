@@ -12,6 +12,7 @@ import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
@@ -158,7 +159,7 @@ public class RegexAnnotationsHandlerExecutorTest {
         final SensorResponse sensorResponse = SensorResponse.noData(Collections.emptyList());
         Mockito.when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
 
-        Mockito.when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString())).thenReturn(Optional.of(DEFAULT_SOUND));
+        Mockito.when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString(), Mockito.any(HardwareVersion.class))).thenReturn(Optional.of(DEFAULT_SOUND));
         Mockito.when(sleepSoundSettingsDynamoDB.get(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
     }
 

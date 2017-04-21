@@ -73,7 +73,8 @@ public class SleepSoundsResourceTest {
     private KeyStore keyStore;
     private DurationDAO durationDAO;
     private MessejiClient messejiClient;
-    private FileInfoDAO fileInfoDAO;
+    private FileInfoDAO fileInfoSenseOneDAO;
+    private FileInfoDAO fileInfoSenseOneFiveDAO;
     private FileManifestDAO fileManifestDAO;
     private SleepSoundsResource sleepSoundsResource;
     private FeatureStore featureStore;
@@ -99,9 +100,10 @@ public class SleepSoundsResourceTest {
         keyStore = mock(KeyStore.class);
         durationDAO = mock(DurationDAO.class);
         messejiClient = mock(MessejiClient.class);
-        fileInfoDAO = mock(FileInfoDAO.class);
+        fileInfoSenseOneDAO = mock(FileInfoDAO.class);
+        fileInfoSenseOneFiveDAO = mock(FileInfoDAO.class);
         fileManifestDAO = mock(FileManifestDAO.class);
-        sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO);
+        sleepSoundsProcessor = SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileInfoSenseOneFiveDAO, fileManifestDAO);
         sleepSoundSettingsDynamoDB = mock(SleepSoundSettingsDynamoDB.class);
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
@@ -243,7 +245,7 @@ public class SleepSoundsResourceTest {
     public void testGetStatusInvalidPath() throws Exception {
         when(deviceDAO.getMostRecentSensePairByAccountId(Mockito.anyLong())).thenReturn(pair);
         when(durationDAO.getDurationBySeconds(Mockito.anyInt())).thenReturn(Optional.of(Duration.create(1L, "path", 30)));
-        when(fileInfoDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.<FileInfo>absent());
+        when(fileInfoSenseOneDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.<FileInfo>absent());
         final SenseStateAtTime state = new SenseStateAtTime(
                 State.SenseState.newBuilder()
                         .setSenseId(senseId)
@@ -280,7 +282,7 @@ public class SleepSoundsResourceTest {
         final Duration duration = Duration.create(1L, "path", 30);
         when(durationDAO.getDurationBySeconds(Mockito.anyInt())).thenReturn(Optional.of(duration));
         final FileInfo fileInfo = makeFileInfo(1L, "preview", "name", "path", "url");
-        when(fileInfoDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.of(fileInfo));
+        when(fileInfoSenseOneDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.of(fileInfo));
         final SenseStateAtTime state = new SenseStateAtTime(
                 State.SenseState.newBuilder()
                         .setSenseId(senseId)
@@ -336,8 +338,8 @@ public class SleepSoundsResourceTest {
         final Duration duration = Duration.create(durationId, "name", 30);
 
         // Only work for our specific sound
-        when(fileInfoDAO.getById(Mockito.anyLong())).thenReturn(Optional.<FileInfo>absent());
-        when(fileInfoDAO.getById(soundId)).thenReturn(Optional.of(fileInfo));
+        when(fileInfoSenseOneDAO.getById(Mockito.anyLong())).thenReturn(Optional.<FileInfo>absent());
+        when(fileInfoSenseOneDAO.getById(soundId)).thenReturn(Optional.of(fileInfo));
 
         when(fileManifestDAO.getManifest(Mockito.anyString())).thenReturn(Optional.<FileSync.FileManifest>absent());
         when(fileManifestDAO.getManifest(senseId)).thenReturn(Optional.of(fileManifest));
@@ -418,7 +420,7 @@ public class SleepSoundsResourceTest {
                 .withFileType(FileInfo.FileType.ALARM)
                 .build());
 
-        when(fileInfoDAO.getAll(Mockito.anyInt(), Mockito.anyString())).thenReturn(fileInfoList);
+        when(fileInfoSenseOneDAO.getAll(Mockito.anyInt(), Mockito.anyString())).thenReturn(fileInfoList);
 
         final FileSync.FileManifest fileManifest = FileSync.FileManifest.newBuilder()
                 .addFileInfo(FileSync.FileManifest.File.newBuilder()
@@ -472,7 +474,7 @@ public class SleepSoundsResourceTest {
             .withFileType(FileInfo.FileType.SLEEP_SOUND)
             .build());
 
-        when(fileInfoDAO.getAll(Mockito.anyInt(), Mockito.anyString())).thenReturn(fileInfoList);
+        when(fileInfoSenseOneDAO.getAll(Mockito.anyInt(), Mockito.anyString())).thenReturn(fileInfoList);
 
         final FileSync.FileManifest fileManifest = FileSync.FileManifest.newBuilder()
                 .addFileInfo(FileSync.FileManifest.File.newBuilder()
