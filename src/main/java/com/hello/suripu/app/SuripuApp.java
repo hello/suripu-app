@@ -70,7 +70,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
-import com.hello.suripu.app.utils.AlertsProcessor;
+import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;

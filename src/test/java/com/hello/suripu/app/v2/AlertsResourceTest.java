@@ -1,7 +1,7 @@
 package com.hello.suripu.app.v2;
 
 import com.google.common.base.Optional;
-import com.hello.suripu.app.utils.AlertsProcessor;
+import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.core.alerts.Alert;
 import com.hello.suripu.core.alerts.AlertCategory;
 import com.hello.suripu.core.oauth.OAuthScope;

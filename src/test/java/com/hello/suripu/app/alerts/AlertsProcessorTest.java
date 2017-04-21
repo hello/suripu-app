@@ -1,4 +1,4 @@
-package com.hello.suripu.app.utils;
+package com.hello.suripu.app.alerts;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -12,6 +12,7 @@ import com.hello.suripu.core.models.device.v2.Sense;
 import com.hello.suripu.core.sense.metadata.HumanReadableHardwareVersion;
 import com.hello.suripu.core.sense.voice.VoiceMetadata;
 import com.hello.suripu.core.sense.voice.VoiceMetadataDAO;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +34,8 @@ public class AlertsProcessorTest {
     private VoiceMetadataDAO mockVoiceMetadataDAO;
     private DeviceProcessor mockDeviceProcessor;
     private Account mockAccount;
-    private AlertsProcessor alertsProcessor;
+    private com.hello.suripu.app.alerts.AlertsProcessor alertsProcessor;
+    private com.hello.suripu.core.db.AccountDAO mockAccountDAO;
 
     @Before
     public void setUp() throws Exception {
@@ -49,13 +51,13 @@ public class AlertsProcessorTest {
 
         mockDeviceProcessor = mock(DeviceProcessor.class);
 
-        final AccountDAO mockAccountDAO = mock(AccountDAO.class);
+        mockAccountDAO = mock(AccountDAO.class);
 
         doReturn(Optional.of(mockAccount))
                 .when(mockAccountDAO)
                 .getById(MOCK_ACCOUNT_ID);
 
-        alertsProcessor = new AlertsProcessor(
+        alertsProcessor = new com.hello.suripu.app.alerts.AlertsProcessor(
                 mockAlertsDAO,
                 mockVoiceMetadataDAO,
                 mockDeviceProcessor,
@@ -107,11 +109,6 @@ public class AlertsProcessorTest {
 
     @Test
     public void getSleepPillNotPairedAlert() throws Exception {
-        final Sense recentlySeenSense = mock(Sense.class);
-        doReturn(ImmutableList.<Sense>builder().add(recentlySeenSense).build())
-                .when(mockDeviceProcessor)
-                .getSenses(MOCK_ACCOUNT_ID);
-
         doReturn(ImmutableList.builder().build())
                 .when(mockDeviceProcessor)
                 .getPills(MOCK_ACCOUNT_ID, mockAccount);
@@ -120,6 +117,21 @@ public class AlertsProcessorTest {
 
         assertTrue(pillAlert.isPresent());
         assertThat(pillAlert.get().category(), equalTo(AlertCategory.SLEEP_PILL_NOT_PAIRED));
+    }
+
+    @Test(expected = AlertsProcessor.BadAlertRequestException.class)
+    public void throwBadAlertRequestException() throws Exception {
+        final Long INVALID_ACCOUNT_ID = 1L;
+        doReturn(Optional.absent())
+                .when(mockAccountDAO)
+                .getById(INVALID_ACCOUNT_ID);
+
+        alertsProcessor.getPillAlertOptional(INVALID_ACCOUNT_ID);
+    }
+
+    @Test(expected = AlertsProcessor.UnsupportedAlertCategoryException.class)
+    public void throwUnsupportedAlertCategoryException() throws Exception {
+        alertsProcessor.map(AlertCategory.EXPANSION_UNREACHABLE, MOCK_ACCOUNT_ID, DateTime.now());
     }
 
 }

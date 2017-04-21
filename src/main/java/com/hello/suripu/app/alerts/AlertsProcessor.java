@@ -1,5 +1,6 @@
-package com.hello.suripu.app.utils;
+package com.hello.suripu.app.alerts;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.hello.suripu.core.alerts.Alert;
 import com.hello.suripu.core.alerts.AlertCategory;
@@ -20,8 +21,6 @@ import org.joda.time.Days;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 /**
@@ -46,11 +45,11 @@ public class AlertsProcessor {
         this.accountDAO = accountDAO;
     }
 
-    public Optional<Alert> getSenseAlertOptional(final Long accountId) {
+    public Optional<Alert> getSenseAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException {
         return Optional.fromNullable(getSenseAlert(accountId, DateTime.now(DateTimeZone.UTC)));
     }
 
-    public Optional<Alert> getPillAlertOptional(final Long accountId) {
+    public Optional<Alert> getPillAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException, BadAlertRequestException {
         return Optional.fromNullable(getPillAlert(accountId, DateTime.now(DateTimeZone.UTC)));
     }
 
@@ -68,27 +67,27 @@ public class AlertsProcessor {
 
         if(senses.isEmpty()) {
             return this.map(AlertCategory.SENSE_NOT_PAIRED, accountId, createdAt);
-        } else {
-            final Sense sense = senses.get(0);
-            final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
-            if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
-                LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
-                return this.map(AlertCategory.SENSE_MUTED, accountId, createdAt);
-            }
-            final Optional<DateTime> lastUpdatedOptional = sense.lastUpdatedOptional;
-            if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
-                return this.map(AlertCategory.SENSE_NOT_SEEN, accountId, createdAt);
-            }
-
-            return null;
         }
+        final Sense sense = senses.get(0);
+        final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
+        if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
+            LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
+            return this.map(AlertCategory.SENSE_MUTED, accountId, createdAt);
+        }
+        final Optional<DateTime> lastUpdatedOptional = sense.lastUpdatedOptional;
+        if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
+            return this.map(AlertCategory.SENSE_NOT_SEEN, accountId, createdAt);
+        }
+
+        return null;
+
     }
 
     @Nullable
     private Alert getPillAlert(final Long accountId, @NotNull final DateTime createdAt) {
         final Optional<Account> accountOptional = accountDAO.getById(accountId);
         if (!accountOptional.isPresent()) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            throw new com.hello.suripu.app.alerts.AlertsProcessor.BadAlertRequestException(String.format("no account associated with accountId=%s", accountId));
         }
         final List<Pill> pills = deviceProcessor.getPills(accountId, accountOptional.get());
 
@@ -104,8 +103,9 @@ public class AlertsProcessor {
         return null;
     }
 
+    @VisibleForTesting
     @NotNull
-    private Alert map(@NotNull final AlertCategory alertCategory,
+    protected Alert map(@NotNull final AlertCategory alertCategory,
                       @NotNull final Long accountId,
                       @NotNull final DateTime createdAt) {
         LOGGER.debug("action=map alert_category={} account_id={}", alertCategory, accountId);
@@ -146,11 +146,31 @@ public class AlertsProcessor {
                         createdAt);
             default:
                 LOGGER.error("action=map alert_category={} account_id={} unsupported alert_category", alertCategory, accountId);
-                throw new WebApplicationException(Response.Status.BAD_REQUEST); // todo make InvalidAlertCategoryException that is try catched?
+                throw new UnsupportedAlertCategoryException(alertCategory);
         }
     }
 
     private boolean shouldCreateAlert(@NotNull final DateTime lastSeen, final int atLeastNumDays) {
         return Days.daysBetween(lastSeen, DateTime.now(DateTimeZone.UTC)).isGreaterThan(Days.days(atLeastNumDays));
+    }
+
+    public static class BadAlertRequestException extends RuntimeException {
+
+        BadAlertRequestException(@NotNull final String message) {
+            super(message);
+        }
+    }
+
+    public static class UnsupportedAlertCategoryException extends RuntimeException {
+        private final AlertCategory alertCategory;
+
+        UnsupportedAlertCategoryException(@NotNull final AlertCategory category) {
+            super(String.format("cannot create alert for category: %s", category));
+            alertCategory = category;
+        }
+
+        public AlertCategory getAlertCategory() {
+            return alertCategory;
+        }
     }
 }
