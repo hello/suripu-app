@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.api.input.FileSync;
 import com.hello.suripu.api.input.State;
@@ -66,6 +67,14 @@ public class SleepSoundsResourceTest {
     private final Optional<DeviceAccountPair> pair = Optional.of(new DeviceAccountPair(accountId, 1L, senseId, new DateTime()));
     private final DeviceKeyStoreRecord record = DeviceKeyStoreRecord.forSense("sense","key","sn", "", HardwareVersion.SENSE_ONE);
     private final AccessToken token = makeToken(accountId);
+
+    private final Long accountIdOneFive = 15L;
+    private final String senseIdOneFive = "sense15";
+    private final Optional<DeviceAccountPair> pairOneFive = Optional.of(new DeviceAccountPair(accountIdOneFive, 2L, senseIdOneFive, new DateTime()));
+    private final DeviceKeyStoreRecord recordOneFive = DeviceKeyStoreRecord.forSense(senseIdOneFive,"key15","sn15", "", HardwareVersion.SENSE_ONE_FIVE);
+    private final AccessToken tokenOneFive = makeToken(accountIdOneFive);
+
+
     private AnalyticsTracker analyticsTracker = mock(AnalyticsTracker.class);
 
     private DeviceDAO deviceDAO;
@@ -304,6 +313,61 @@ public class SleepSoundsResourceTest {
         assertThat(status.sound.get(), is(Sound.fromFileInfo(fileInfo)));
         assertThat(status.volumePercent.isPresent(), is(false));
     }
+
+    @Test
+    public void testGetStatusCorrectWithHardwareVersion() {
+        when(deviceDAO.getMostRecentSensePairByAccountId(accountIdOneFive)).thenReturn(pairOneFive);
+
+        final Duration duration = Duration.create(1L, "path15", 30);
+        when(durationDAO.getDurationBySeconds(Mockito.anyInt())).thenReturn(Optional.of(duration));
+
+//        final FileInfo fileInfoOneFive = makeFileInfo(1L, "preview", "name15", "path15", "url");
+//        when(fileInfoSenseOneFiveDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.of(fileInfoOneFive));
+
+        final SenseStateAtTime state = new SenseStateAtTime(
+                State.SenseState.newBuilder()
+                        .setSenseId(senseIdOneFive)
+                        .setAudioState(State.AudioState.newBuilder()
+                                .setPlayingAudio(true)
+                                .setFilePath("path15")
+                                .setDurationSeconds(1)
+                                .build())
+                        .build(),
+                new DateTime());
+        when(senseStateDynamoDB.getState(senseIdOneFive))
+                .thenReturn(Optional.of(state));
+        when(keyStore.getKeyStoreRecord(senseIdOneFive)).thenReturn(Optional.of(recordOneFive));
+
+        final SleepSoundStatus status = sleepSoundsResource.getStatus(tokenOneFive);
+        assertThat(status.isPlaying, is(true));
+
+    }
+
+    @Test(expected = UncheckedExecutionException.class)
+    public void testGetStatusFailWithHardwareVersion() {
+        when(deviceDAO.getMostRecentSensePairByAccountId(accountIdOneFive)).thenReturn(pairOneFive);
+
+        final Duration duration = Duration.create(1L, "path15", 30);
+        when(durationDAO.getDurationBySeconds(Mockito.anyInt())).thenReturn(Optional.of(duration));
+
+        final SenseStateAtTime state = new SenseStateAtTime(
+                State.SenseState.newBuilder()
+                        .setSenseId(senseIdOneFive)
+                        .setAudioState(State.AudioState.newBuilder()
+                                .setPlayingAudio(true)
+                                .setFilePath("path15")
+                                .setDurationSeconds(1)
+                .build())
+                        .build(),
+                new DateTime());
+        when(senseStateDynamoDB.getState(senseIdOneFive))
+                .thenReturn(Optional.of(state));
+        when(keyStore.getKeyStoreRecord(senseIdOneFive)).thenReturn(Optional.of(recordOneFive));
+
+        // no method defined for mock objects, should throw exception
+        final SleepSoundStatus status = sleepSoundsResource.getStatus(tokenOneFive);
+    }
+
     // endregion getStatus
 
     // region play
