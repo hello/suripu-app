@@ -114,6 +114,7 @@ import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileInfoSenseOneDAO;
+import com.hello.suripu.core.db.FileInfoSenseOneFiveDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.HistoricalPairingDAO;
@@ -147,7 +148,6 @@ import com.hello.suripu.core.db.VoiceCommandsDAO;
 import com.hello.suripu.core.db.WifiInfoDAO;
 import com.hello.suripu.core.db.WifiInfoDynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
-import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.colors.SenseColorDynamoDBDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
 import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
@@ -309,6 +309,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final NotificationSubscriptionsDAO notificationSubscriptionsDAO = commonDB.onDemand(NotificationSubscriptionsDAO.class);
 
         final FileInfoDAO fileInfoSenseOneDAO = commonDB.onDemand(FileInfoSenseOneDAO.class);
+        final FileInfoDAO fileInfoSenseOneFiveDAO = commonDB.onDemand(FileInfoSenseOneFiveDAO.class);
         final AlertsDAO alertsDAO = commonDB.onDemand(AlertsDAO.class);
 
         final VoiceCommandsDAO voiceCommandsDAO = commonDB.onDemand(VoiceCommandsDAO.class);
@@ -677,7 +678,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, senseKeyStore, deviceDAO, messejiClient,
-                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileManifestDAO),
+                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileInfoSenseOneFiveDAO, fileManifestDAO),
                 sleepSoundSettingsDynamoDB,
                 configuration.getSleepSoundCacheSeconds(), configuration.getSleepSoundDurationCacheSeconds()));
 
@@ -738,7 +739,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 deviceDataDAODynamoDB,
                 timelineDAODynamoDB,
                 messejiClient,
-                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileManifestDAO),
+                SleepSoundsProcessor.create(fileInfoSenseOneDAO, fileInfoSenseOneFiveDAO, fileManifestDAO),
                 durationDAO,
                 timelineProcessor,
                 accountPreferencesDAO,

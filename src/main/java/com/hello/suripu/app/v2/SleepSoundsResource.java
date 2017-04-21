@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Path("/v2/sleep_sounds")
 public class SleepSoundsResource extends BaseResource {
@@ -117,8 +118,12 @@ public class SleepSoundsResource extends BaseResource {
                 .expireAfterWrite(soundCacheExpirationSeconds, TimeUnit.SECONDS)
                 .build(new CacheLoader<String, Optional<Sound>>() {
                     @Override
-                    public Optional<Sound> load(final String filePath) throws Exception {
-                        return sleepSoundsProcessor.getSoundByFilePath(filePath);
+                    public Optional<Sound> load(final String cacheKey) throws Exception {
+                        // cacheKey = "%s|%s", filePath, hardware_version
+                        final String[] parts = cacheKey.split(Pattern.quote("|"));
+                        final String filePath = parts[0];
+                        final HardwareVersion hardwareVersion = HardwareVersion.fromInt(Integer.valueOf(parts[1]));
+                        return sleepSoundsProcessor.getSoundByFilePath(filePath, hardwareVersion);
                     }
                 });
         final LoadingCache<Integer, Optional<Duration>> durationBySecondsCache = CacheBuilder.newBuilder()
@@ -133,6 +138,7 @@ public class SleepSoundsResource extends BaseResource {
                 sleepSoundsProcessor, sleepSoundSettingsDynamoDB,
                 soundByFilePathCache, durationBySecondsCache);
     }
+
 
 
     //region play
@@ -265,7 +271,6 @@ public class SleepSoundsResource extends BaseResource {
     }
     //endregion stop
 
-
     //region combinedState
     protected class CombinedState {
         @JsonProperty("availableDurations")
@@ -299,11 +304,15 @@ public class SleepSoundsResource extends BaseResource {
             LOGGER.warn("account-id={} device-id-pair=not-found", accountId);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+
         final String senseId = deviceIdPair.get().externalDeviceId;
+        final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(senseId);
+        final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
+
 
         final SleepSoundsProcessor.SoundResult soundResult = getSounds(accountId, senseId);
         final DurationResult durationResult = new DurationResult(durationDAO.all());
-        final SleepSoundStatus sleepSoundStatus = getStatus(accountId, senseId, soundResult, durationResult);
+        final SleepSoundStatus sleepSoundStatus = getStatus(accountId, senseId, hardwareVersion, soundResult, durationResult);
         return new CombinedState(durationResult, soundResult, sleepSoundStatus);
     }
 
@@ -383,7 +392,7 @@ public class SleepSoundsResource extends BaseResource {
 
 
     //region status
-    private SleepSoundStatus getStatus(final Long accountId, final String deviceId, final SoundMap soundMap, final DurationMap durationMap) {
+    private SleepSoundStatus getStatus(final Long accountId, final String deviceId, final HardwareVersion hardwareVersion, final SoundMap soundMap, final DurationMap durationMap) {
 
         final SleepSoundStatus NOT_PLAYING = SleepSoundStatus.create();
 
@@ -412,7 +421,7 @@ public class SleepSoundsResource extends BaseResource {
             return NOT_PLAYING;
         }
 
-        final Optional<Sound> soundOptional = soundMap.getSoundByFilePath(audioState.getFilePath());
+        final Optional<Sound> soundOptional = soundMap.getSoundByFilePath(audioState.getFilePath(), hardwareVersion);
         if (!soundOptional.isPresent()) {
             LOGGER.warn("error=sound-file-not-found account-id={} sense-id={} file-path={}",
                     accountId, deviceId, audioState.getFilePath());
@@ -444,13 +453,16 @@ public class SleepSoundsResource extends BaseResource {
         }
 
         final String deviceId = deviceIdPair.get().externalDeviceId;
+        final Optional<DeviceKeyStoreRecord> recordOptional = senseKeyStore.getKeyStoreRecord(deviceId);
+        final HardwareVersion hardwareVersion = (recordOptional.isPresent()) ? recordOptional.get().hardwareVersion : HardwareVersion.SENSE_ONE;
 
-        return getStatus(accountId, deviceId,
+
+        return getStatus(accountId, deviceId, hardwareVersion,
                 new SoundMap() {
                     @Override
-                    public Optional<Sound> getSoundByFilePath(final String filePath) {
+                    public Optional<Sound> getSoundByFilePath(final String filePath, final HardwareVersion hardwareVersion) {
                         try {
-                            return soundByFilePathCache.get(filePath);
+                            return soundByFilePathCache.get(toCacheKey(filePath, hardwareVersion));
                         } catch (ExecutionException e) {
                             LOGGER.error("error=ExecutionException method=soundByFilePathCache.get(filePath) file-path={}", filePath);
                             throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
@@ -472,6 +484,9 @@ public class SleepSoundsResource extends BaseResource {
     }
     //endregion status
 
+    private static String toCacheKey(final String filePath, final HardwareVersion hardwareVersion) {
+        return String.format("%s|%d", filePath, hardwareVersion.value);
+    }
 
     private static Response invalid_request(final String message) {
         return Response.status(Response.Status.BAD_REQUEST)

@@ -4,6 +4,7 @@ import com.google.api.client.util.Lists;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.SleepSoundSetting;
@@ -184,7 +185,7 @@ public class SleepSoundHandler extends BaseHandler {
         }
 
         if (!availableSounds.containsKey(soundName)) {
-            Optional<Sound> optionalSound = sleepSoundsProcessor.getSoundByFileName(soundName);
+            Optional<Sound> optionalSound = sleepSoundsProcessor.getSoundByFileName(soundName, HardwareVersion.SENSE_ONE_FIVE);
             if (optionalSound.isPresent()) {
                 availableSounds.put(soundName, optionalSound.get());
             }

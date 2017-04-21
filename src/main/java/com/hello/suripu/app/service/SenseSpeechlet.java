@@ -19,6 +19,7 @@ import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
@@ -45,6 +46,7 @@ public class SenseSpeechlet implements Speechlet {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SenseSpeechlet.class);
   public static String SKILL_NAME = "Hello Sense";
+  private static final HardwareVersion DEFAULT_HARDWARE_VERSION = HardwareVersion.SENSE_ONE;
 
   private Set<IntentHandler> intentHandlers = Sets.newHashSet();
   private final AccountDAO accountDAO;
@@ -126,7 +128,7 @@ public class SenseSpeechlet implements Speechlet {
       }
       final DeviceAccountPair accountPair = optionalPair.get();
 
-      final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName("Horizon");
+      final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName("Horizon", DEFAULT_HARDWARE_VERSION);
       if (!soundOptional.isPresent()) {
         LOGGER.error("error=failed-stop reason=invalid-sound-id");
       }
