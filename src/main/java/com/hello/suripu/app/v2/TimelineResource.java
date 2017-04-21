@@ -130,7 +130,7 @@ public class TimelineResource extends BaseResource {
         final TimelineFeedback timelineFeedback = TimelineFeedback.createTimeAmendedFeedback(queryDate, hourMinute, timeAmendment.newEventTime, eventType, accessToken.accountId);
 
         //make sure the feedback event order and times make sense
-        checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback, offsetMillis);
+        checkValidFeedbackOrThrow(accessToken.accountId,timelineFeedback, 0);
 
         timelineDAODynamoDB.invalidateCache(accessToken.accountId, timelineFeedback.dateOfNight, DateTime.now());
 
