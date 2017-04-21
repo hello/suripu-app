@@ -19,9 +19,8 @@ import com.hello.suripu.core.preferences.AccountPreferencesDynamoDB;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
-import com.librato.rollout.RolloutClient;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -77,7 +76,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final AlarmDAODynamoDB alarmDAO = mock(AlarmDAODynamoDB.class);
     private final MergedUserInfoDynamoDB mergedUserDAO = mock(MergedUserInfoDynamoDB.class);
     private final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = mock(SleepStatsDAODynamoDB.class);
-    private final InstrumentedTimelineProcessor timelineProcessor = mock(InstrumentedTimelineProcessor.class);
+    private final TimelineProcessor timelineProcessor = mock(TimelineProcessor.class);
     private final InstrumentedTimelineProcessorV3 timelineProcessorV3 = mock(InstrumentedTimelineProcessorV3.class);
 
     private final MessejiClient messejiClient = mock(MessejiClient.class);
@@ -87,7 +86,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final SensorViewLogic sensorViewLogic = mock(SensorViewLogic.class);
     private final AccountPreferencesDynamoDB accountPreferenceDAO = mock(AccountPreferencesDynamoDB.class);
     private final AccountDAO accountDAO = mock(AccountDAO.class);
-    private final RolloutClient rolloutClient = mock(RolloutClient.class);
+
 
     private final String SENSE_ID = "123456789";
     private final Long ACCOUNT_ID = 99L;
@@ -183,13 +182,11 @@ public class RegexAnnotationsHandlerExecutorTest {
                 mergedUserDAO,
                 sleepStatsDAODynamoDB,
                 timelineProcessor,
-                timelineProcessorV3,
                 Optional.absent(), // geoip DatabaseReader
                 sensorViewLogic,
                 accountPreferenceDAO,
                 false,
-                accountDAO,
-                rolloutClient
+                accountDAO
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)

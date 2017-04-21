@@ -32,8 +32,7 @@ import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import com.librato.rollout.RolloutClient;
 import io.dropwizard.jersey.PATCH;
 import org.joda.time.DateTime;
@@ -69,8 +68,7 @@ public class TimelineResource extends BaseResource {
     @Inject
     ActionProcessor actionProcessor;
 
-    private final InstrumentedTimelineProcessor timelineProcessor;
-    private final InstrumentedTimelineProcessorV3 timelineProcessorv3;
+    private final TimelineProcessor timelineProcessor;
 
     private final TimelineDAODynamoDB timelineDAODynamoDB;
     private final TimelineLogDAO timelineLogDAO;
@@ -80,15 +78,13 @@ public class TimelineResource extends BaseResource {
     private final DataLogger timelineLogDAOV2;
 
     public TimelineResource(final TimelineDAODynamoDB timelineDAODynamoDB,
-                            final InstrumentedTimelineProcessor timelineProcessor,
-                            final InstrumentedTimelineProcessorV3 timelineProcessorv3,
+                            final TimelineProcessor timelineProcessor,
                             final TimelineLogDAO timelineLogDAO,
                             final FeedbackDAO feedbackDAO,
                             final PillDataDAODynamoDB pillDataDAODynamoDB,
                             final SleepStatsDAODynamoDB sleepStatsDAODynamoDB,
                             final DataLogger timelineLogDAOV2) {
         this.timelineProcessor = timelineProcessor;
-        this.timelineProcessorv3 = timelineProcessorv3;
         this.timelineDAODynamoDB = timelineDAODynamoDB;
         this.timelineLogDAO = timelineLogDAO;
         this.feedbackDAO = feedbackDAO;
@@ -296,11 +292,8 @@ public class TimelineResource extends BaseResource {
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(night);
 
         final TimelineResult timelineResult;
-        if (hourOptional.isPresent() && hasTimelineProcessorV3(accountId)){
-            timelineResult = timelineProcessorv3.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
-        } else {
-            timelineResult = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
-        }
+        timelineResult = timelineProcessor.retrieveTimelinesFast(accountId, targetDate, hourOptional,newFeedback);
+
         //GET THE TIMELINE WITH THE NEW FEEDBACK (or no new feedback)
         //TODO change timeline result to a V2 timeline result
 
