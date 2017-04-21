@@ -14,7 +14,6 @@ import com.hello.suripu.core.sense.metadata.HumanReadableHardwareVersion;
 import com.hello.suripu.core.sense.voice.VoiceMetadata;
 import com.hello.suripu.core.sense.voice.VoiceMetadataDAO;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -46,11 +45,11 @@ public class AlertsProcessor {
     }
 
     public Optional<Alert> getSenseAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException {
-        return Optional.fromNullable(getSenseAlert(accountId, DateTime.now(DateTimeZone.UTC)));
+        return getSenseAlert(accountId, DateTime.now(DateTimeZone.UTC));
     }
 
     public Optional<Alert> getPillAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException, BadAlertRequestException {
-        return Optional.fromNullable(getPillAlert(accountId, DateTime.now(DateTimeZone.UTC)));
+        return getPillAlert(accountId, DateTime.now(DateTimeZone.UTC));
     }
 
     public Optional<Alert> getSystemAlertOptional(final Long accountId) {
@@ -61,30 +60,30 @@ public class AlertsProcessor {
         return alertOptional;
     }
 
-    @Nullable
-    private Alert getSenseAlert(final Long accountId, @NotNull final DateTime createdAt) {
+    @NotNull
+    private Optional<Alert> getSenseAlert(final Long accountId, @NotNull final DateTime createdAt) {
         final List<Sense> senses = deviceProcessor.getSenses(accountId);
 
         if(senses.isEmpty()) {
-            return this.map(AlertCategory.SENSE_NOT_PAIRED, accountId, createdAt);
+            return Optional.of(this.map(AlertCategory.SENSE_NOT_PAIRED, accountId, createdAt));
         }
         final Sense sense = senses.get(0);
         final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
         if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
             LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
-            return this.map(AlertCategory.SENSE_MUTED, accountId, createdAt);
+            return Optional.of(this.map(AlertCategory.SENSE_MUTED, accountId, createdAt));
         }
         final Optional<DateTime> lastUpdatedOptional = sense.lastUpdatedOptional;
         if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
-            return this.map(AlertCategory.SENSE_NOT_SEEN, accountId, createdAt);
+            return Optional.of(this.map(AlertCategory.SENSE_NOT_SEEN, accountId, createdAt));
         }
 
-        return null;
+        return Optional.absent();
 
     }
 
-    @Nullable
-    private Alert getPillAlert(final Long accountId, @NotNull final DateTime createdAt) {
+    @NotNull
+    private Optional<Alert> getPillAlert(final Long accountId, @NotNull final DateTime createdAt) {
         final Optional<Account> accountOptional = accountDAO.getById(accountId);
         if (!accountOptional.isPresent()) {
             throw new com.hello.suripu.app.alerts.AlertsProcessor.BadAlertRequestException(String.format("no account associated with accountId=%s", accountId));
@@ -92,15 +91,15 @@ public class AlertsProcessor {
         final List<Pill> pills = deviceProcessor.getPills(accountId, accountOptional.get());
 
         if(pills.isEmpty()) {
-            return this.map(AlertCategory.SLEEP_PILL_NOT_PAIRED, accountId, createdAt);
+            return Optional.of(this.map(AlertCategory.SLEEP_PILL_NOT_PAIRED, accountId, createdAt));
         }
         final Pill pill = pills.get(0);
         final Optional<DateTime> lastUpdatedOptional = pill.lastUpdatedOptional;
         if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
-            return this.map(AlertCategory.SLEEP_PILL_NOT_SEEN, accountId, createdAt);
+            return Optional.of(this.map(AlertCategory.SLEEP_PILL_NOT_SEEN, accountId, createdAt));
         }
 
-        return null;
+        return Optional.absent();
     }
 
     @VisibleForTesting
@@ -125,7 +124,7 @@ public class AlertsProcessor {
                         4L,
                         accountId,
                         "Sense",
-                        "Sense has not reported any data recently. Tap ‘Fix Now’ to troubleshoot.", //todo either copy needs to change or body needs to support replacement
+                        "Sense has not reported any data recently.",
                         AlertCategory.SLEEP_PILL_NOT_PAIRED,
                         createdAt);
             case SLEEP_PILL_NOT_PAIRED:
@@ -141,7 +140,7 @@ public class AlertsProcessor {
                         6L,
                         accountId,
                         "Sleep Pill",
-                        "Sleep Pill has not reported any data recently. Tap ‘Fix Now’ to troubleshoot.", //todo either copy needs to change or body needs to support replacement
+                        "Sleep Pill has not reported any data recently.",
                         AlertCategory.SLEEP_PILL_NOT_SEEN,
                         createdAt);
             default:
