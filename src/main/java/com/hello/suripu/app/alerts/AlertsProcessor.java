@@ -28,6 +28,7 @@ import java.util.List;
 public class AlertsProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AlertsProcessor.class);
+    private static final int MIN_NUM_DAYS_SINCE_LAST_SEEN_DEVICE = 1;
 
     private final AlertsDAO alertsDAO;
     private final VoiceMetadataDAO voiceMetadataDAO;
@@ -74,7 +75,7 @@ public class AlertsProcessor {
             return Optional.of(this.map(AlertCategory.SENSE_MUTED, accountId, createdAt));
         }
         final Optional<DateTime> lastUpdatedOptional = sense.lastUpdatedOptional;
-        if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
+        if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), MIN_NUM_DAYS_SINCE_LAST_SEEN_DEVICE)) {
             return Optional.of(this.map(AlertCategory.SENSE_NOT_SEEN, accountId, createdAt));
         }
 
@@ -95,7 +96,7 @@ public class AlertsProcessor {
         }
         final Pill pill = pills.get(0);
         final Optional<DateTime> lastUpdatedOptional = pill.lastUpdatedOptional;
-        if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), 1)) {
+        if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), MIN_NUM_DAYS_SINCE_LAST_SEEN_DEVICE)) {
             return Optional.of(this.map(AlertCategory.SLEEP_PILL_NOT_SEEN, accountId, createdAt));
         }
 
@@ -150,6 +151,7 @@ public class AlertsProcessor {
     }
 
     private boolean shouldCreateAlert(@NotNull final DateTime lastSeen, final int atLeastNumDays) {
+        Days
         return Days.daysBetween(lastSeen, DateTime.now(DateTimeZone.UTC)).isGreaterThan(Days.days(atLeastNumDays));
     }
 
