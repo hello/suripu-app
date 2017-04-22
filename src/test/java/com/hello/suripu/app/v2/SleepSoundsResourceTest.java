@@ -117,6 +117,8 @@ public class SleepSoundsResourceTest {
         sleepSoundsResource = SleepSoundsResource.create(
                 durationDAO, senseStateDynamoDB, keyStore, deviceDAO,
                 messejiClient, sleepSoundsProcessor, sleepSoundSettingsDynamoDB, 1, 1);
+        when(keyStore.getKeyStoreRecord(senseId)).thenReturn(Optional.of(record));
+
     }
 
     private void assertEmpty(final SleepSoundStatus status) {
@@ -321,9 +323,6 @@ public class SleepSoundsResourceTest {
         final Duration duration = Duration.create(1L, "path15", 30);
         when(durationDAO.getDurationBySeconds(Mockito.anyInt())).thenReturn(Optional.of(duration));
 
-//        final FileInfo fileInfoOneFive = makeFileInfo(1L, "preview", "name15", "path15", "url");
-//        when(fileInfoSenseOneFiveDAO.getByFilePath(Mockito.anyString())).thenReturn(Optional.of(fileInfoOneFive));
-
         final SenseStateAtTime state = new SenseStateAtTime(
                 State.SenseState.newBuilder()
                         .setSenseId(senseIdOneFive)
@@ -337,6 +336,9 @@ public class SleepSoundsResourceTest {
         when(senseStateDynamoDB.getState(senseIdOneFive))
                 .thenReturn(Optional.of(state));
         when(keyStore.getKeyStoreRecord(senseIdOneFive)).thenReturn(Optional.of(recordOneFive));
+        final FileInfo fileInfoOneFive = makeFileInfo(2L, "preview", "name15", "path15", "url");
+        when(fileInfoSenseOneFiveDAO.getByFilePath("path15")).thenReturn(Optional.of(fileInfoOneFive));
+
 
         final SleepSoundStatus status = sleepSoundsResource.getStatus(tokenOneFive);
         assertThat(status.isPlaying, is(true));
