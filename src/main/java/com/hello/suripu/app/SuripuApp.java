@@ -82,6 +82,7 @@ import com.hello.suripu.app.v2.TrendsResource;
 import com.hello.suripu.app.v2.UserFeaturesResource;
 import com.hello.suripu.app.v2.VoiceCommandsResource;
 import com.hello.suripu.core.ObjectGraphRoot;
+import com.hello.suripu.core.accounts.pairings.PairedAccounts;
 import com.hello.suripu.core.actions.ActionFirehoseDAO;
 import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.actions.ActionProcessorLog;
@@ -801,7 +802,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         final PersistentExpansionDataStore externalAppDataStore = new PersistentExpansionDataStore(expansionDataDAO);
 
 
-        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore));
+        final PairedAccounts pairedAccounts = new PairedAccounts(mergedUserInfoDynamoDB, deviceDAO, accountDAO);
+        environment.jersey().register(new DeviceResource(deviceProcessor, swapper, accountDAO, senseMetadataDAO, voiceMetadataDAO, messejiClient, externalTokenStore, pairedAccounts));
 
         final TokenCheckerFactory tokenCheckerFactory = new TokenCheckerFactory(deviceDAO, configuration.expansionConfiguration(), expansionStore, externalTokenStore, externalAppDataStore, environment.getObjectMapper());
         environment.jersey().register(new AppStatsResource(appStatsDAO, insightsDAODynamoDB, questionProcessor, accountDAO, timeZoneHistoryDAODynamoDB, tokenCheckerFactory));
