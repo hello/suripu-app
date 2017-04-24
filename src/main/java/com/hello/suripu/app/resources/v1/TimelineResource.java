@@ -1,30 +1,28 @@
 package com.hello.suripu.app.resources.v1;
 
 import com.amazonaws.AmazonServiceException;
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.AccountDAO;
-import com.hello.suripu.core.logging.DataLogger;
-import com.hello.suripu.core.models.TimelineFeedback;
-import com.hello.suripu.core.models.timeline.v2.TimelineLog;
-import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.core.db.TimelineLogDAO;
+import com.hello.suripu.core.logging.DataLogger;
 import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.Timeline;
+import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
+import com.hello.suripu.core.models.timeline.v2.TimelineLog;
 import com.hello.suripu.core.oauth.OAuthScope;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.core.translations.English;
+import com.hello.suripu.core.util.DateTimeUtil;
+import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
 import com.hello.suripu.coredropwizard.oauth.Auth;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowed;
 import com.hello.suripu.coredropwizard.resources.BaseResource;
-import com.hello.suripu.core.translations.English;
-import com.hello.suripu.core.util.DateTimeUtil;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutClient;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,8 +185,8 @@ public class TimelineResource extends BaseResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
 
-        final TimelineResult timelineResult = timelineProcessor.retrieveTimelinesFast(accountId.get(), DateTimeUtil.ymdStringToDateTime(date), Optional.<TimelineFeedback>absent());
-
+        final TimelineResult timelineResult  = timelineProcessor.retrieveTimelinesFast(accountId.get(),  DateTimeUtil.ymdStringToDateTime(date), Optional.<TimelineFeedback>absent());
+        
         return timelineResult.timelines;
     }
 

@@ -213,6 +213,8 @@ import com.hello.suripu.coredropwizard.oauth.OAuthCredentialAuthFilter;
 import com.hello.suripu.coredropwizard.oauth.ScopesAllowedDynamicFeature;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentAccessTokenStore;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import com.hello.suripu.coredropwizard.util.CustomJSONExceptionMapper;
 import com.librato.rollout.RolloutClient;
 import com.segment.analytics.Analytics;
@@ -604,7 +606,8 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         final PairingDAO pairingDAO = new HistoricalPairingDAO(deviceDAO,deviceDataDAODynamoDB);
         final SenseDataDAO senseDataDAO = new SenseDataDAODynamoDB(pairingDAO, deviceDataDAODynamoDB, senseColorDAO, calibrationDAO);
-        final InstrumentedTimelineProcessor timelineProcessor = InstrumentedTimelineProcessor.createTimelineProcessor(
+
+        final InstrumentedTimelineProcessor timelineProcessorV2 = InstrumentedTimelineProcessor.createTimelineProcessor(
                 pillDataDAODynamoDB,
                 deviceDAO,
                 deviceDataDAODynamoDB,
@@ -624,7 +627,31 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
                 neuralNetClients,
                 timelineAlgorithmConfiguration,
                 environment.metrics());
-        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessor));
+
+        final InstrumentedTimelineProcessorV3 timelineProcessorV3 = InstrumentedTimelineProcessorV3.createTimelineProcessor(
+                pillDataDAODynamoDB,
+                deviceDAO,
+                deviceDataDAODynamoDB,
+                ringTimeHistoryDAODynamoDB,
+                feedbackDAO,
+                sleepHmmDAODynamoDB,
+                accountDAO,
+                sleepStatsDAODynamoDB,
+                mainEventTimesDAO,
+                senseDataDAO,
+                timeZoneHistoryDAODynamoDB,
+                onlineHmmModelsDAO,
+                featureExtractionDAO,
+                defaultModelEnsembleDAO,
+                userTimelineTestGroupDAO,
+                sleepScoreParametersDAO,
+                neuralNetClients,
+                timelineAlgorithmConfiguration,
+                environment.metrics());
+
+        final TimelineProcessor timelineProcessor =  TimelineProcessor.createTimelineProcessors(timelineProcessorV2, timelineProcessorV3);
+
+        environment.jersey().register(new TimelineResource(accountDAO, timelineDAODynamoDB, timelineLogDAO, timelineLogger, timelineProcessorV2));
         environment.jersey().register(new TimeZoneResource(timeZoneHistoryDAODynamoDB, mergedUserInfoDynamoDB, deviceDAO));
 
         final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
@@ -827,5 +854,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
             environment.jersey().register(supichi.uploadResource());
             environment.jersey().register(supichi.pingResource());
         }
+
+
     }
 }

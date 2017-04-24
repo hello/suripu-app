@@ -14,7 +14,7 @@ import com.hello.suripu.core.preferences.AccountPreferencesDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import com.maxmind.geoip2.DatabaseReader;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
@@ -27,7 +27,6 @@ import is.hello.supichi.db.SpeechCommandDAO;
  * Created by ksg on 6/17/16
  */
 public class HandlerFactory {
-
     private final SpeechCommandDAO speechCommandDAO;
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
@@ -44,7 +43,7 @@ public class HandlerFactory {
     private final SleepStatsDAODynamoDB sleepStatsDAO;
     private final AccountPreferencesDAO accountPreferencesDAO;
 
-    private final InstrumentedTimelineProcessor timelineProcessor;
+    private final TimelineProcessor timelineProcessor;
     private final Optional<DatabaseReader> geoIpDatabase;
     private final SensorViewLogic sensorViewLogic;
     private final boolean isDebug;
@@ -64,7 +63,7 @@ public class HandlerFactory {
                            final AlarmDAODynamoDB alarmDAODynamoDB,
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                            final SleepStatsDAODynamoDB sleepStatsDAO,
-                           final InstrumentedTimelineProcessor timelineProcessor,
+                           final TimelineProcessor timelineProcessor,
                            final Optional<DatabaseReader> geoIpDatabase,
                            final SensorViewLogic sensorViewLogic,
                            final AccountPreferencesDAO accountPreferencesDAO,
@@ -106,7 +105,7 @@ public class HandlerFactory {
                                         final AlarmDAODynamoDB alarmDAODynamoDB,
                                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                                         final SleepStatsDAODynamoDB sleepStatsDAO,
-                                        final InstrumentedTimelineProcessor timelineProcessor,
+                                        final TimelineProcessor timelineProcessor,
                                         final Optional<DatabaseReader> geoIPDatabase,
                                         final SensorViewLogic sensorViewLogic,
                                         final AccountPreferencesDAO accountPreferencesDAO,
@@ -170,5 +169,6 @@ public class HandlerFactory {
 
     public SleepSummaryHandler sleepSummaryHandler() {
         return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO, timelineProcessor);
+
     }
 }
