@@ -166,8 +166,11 @@ public class DeviceResource extends BaseResource {
     public Response unpairAccounts(@Auth final AccessToken accessToken, @Valid List<PairedAccount> accountsToUnpair) {
         final UnpairingStatus status = pairedAccounts.remove(accessToken.accountId, accountsToUnpair);
         if(UnpairingStatus.OK.equals(status)) {
+            LOGGER.error("action=unpair status={} account_id={}", status, accessToken.accountId);
             return Response.noContent().build();
         }
+
+        LOGGER.error("error=unpair-failed status={} account_id={}", status, accessToken.accountId);
         throw new WebApplicationException(status.toString(), Response.Status.BAD_REQUEST);
     }
 
