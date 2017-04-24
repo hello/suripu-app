@@ -45,6 +45,20 @@ public class AlertsProcessor {
         this.accountDAO = accountDAO;
     }
 
+    /**
+     * Only returns alert optionals for the following alert categories if applicable:
+     * {@link com.hello.suripu.core.alerts.AlertCategory#EXPANSION_UNREACHABLE}
+     * {@link com.hello.suripu.core.alerts.AlertCategory#SENSE_MUTED}
+     */
+    public Optional<Alert> getExistingAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException {
+        final List<Sense> senses = deviceProcessor.getSenses(accountId);
+        if (senses.isEmpty()) {
+            return getSystemAlertOptional(accountId);
+        }
+        final Sense sense = senses.get(0);
+        return getSenseMutedAlert(accountId, DateTime.now(DateTimeZone.UTC), sense);
+    }
+
     public Optional<Alert> getSenseAlertOptional(final Long accountId) throws UnsupportedAlertCategoryException {
         return getSenseAlert(accountId, DateTime.now(DateTimeZone.UTC));
     }
@@ -69,10 +83,9 @@ public class AlertsProcessor {
             return Optional.of(this.map(AlertCategory.SENSE_NOT_PAIRED, accountId, createdAt));
         }
         final Sense sense = senses.get(0);
-        final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
-        if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
-            LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
-            return Optional.of(this.map(AlertCategory.SENSE_MUTED, accountId, createdAt));
+        final Optional<Alert> senseMutedAlertOptional = getSenseMutedAlert(accountId, createdAt, sense);
+        if (senseMutedAlertOptional.isPresent()) {
+            return senseMutedAlertOptional;
         }
         final Optional<DateTime> lastUpdatedOptional = sense.lastUpdatedOptional;
         if (lastUpdatedOptional.isPresent() && this.shouldCreateAlert(lastUpdatedOptional.get(), MIN_NUM_DAYS_SINCE_LAST_SEEN_DEVICE)) {
@@ -81,6 +94,19 @@ public class AlertsProcessor {
 
         return Optional.absent();
 
+    }
+
+    @NotNull
+    private Optional<Alert> getSenseMutedAlert(final Long accountId,
+                                               @NotNull final DateTime createdAt,
+                                               @NotNull final Sense sense) {
+        final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
+        //final VoiceMetadata voiceMetadata = deviceProcessor.voiceMetadata(sense.externalId, accountId);
+        if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
+            LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
+            return Optional.of(this.map(AlertCategory.SENSE_MUTED, accountId, createdAt));
+        }
+        return Optional.absent();
     }
 
     @NotNull
@@ -151,7 +177,6 @@ public class AlertsProcessor {
     }
 
     private boolean shouldCreateAlert(@NotNull final DateTime lastSeen, final int atLeastNumDays) {
-        Days
         return Days.daysBetween(lastSeen, DateTime.now(DateTimeZone.UTC)).isGreaterThan(Days.days(atLeastNumDays));
     }
 

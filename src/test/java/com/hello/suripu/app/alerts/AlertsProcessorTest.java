@@ -34,7 +34,7 @@ public class AlertsProcessorTest {
     private VoiceMetadataDAO mockVoiceMetadataDAO;
     private DeviceProcessor mockDeviceProcessor;
     private Account mockAccount;
-    private com.hello.suripu.app.alerts.AlertsProcessor alertsProcessor;
+    private AlertsProcessor alertsProcessor;
     private com.hello.suripu.core.db.AccountDAO mockAccountDAO;
 
     @Before
@@ -57,12 +57,20 @@ public class AlertsProcessorTest {
                 .when(mockAccountDAO)
                 .getById(MOCK_ACCOUNT_ID);
 
-        alertsProcessor = new com.hello.suripu.app.alerts.AlertsProcessor(
+        alertsProcessor = new AlertsProcessor(
                 mockAlertsDAO,
                 mockVoiceMetadataDAO,
                 mockDeviceProcessor,
                 mockAccountDAO
         );
+    }
+
+    //todo @Test
+    public void getExistingAlert() throws Exception {
+
+        //final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
+
+        //assertThat(existingAlert.get().category(), equalTo(com.hello.suripu.core.alerts.AlertCategory.EXPANSION_UNREACHABLE));
     }
 
     @Test

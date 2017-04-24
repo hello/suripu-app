@@ -1,7 +1,7 @@
 package com.hello.suripu.app.modules;
 
-import com.hello.suripu.app.resources.v1.AccountResource;
 import com.hello.suripu.app.experimental.DataResource;
+import com.hello.suripu.app.resources.v1.AccountResource;
 import com.hello.suripu.app.resources.v1.DeviceResources;
 import com.hello.suripu.app.resources.v1.InsightsResource;
 import com.hello.suripu.app.resources.v1.MobilePushRegistrationResource;
@@ -9,6 +9,7 @@ import com.hello.suripu.app.resources.v1.OTAResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
 import com.hello.suripu.app.v2.SensorsResource;
@@ -25,11 +26,10 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
-
-import javax.inject.Singleton;
-
 import dagger.Module;
 import dagger.Provides;
+
+import javax.inject.Singleton;
 
 @Module(injects = {
         TimelineResource.class,
@@ -49,7 +49,8 @@ import dagger.Provides;
         ExpansionsResource.class,
         AccountResource.class,
         MobilePushRegistrationResource.class,
-        DataResource.class
+        DataResource.class,
+        AlertsResource.class,
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;
