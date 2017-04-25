@@ -35,13 +35,14 @@ public class AlertsProcessorTest {
     private DeviceProcessor mockDeviceProcessor;
     private Account mockAccount;
     private AlertsProcessor alertsProcessor;
-    private com.hello.suripu.core.db.AccountDAO mockAccountDAO;
+    private AccountDAO mockAccountDAO;
+    private AlertsDAO mockAlertsDAO;
 
     @Before
     public void setUp() throws Exception {
         mockAccount = mock(Account.class);
 
-        final AlertsDAO mockAlertsDAO = mock(AlertsDAO.class);
+        mockAlertsDAO = mock(AlertsDAO.class);
 
         doReturn(Optional.<Alert>absent())
                 .when(mockAlertsDAO)
@@ -65,12 +66,33 @@ public class AlertsProcessorTest {
         );
     }
 
-    //todo @Test
-    public void getExistingAlert() throws Exception {
+    @Test
+    public void getSenseMutedAlertFromExistingAlerts() throws Exception {
+       mockSenseMuted();
 
-        //final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
+       final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
+        assertThat(existingAlert.isPresent(), equalTo(true));
+        assertThat(existingAlert.get().category(), equalTo(AlertCategory.SENSE_MUTED));
+    }
 
-        //assertThat(existingAlert.get().category(), equalTo(com.hello.suripu.core.alerts.AlertCategory.EXPANSION_UNREACHABLE));
+    @Test
+    public void getExpansionUnreachableAlertFromExistingAlerts() throws Exception {
+        doReturn(ImmutableList.<Sense>builder().build())
+                .when(mockDeviceProcessor)
+                .getSenses(MOCK_ACCOUNT_ID);
+
+        final Alert expansionUnreachable = mock(Alert.class);
+
+        doReturn(AlertCategory.EXPANSION_UNREACHABLE)
+                .when(expansionUnreachable).category();
+
+        doReturn(Optional.of(expansionUnreachable))
+                .when(mockAlertsDAO)
+                .mostRecentNotSeen(anyLong());
+
+        final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
+        assertThat(existingAlert.isPresent(), equalTo(true));
+        assertThat(existingAlert.get().category(), equalTo(AlertCategory.EXPANSION_UNREACHABLE));
     }
 
     @Test
@@ -87,27 +109,7 @@ public class AlertsProcessorTest {
 
     @Test
     public void getSenseMutedAlert() throws Exception {
-        final Sense mutedSense = mock(Sense.class);
-        doReturn(HumanReadableHardwareVersion.SENSE_WITH_VOICE)
-                .when(mutedSense)
-                .hardwareVersion();
-
-        VoiceMetadata mockVoiceMetadata = mock(VoiceMetadata.class);
-        doReturn(true)
-                .when(mockVoiceMetadata)
-                .muted();
-
-        doReturn(mockVoiceMetadata)
-                .when(mockVoiceMetadataDAO)
-                .get(any(), anyLong(), anyLong());
-
-        doReturn(ImmutableList.<Sense>builder().add(mutedSense).build())
-                .when(mockDeviceProcessor)
-                .getSenses(MOCK_ACCOUNT_ID);
-
-        doReturn(ImmutableList.builder().build())
-                .when(mockDeviceProcessor)
-                .getPills(MOCK_ACCOUNT_ID, mockAccount);
+        mockSenseMuted();
 
         final Optional<Alert> systemAlert = alertsProcessor.getSenseAlertOptional(MOCK_ACCOUNT_ID);
 
@@ -140,6 +142,30 @@ public class AlertsProcessorTest {
     @Test(expected = AlertsProcessor.UnsupportedAlertCategoryException.class)
     public void throwUnsupportedAlertCategoryException() throws Exception {
         alertsProcessor.map(AlertCategory.EXPANSION_UNREACHABLE, MOCK_ACCOUNT_ID, DateTime.now());
+    }
+
+    private void mockSenseMuted() {
+        final Sense mutedSense = mock(Sense.class);
+        doReturn(HumanReadableHardwareVersion.SENSE_WITH_VOICE)
+                .when(mutedSense)
+                .hardwareVersion();
+
+        VoiceMetadata mockVoiceMetadata = mock(VoiceMetadata.class);
+        doReturn(true)
+                .when(mockVoiceMetadata)
+                .muted();
+
+        doReturn(mockVoiceMetadata)
+                .when(mockVoiceMetadataDAO)
+                .get(any(), anyLong(), anyLong());
+
+        doReturn(ImmutableList.<Sense>builder().add(mutedSense).build())
+                .when(mockDeviceProcessor)
+                .getSenses(MOCK_ACCOUNT_ID);
+
+        doReturn(ImmutableList.builder().build())
+                .when(mockDeviceProcessor)
+                .getPills(MOCK_ACCOUNT_ID, mockAccount);
     }
 
 }

@@ -2,7 +2,6 @@ package com.hello.suripu.app.v2;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.app.modules.AppFeatureFlipper;
 import com.hello.suripu.core.ObjectGraphRoot;
@@ -16,6 +15,7 @@ import com.librato.rollout.RolloutClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

@@ -101,7 +101,6 @@ public class AlertsProcessor {
                                                @NotNull final DateTime createdAt,
                                                @NotNull final Sense sense) {
         final VoiceMetadata voiceMetadata = voiceMetadataDAO.get(sense.externalId, accountId, accountId);
-        //final VoiceMetadata voiceMetadata = deviceProcessor.voiceMetadata(sense.externalId, accountId);
         if(voiceMetadata.muted() && HumanReadableHardwareVersion.SENSE_WITH_VOICE.equals(sense.hardwareVersion())) {
             LOGGER.debug("action=show-mute-alarm sense_id={} account_id={}", sense.externalId, accountId);
             return Optional.of(this.map(AlertCategory.SENSE_MUTED, accountId, createdAt));

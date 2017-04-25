@@ -9,6 +9,7 @@ import com.hello.suripu.core.alerts.Alert;
 import com.hello.suripu.core.alerts.AlertCategory;
 import com.hello.suripu.core.oauth.OAuthScope;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
+import com.librato.rollout.RolloutClient;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.verify;
 public class AlertsResourceTest {
 
     @Inject
-    com.librato.rollout.RolloutClient mockFlipper;
+    RolloutClient mockFlipper;
 
     private static final Long MOCK_ACCOUNT_ID = 0L;
 
@@ -47,8 +48,6 @@ public class AlertsResourceTest {
         accessToken = makeToken(MOCK_ACCOUNT_ID);
         mockAlertsProcessor = mock(AlertsProcessor.class);
         this.alertsResource = new AlertsResource(mockAlertsProcessor);
-        //todo fix inject into alertsResource
-        alertsResource.flipper = mockFlipper;
 
         doReturn(true)
                 .when(mockFlipper)
