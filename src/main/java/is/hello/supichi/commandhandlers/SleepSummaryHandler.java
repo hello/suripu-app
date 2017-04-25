@@ -7,9 +7,9 @@ import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TimelineUtils;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-import is.hello.supichi.db.SpeechCommandDAO;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import is.hello.supichi.commandhandlers.results.GenericResult;
+import is.hello.supichi.db.SpeechCommandDAO;
 import is.hello.supichi.models.AnnotatedTranscript;
 import is.hello.supichi.models.HandlerResult;
 import is.hello.supichi.models.HandlerType;
@@ -41,9 +41,10 @@ public class SleepSummaryHandler extends BaseHandler {
     public static final String ERROR_NO_TIMEZONE = "Sorry, we're unable to retrieve your sleep score. Please set your timezone in the app.";
 
     private final SleepStatsDAODynamoDB sleepStatsDAO;
-    private final InstrumentedTimelineProcessor timelineProcessor;
+    private final TimelineProcessor timelineProcessor;
 
-    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO, final InstrumentedTimelineProcessor timelineProcessor) {
+    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO,
+                               final TimelineProcessor timelineProcessor) {
         super("sleep-summary", speechCommandDAO, getAvailableActions());
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
@@ -104,6 +105,8 @@ public class SleepSummaryHandler extends BaseHandler {
 
 
     private HandlerResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
+
+
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-sleep-score reason=no-timezone account_id={}", accountId);
             return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE));
@@ -121,7 +124,9 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private Optional<AggregateSleepStats> getSleepStat(final Long accountId, final DateTimeZone timezoneId) {
         final DateTime localToday = DateTime.now(timezoneId).withTimeAtStartOfDay();
+        final Integer localHour = DateTime.now(timezoneId).getHourOfDay();
         final String lastNightDate = DateTimeUtil.dateToYmdString(localToday.minusDays(1));
+        final String localCurrentDate = DateTimeUtil.dateToYmdString(localToday);
 
         LOGGER.debug("action=get-sleep-stats-from-ddb account_id={} night_date={}", accountId, lastNightDate);
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
@@ -136,10 +141,12 @@ public class SleepSummaryHandler extends BaseHandler {
         }
 
         final DateTime targetDate = DateTimeUtil.ymdStringToDateTime(lastNightDate);
+        final DateTime queryDate = DateTimeUtil.ymdStringToDateTime(localCurrentDate);
         LOGGER.debug("action=compute-timeline-for-stats account_id={} target_date={}", accountId, targetDate);
 
-        final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
-        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate, Optional.absent());
+        final TimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
+
+        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, targetDate,Optional.absent(), Optional.absent());
 
         if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
             final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
@@ -162,4 +169,5 @@ public class SleepSummaryHandler extends BaseHandler {
     public SupichiResponseType responseType() {
         return SupichiResponseType.WATSON;
     }
+
 }

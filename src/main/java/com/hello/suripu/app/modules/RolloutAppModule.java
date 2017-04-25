@@ -24,6 +24,8 @@ import com.hello.suripu.core.flipper.DynamoDBAdapter;
 import com.hello.suripu.core.processors.QuestionProcessor;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessorV3;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import com.librato.rollout.RolloutAdapter;
 import com.librato.rollout.RolloutClient;
 import dagger.Module;
@@ -35,6 +37,7 @@ import javax.inject.Singleton;
         TimelineResource.class,
         RoomConditionsResource.class,
         InstrumentedTimelineProcessor.class,
+        InstrumentedTimelineProcessorV3.class,
         InsightsResource.class,
         DeviceResources.class,
         com.hello.suripu.app.v2.TimelineResource.class,
@@ -50,6 +53,7 @@ import javax.inject.Singleton;
         AccountResource.class,
         MobilePushRegistrationResource.class,
         DataResource.class,
+        TimelineProcessor.class,
         AlertsResource.class,
 })
 public class RolloutAppModule {

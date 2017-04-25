@@ -11,4 +11,5 @@ public class AppFeatureFlipper {
      * {@link com.hello.suripu.core.alerts.AlertCategory#SENSE_MUTED}
      */
     public static String NEW_ALERTS_ENABLED = "new_alerts_enabled";
+
 }

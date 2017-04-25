@@ -927,4 +927,5 @@ public class CreateDynamoDBTables extends ConfiguredCommand<SuripuAppConfigurati
             System.out.println(String.format("%s created", tableName));
             }
     }
+
 }
