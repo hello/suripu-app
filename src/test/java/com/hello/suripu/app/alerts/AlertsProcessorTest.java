@@ -71,7 +71,7 @@ public class AlertsProcessorTest {
        mockSenseMuted();
 
        final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
-        assertThat(existingAlert.isPresent(), equalTo(true));
+        assertTrue(existingAlert.isPresent());
         assertThat(existingAlert.get().category(), equalTo(AlertCategory.SENSE_MUTED));
     }
 
@@ -91,7 +91,7 @@ public class AlertsProcessorTest {
                 .mostRecentNotSeen(anyLong());
 
         final Optional<Alert> existingAlert = alertsProcessor.getExistingAlertOptional(MOCK_ACCOUNT_ID);
-        assertThat(existingAlert.isPresent(), equalTo(true));
+        assertTrue(existingAlert.isPresent());
         assertThat(existingAlert.get().category(), equalTo(AlertCategory.EXPANSION_UNREACHABLE));
     }
 
