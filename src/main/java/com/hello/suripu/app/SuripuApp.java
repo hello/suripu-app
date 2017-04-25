@@ -70,6 +70,7 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
+import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
@@ -96,7 +97,6 @@ import com.hello.suripu.core.analytics.SegmentAnalyticsTracker;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.configuration.QueueName;
 import com.hello.suripu.core.configuration.UrlName;
-import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -291,7 +291,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         insightsDB.registerContainerFactory(new OptionalContainerFactory());
         insightsDB.registerArgumentFactory(new PostgresIntegerArrayArgumentFactory());
 
-        final AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
+        final com.hello.suripu.core.db.AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
         final ApplicationsDAO applicationsDAO = commonDB.onDemand(ApplicationsDAO.class);
         final AccessTokenDAO accessTokenDAO = commonDB.onDemand(AccessTokenDAO.class);
@@ -838,7 +838,9 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
-        environment.jersey().register(new AlertsResource(alertsDAO, voiceMetadataDAO, deviceDAO, senseMetadataDAO));
+        //todo see if all dependencies needed or not for AlertsProcessor
+        final AlertsProcessor alertsProcessor = new AlertsProcessor(alertsDAO, voiceMetadataDAO, deviceProcessor, accountDAO);
+        environment.jersey().register(new AlertsResource(alertsProcessor));
 
         environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
                                                                                          configuration.getUrl(UrlName.VOICE))));

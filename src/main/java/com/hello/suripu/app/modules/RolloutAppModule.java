@@ -9,6 +9,7 @@ import com.hello.suripu.app.resources.v1.OTAResource;
 import com.hello.suripu.app.resources.v1.QuestionsResource;
 import com.hello.suripu.app.resources.v1.RoomConditionsResource;
 import com.hello.suripu.app.resources.v1.TimelineResource;
+import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
 import com.hello.suripu.app.v2.ExpansionsResource;
 import com.hello.suripu.app.v2.SensorsResource;
@@ -52,7 +53,8 @@ import javax.inject.Singleton;
         AccountResource.class,
         MobilePushRegistrationResource.class,
         DataResource.class,
-        TimelineProcessor.class
+        TimelineProcessor.class,
+        AlertsResource.class,
 })
 public class RolloutAppModule {
     private final FeatureStore featureStore;
