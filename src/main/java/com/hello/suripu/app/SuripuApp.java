@@ -838,9 +838,10 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
         environment.jersey().register(new SensorsResource(sensorViewLogic));
 
         environment.jersey().register(new AlarmGroupsResource(deviceDAO, amazonS3, alarmProcessor, expansionStore));
-        //todo see if all dependencies needed or not for AlertsProcessor
+
         final AlertsProcessor alertsProcessor = new AlertsProcessor(alertsDAO, voiceMetadataDAO, deviceProcessor, accountDAO);
         environment.jersey().register(new AlertsResource(alertsProcessor));
+        environment.jersey().register(new com.hello.suripu.app.v3.AlertsResource(alertsProcessor));
 
         environment.jersey().register(new VoiceCommandsResource(new VoiceCommandResponse(voiceCommandsDAO.getCommands(),
                                                                                          configuration.getUrl(UrlName.VOICE))));

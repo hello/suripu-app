@@ -1,7 +1,5 @@
 package com.hello.suripu.app.modules;
 
-import com.hello.suripu.app.v2.AlertsResource;
-import com.hello.suripu.app.v2.AlertsResourceTest;
 import com.hello.suripu.core.actions.ActionProcessor;
 import com.hello.suripu.core.actions.ActionProcessorFirehose;
 import com.hello.suripu.core.analytics.AnalyticsTracker;
@@ -17,8 +15,6 @@ import static org.mockito.Mockito.mock;
 @Module(library = true,
         overrides = true,
         injects = {
-                AlertsResource.class,
-                AlertsResourceTest.class,
         }
 )
 public class TestRolloutAppModule {
