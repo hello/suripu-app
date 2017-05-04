@@ -1,10 +1,9 @@
 package com.hello.suripu.app.service;
 
-import com.google.common.base.Optional;
-
 import com.amazon.speech.slu.Intent;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.google.common.base.Optional;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.SleepStatsDAO;
 import com.hello.suripu.core.models.Account;
@@ -12,8 +11,7 @@ import com.hello.suripu.core.models.AggregateSleepStats;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
-
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -33,12 +31,12 @@ public class ScoreIntentHandler extends IntentHandler {
 
   private final AccountDAO accountDAO;
   private final TimelineDAODynamoDB timelineDAODynamoDB;
-  private final InstrumentedTimelineProcessor timelineProcessor;
+  private final TimelineProcessor timelineProcessor;
   private final SleepStatsDAO sleepStatsDAO;
 
   public ScoreIntentHandler(final AccountDAO accountDAO,
                             final TimelineDAODynamoDB timelineDAODynamoDB,
-                            final InstrumentedTimelineProcessor timelineProcessor,
+                            final TimelineProcessor timelineProcessor,
                             final SleepStatsDAO sleepStatsDAO) {
     this.accountDAO = accountDAO;
     this.timelineDAODynamoDB = timelineDAODynamoDB;

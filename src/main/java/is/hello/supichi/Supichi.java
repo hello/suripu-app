@@ -45,7 +45,7 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.maxmind.geoip2.DatabaseReader;
 import io.dropwizard.setup.Environment;
@@ -113,7 +113,7 @@ public class Supichi
             final AmazonDynamoDBClientFactory dynamoDBClientFactory,
             final ImmutableMap<DynamoDBTableName, String> tableNames,
             final DBI commonDB,
-            final InstrumentedTimelineProcessor timelineProcessor,
+            final TimelineProcessor timelineProcessor,
             final MessejiClient messejiClient,
             final Vault tokenKMSVault,
             final DeviceProcessor deviceProcessor) throws IOException {
@@ -334,7 +334,6 @@ public class Supichi
                 speechKinesisProducer, responseBuilders, handlersToBuilders,
                 deviceProcessor,
                 environment.metrics());
-
     }
 
     public UploadResource uploadResource() {

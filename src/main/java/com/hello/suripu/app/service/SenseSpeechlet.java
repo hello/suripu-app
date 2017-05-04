@@ -30,7 +30,7 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.db.AccessTokenDAO;
 import com.hello.suripu.coredropwizard.db.TimelineDAODynamoDB;
 import com.hello.suripu.coredropwizard.oauth.AccessToken;
-import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
+import com.hello.suripu.coredropwizard.timeline.TimelineProcessor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -64,7 +64,7 @@ public class SenseSpeechlet implements Speechlet {
       final MessejiClient messejiClient,
       final SleepSoundsProcessor sleepSoundsProcessor,
       final DurationDAO durationDAO,
-      final InstrumentedTimelineProcessor timelineProcessor,
+      final TimelineProcessor timelineProcessor,
       final AccountPreferencesDAO preferencesDAO,
       final CalibrationDAO calibrationDAO,
       final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
