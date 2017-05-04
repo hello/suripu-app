@@ -6,6 +6,7 @@ import com.amazon.speech.speechlet.SpeechletResponse;
 import com.google.common.base.Optional;
 import com.hello.suripu.core.db.DeviceReadDAO;
 import com.hello.suripu.core.db.sleep_sounds.DurationDAO;
+import com.hello.suripu.core.firmware.HardwareVersion;
 import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
@@ -30,6 +31,8 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
   private static final Integer TIMEOUT_FADE_OUT = 20; // Used when sense's play duration times out
   private static final Double SENSE_MAX_DECIBELS = 60.0;
   private static final String SOUND_NAME_KEY = "SOUND_NAME";
+  private static final HardwareVersion DEFAULT_INTENT_HW_VERSION = HardwareVersion.SENSE_ONE_FIVE;
+
 
   final DeviceReadDAO deviceReadDAO;
   final MessejiClient messejiClient;
@@ -78,7 +81,7 @@ public class LastSleepSoundIntentHandler extends IntentHandler {
       slotName = "Horizon";
     }
 
-    final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName(WordUtils.capitalize(slotName));
+    final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName(WordUtils.capitalize(slotName), DEFAULT_INTENT_HW_VERSION);
     if (!soundOptional.isPresent()) {
       return errorResponse("Invalid Sound ID");
     }

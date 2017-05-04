@@ -35,6 +35,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
   private static final Integer TIMEOUT_FADE_OUT = 20; // Used when sense's play duration times out
   private static final Double SENSE_MAX_DECIBELS = 60.0;
   private static final String SOUND_NAME_KEY = "SOUND_NAME";
+  private static final HardwareVersion DEFAULT_INTENT_HW_VERSION = HardwareVersion.SENSE_ONE_FIVE;
 
   final DeviceReadDAO deviceReadDAO;
   final MessejiClient messejiClient;
@@ -85,7 +86,7 @@ public class SleepSoundIntentHandler extends IntentHandler {
     }
     session.setAttribute(SOUND_NAME_KEY, WordUtils.capitalize(slotName));
 
-    final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName(WordUtils.capitalize(slotName));
+    final Optional<Sound> soundOptional = sleepSoundsProcessor.getSoundByFileName(WordUtils.capitalize(slotName), DEFAULT_INTENT_HW_VERSION);
     if (!soundOptional.isPresent()) {
       return errorResponse("Invalid Sound ID");
     }
