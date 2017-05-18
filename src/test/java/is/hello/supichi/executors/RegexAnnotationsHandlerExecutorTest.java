@@ -13,6 +13,7 @@ import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.sleep_sounds.SleepSoundSettingsDynamoDB;
 import com.hello.suripu.core.firmware.HardwareVersion;
+import com.hello.suripu.core.models.Account;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.models.ValueRange;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
@@ -58,13 +59,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import static is.hello.supichi.models.SpeechCommand.ALARM_DELETE;
-import static is.hello.supichi.models.SpeechCommand.ALARM_GET;
-import static is.hello.supichi.models.SpeechCommand.ALARM_SET;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static is.hello.supichi.models.SpeechCommand.*;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RegexAnnotationsHandlerExecutorTest {
     private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
@@ -143,27 +142,27 @@ public class RegexAnnotationsHandlerExecutorTest {
         final Map<String, String> encryptionContext = Maps.newHashMap();
         encryptionContext.put("application_id", fakeToken.appId.toString());
 
-        Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.HUE.toString())).thenReturn(Optional.of(fakeHueApplication));
-        Mockito.when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.NEST.toString())).thenReturn(Optional.of(fakeNestApplication));
-        Mockito.when(externalTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.of(fakeToken));
-        Mockito.when(externalTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.of(fakeDecryptedToken));
-        Mockito.when(badTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.absent());
-        Mockito.when(badTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.absent());
-        Mockito.when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
-        Mockito.when(externalAppDataStore.getAppData(1L, SENSE_ID)).thenReturn(Optional.of(fakeHueApplicationData));
-        Mockito.when(externalAppDataStore.getAppData(2L, SENSE_ID)).thenReturn(Optional.of(fakeNestApplicationData));
+        when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.HUE.toString())).thenReturn(Optional.of(fakeHueApplication));
+        when(externalApplicationStore.getApplicationByName(Expansion.ServiceName.NEST.toString())).thenReturn(Optional.of(fakeNestApplication));
+        when(externalTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.of(fakeToken));
+        when(externalTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.of(fakeDecryptedToken));
+        when(badTokenStore.getTokenByDeviceId(Mockito.anyString(), Mockito.anyLong())).thenReturn(Optional.absent());
+        when(badTokenStore.getDecryptedExternalToken(Mockito.anyString(), Mockito.any(Expansion.class), Mockito.anyBoolean())).thenReturn(Optional.absent());
+        when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
+        when(externalAppDataStore.getAppData(1L, SENSE_ID)).thenReturn(Optional.of(fakeHueApplicationData));
+        when(externalAppDataStore.getAppData(2L, SENSE_ID)).thenReturn(Optional.of(fakeNestApplicationData));
 
         final int offsetMillis = TIME_ZONE.getOffset(DateTime.now(DateTimeZone.UTC).getMillis());
         final Optional<TimeZoneHistory> optionalTimeZoneHistory = Optional.of(new TimeZoneHistory(offsetMillis, "America/Los_Angeles"));
-        Mockito.when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(optionalTimeZoneHistory);
+        when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(optionalTimeZoneHistory);
 
-        Mockito.when(mergedUserDAO.getInfo(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
+        when(mergedUserDAO.getInfo(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
 
         final SensorResponse sensorResponse = SensorResponse.noData(Collections.emptyList());
-        Mockito.when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
+        when(sensorViewLogic.list(Mockito.anyLong(), Mockito.anyObject())).thenReturn(sensorResponse);
 
-        Mockito.when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString(), Mockito.any(HardwareVersion.class))).thenReturn(Optional.of(DEFAULT_SOUND));
-        Mockito.when(sleepSoundSettingsDynamoDB.get(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
+        when(sleepSoundsProcessor.getSoundByFileName(Mockito.anyString(), Mockito.any(HardwareVersion.class))).thenReturn(Optional.of(DEFAULT_SOUND));
+        when(sleepSoundSettingsDynamoDB.get(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
     }
 
     private HandlerExecutor getExecutor() {
@@ -345,7 +344,8 @@ public class RegexAnnotationsHandlerExecutorTest {
 
                 new HandlerTestData("happy holidays", TriviaHandler.class, true),
                 new HandlerTestData("who is your father", TriviaHandler.class, true),
-                new HandlerTestData("who am i", TriviaHandler.class, true)
+                new HandlerTestData("who am i", TriviaHandler.class, true),
+                new HandlerTestData("happy birthday", TriviaHandler.class, true)
 
         );
 
@@ -625,5 +625,35 @@ public class RegexAnnotationsHandlerExecutorTest {
         assertEquals(correctResult.outcome(), Outcome.FAIL);
         assertEquals(correctResult.optionalErrorText().isPresent(), true);
         assertEquals(correctResult.optionalErrorText().get(), "token decrypt failed");
+    }
+
+    @Test
+    public void TestHappyBirthday() {
+
+        final TriviaHandler triviaHandler = new TriviaHandler(speechCommandDAO, accountDAO, false);
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
+                .register(HandlerType.TRIVIA, triviaHandler);
+
+        final Account account = new Account.Builder().withEmail("email@email.com").withId(999L).withFirstname("Bryan").build();
+        when(accountDAO.getById(anyLong())).thenReturn(Optional.of(account));
+        HandlerResult correctResult = executor.handle(newVoiceRequest("happy birthday"));
+        assertEquals(HandlerType.TRIVIA, correctResult.handlerType);
+        assertEquals(correctResult.outcome(), Outcome.OK);
+        assertFalse(correctResult.optionalErrorText().isPresent());
+        assertEquals("text matches", correctResult.responseText(), "Happy Birthday Bryan!");
+    }
+
+    @Test
+    public void TestHappyBirthdayNoAccount() {
+
+        final TriviaHandler triviaHandler = new TriviaHandler(speechCommandDAO, accountDAO, false);
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
+                .register(HandlerType.TRIVIA, triviaHandler);
+
+        when(accountDAO.getById(anyLong())).thenReturn(Optional.absent());
+        HandlerResult correctResult = executor.handle(newVoiceRequest("happy birthday"));
+        assertEquals(HandlerType.TRIVIA, correctResult.handlerType);
+        assertEquals(correctResult.outcome(), Outcome.FAIL);
+        assertTrue("has error", correctResult.optionalErrorText().isPresent());
     }
 }
