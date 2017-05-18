@@ -57,6 +57,7 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("who am i", SpeechCommand.TRIVIA);
         tempMap.put("send message", SpeechCommand.TRIVIA);
         tempMap.put("play something romantic", SpeechCommand.TRIVIA);
+        tempMap.put("happy birthday", SpeechCommand.TRIVIA);
         return tempMap;
     }
 
@@ -89,6 +90,10 @@ public class TriviaHandler extends BaseHandler {
                 result = GenericResult.ok(String.format("Hello %s!", account.get().firstname));
             } else if (text.contains("romantic")) {
                 result = GenericResult.withMP3("", "RomeoJuliet_Clip_16k_c1.mp3");
+            } else if(text.contains("happy birthday")) {
+                if(account.isPresent()) {
+                    result = GenericResult.ok(String.format("Happy Birthday %s!", account.get().firstname));
+                }
             }
 
             if (isDebug) {
