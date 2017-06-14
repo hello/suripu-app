@@ -74,24 +74,25 @@ public class ExportDataResource {
         final UUID accountUUID = UUID.fromString(uuid);
         final Optional<Account> accountOptional = accountDAO.getByExternalId(accountUUID);
         if(!accountOptional.isPresent()) {
-            LOGGER.warn("uuid={} action=export-data result=account-not-found", uuid);
+            LOGGER.warn("uuid={} action=export result=account-not-found", uuid);
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity(new JsonError(Response.Status.NOT_FOUND.getStatusCode(), "account not found")).build());
         }
+        
         final Account account = accountOptional.get();
         final Map<String, String> message = Maps.newHashMap();
         message.put("email", account.email);
         message.put("account_id", String.valueOf(account.id.or(0L)));
+        message.put("uuid", uuid);
 
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final String content = mapper.writeValueAsString(message);
-            LOGGER.info("action=export-data account_id={}", account.id.or(0L));
+            LOGGER.info("action=export account_id={}", account.id.or(0L));
             final SendMessageResult result = amazonSQS.sendMessage(exportDataQueueURL, content);
-            LOGGER.info("action=export-data account_id={} message_id={}", result.getMessageId());
+            LOGGER.info("action=export account_id={} message_id={}", result.getMessageId());
         } catch (JsonProcessingException e) {
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "json error")).build());
         }
-        
         return Response.noContent().build();
     }
 }

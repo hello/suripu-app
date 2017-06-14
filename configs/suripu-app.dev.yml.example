@@ -219,6 +219,8 @@ alexa_app_ids:
   hello_dev: amzn1.echo-sdk-ams.app.2bb48848-e785-4e9c-9e5f-6165d0ef6963
   josef_dev: amzn1.echo-sdk-ams.app.48296311-bcd4-4221-9608-390dee8ca111
 
+export_data_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/dev_export
+
 expansions:
   hue_app_name: sense-dev
 
