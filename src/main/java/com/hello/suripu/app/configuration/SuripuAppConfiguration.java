@@ -267,5 +267,11 @@ public class SuripuAppConfiguration extends Configuration {
     public Map<HardwareVersion, List<Sensor>> availableSensors() {
         return availableSensors;
     }
+
+    @JsonProperty("export_data_queue_url")
+    private String exportDataQueueUrl = "";
+    public String exportDataQueueUrl() {
+        return exportDataQueueUrl;
+    }
 }
 
