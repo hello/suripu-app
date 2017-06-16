@@ -41,12 +41,14 @@ public class ExportDataResource {
     private final AccountDAO accountDAO;
     private final AmazonSQS amazonSQS;
     private final String exportDataQueueURL;
+    private final ObjectMapper mapper;
 
 
-    private ExportDataResource(final AccountDAO accountDAO, final AmazonSQS amazonSQS, final String exportDataQueueURL) {
+    private ExportDataResource(final AccountDAO accountDAO, final AmazonSQS amazonSQS, final String exportDataQueueURL, final ObjectMapper mapper) {
         this.accountDAO = accountDAO;
         this.amazonSQS = amazonSQS;
         this.exportDataQueueURL = exportDataQueueURL;
+        this.mapper = mapper;
     }
 
 
@@ -57,12 +59,12 @@ public class ExportDataResource {
      * @return
      */
     public static ExportDataResource create(final AccountDAO accountDAO, final AmazonSQS amazonSQS,
-                                            final String exportDataQueueURL) {
+                                            final String exportDataQueueURL, final ObjectMapper mapper) {
         if(exportDataQueueURL.isEmpty()) {
             throw new RuntimeException("Missing queue url");
         }
         
-        return new ExportDataResource(accountDAO, amazonSQS, exportDataQueueURL);
+        return new ExportDataResource(accountDAO, amazonSQS, exportDataQueueURL, mapper);
     }
 
     @ScopesAllowed({OAuthScope.PASSWORD_RESET})
@@ -79,17 +81,17 @@ public class ExportDataResource {
         }
         
         final Account account = accountOptional.get();
+        final Long realAccountId = account.id.or(0L);
         final Map<String, String> message = Maps.newHashMap();
         message.put("email", account.email);
-        message.put("account_id", String.valueOf(account.id.or(0L)));
+        message.put("account_id", String.valueOf(realAccountId));
         message.put("uuid", uuid);
 
-        final ObjectMapper mapper = new ObjectMapper();
         try {
             final String content = mapper.writeValueAsString(message);
-            LOGGER.info("action=export account_id={}", account.id.or(0L));
+            LOGGER.info("action=export account_id={}", realAccountId);
             final SendMessageResult result = amazonSQS.sendMessage(exportDataQueueURL, content);
-            LOGGER.info("action=export account_id={} message_id={}", result.getMessageId());
+            LOGGER.info("action=export account_id={} message_id={}", realAccountId, result.getMessageId());
         } catch (JsonProcessingException e) {
             throw new WebApplicationException(Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(new JsonError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "json error")).build());
         }

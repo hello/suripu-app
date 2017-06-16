@@ -855,7 +855,7 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         // Export data hook
         final AmazonSQS amazonSQS = new AmazonSQSClient(awsCredentialsProvider);
-        final ExportDataResource exportDataResource = ExportDataResource.create(accountDAO, amazonSQS, configuration.exportDataQueueUrl());
+        final ExportDataResource exportDataResource = ExportDataResource.create(accountDAO, amazonSQS, configuration.exportDataQueueUrl(), environment.getObjectMapper());
         environment.jersey().register(exportDataResource);
         
         // Default is True. Disable for local dev if you don't care about voice
