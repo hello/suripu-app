@@ -18,6 +18,8 @@ import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -28,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.hello.dropwizard.mikkusu.resources.PingResource;
 import com.hello.dropwizard.mikkusu.resources.VersionResource;
 import com.hello.suripu.app.alarms.AlarmGroupsResource;
+import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.app.cli.CreateDynamoDBTables;
 import com.hello.suripu.app.cli.CreateMonthlyTables;
 import com.hello.suripu.app.cli.MigrateDeviceDataCommand;
@@ -49,6 +52,7 @@ import com.hello.suripu.app.resources.v1.AlarmResource;
 import com.hello.suripu.app.resources.v1.AppCheckinResource;
 import com.hello.suripu.app.resources.v1.AppStatsResource;
 import com.hello.suripu.app.resources.v1.DeviceResources;
+import com.hello.suripu.app.resources.v1.ExportDataResource;
 import com.hello.suripu.app.resources.v1.FeedbackResource;
 import com.hello.suripu.app.resources.v1.InsightsResource;
 import com.hello.suripu.app.resources.v1.MobilePushRegistrationResource;
@@ -70,7 +74,6 @@ import com.hello.suripu.app.sensors.SensorViewLogic;
 import com.hello.suripu.app.service.TestVoiceResponsesDAO;
 import com.hello.suripu.app.sharing.ShareDAO;
 import com.hello.suripu.app.sharing.ShareDAODynamoDB;
-import com.hello.suripu.app.alerts.AlertsProcessor;
 import com.hello.suripu.app.utils.TokenCheckerFactory;
 import com.hello.suripu.app.v2.AlertsResource;
 import com.hello.suripu.app.v2.DeviceResource;
@@ -850,6 +853,11 @@ public class SuripuApp extends Application<SuripuAppConfiguration> {
 
         environment.jersey().register(new DataResource(deviceProcessor, pillDataDAODynamoDB));
 
+        // Export data hook
+        final AmazonSQS amazonSQS = new AmazonSQSClient(awsCredentialsProvider);
+        final ExportDataResource exportDataResource = ExportDataResource.create(accountDAO, amazonSQS, configuration.exportDataQueueUrl());
+        environment.jersey().register(exportDataResource);
+        
         // Default is True. Disable for local dev if you don't care about voice
         if(configuration.speechConfiguration().enabled()) {
             // speech resources
